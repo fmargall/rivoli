@@ -1,1 +1,1 @@
-![Header](./docs/rivoli-readme-header.png)
+![Header](./docs/rivoli-header-readme.png)
