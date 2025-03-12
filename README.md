@@ -3,6 +3,25 @@
 # RIVOLI &middot; <a href="./LICENSE"> <img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="MIT License"> </a> <a href="https://github.com/qoomon/starlines"> <img src="https://starlines.qoo.monster/assets/fmargall/rivoli" align="right" alt="Starline counter"/> </a>
 <sup> *Radial-based Interpolation for Visualisation, Optics and Light-matter Interaction* </sup>
 
+## Documentation
+
+### Using a `.ini` file
+
+#### `[INPUT]`
+
+| Key | Description | Value | Required? |
+| --- | ----------- | ----- | --------- |
+| `inputAnglesUnit` | Unit in which angles are given in the input file | `degrees` or `radians` | Yes |
+| `inputParameterisation` | Parameterisation of the input coordinates | `spherical` or `rusinkiewicz` | Yes for > 2D dimensions |
+| `inputFilePath` | Relative or absolute path to the input data file | `string` | Yes |
+
+> [!Note]
+> The input file should have a `.txt` format with no header, each row containing the coordinates of each value and the value itself. Colums should be separated by a tab `\t` and rows by a new line `\n`.
+
+#### `[SOFTWARE]`
+
+Documentation in progress...
+
 ## Dependencies
 
 > [!Note]
