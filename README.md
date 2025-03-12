@@ -39,6 +39,10 @@
 
 Documentation in progress...
 
+### Using a `.RBFCoeffs` file
+
+
+
 ## Dependencies
 
 > [!Note]
