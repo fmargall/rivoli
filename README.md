@@ -35,7 +35,7 @@
 | `locationRBFAngleUnit` |
 
 > [!Warning]
-> Chosing the right locations for the RBF is crucial for the interpolation to work properly and may be complicated, depending strongly of the chosen topology. Be aware that if you do not define RBF locations, the software will automatically locate the RBF on the data coordinates. This can lead to a much longer interpolator calculation time, as well as a higher number of output coefficients, with no guarantee of a better quality result.
+> Chosing the right locations for the RBF is crucial for the interpolation to work properly and may be complicated, a good positioning depending strongly of the chosen topology. Be aware that if you do not define RBF locations, the software will automatically locate the RBF on the data coordinates. This can lead to a much longer interpolator calculation time, as well as a higher number of output coefficients, with no guarantee of a better quality result.
 
 Documentation in progress...
 
