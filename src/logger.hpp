@@ -33,9 +33,16 @@ public:
 		Log(messageLevel, streamOutput.str());
 	}
 
+	template <typename... Args>
+	void Log(LogLevel messagelevel, Args... args) {
+		std::ostringstream streamOutput;
+		(streamOutput << ... << args);
+		Log(messagelevel, streamOutput.str());
+	}
+
 	// Used to display the progress of the current status
 	void displayProgressBar(const size_t currentIteration,
-		const size_t totalIterations);
+						    const size_t totalIterations);
 
 	LogLevel level;
 
@@ -58,13 +65,13 @@ private:
 };
 
 // Creating macros for using the logger
-#define LOG(level, msg)   logger.Log(level, std::string(__FUNCTION__) + ": " + msg)
-#define LOG_TRACE(msg)    logger.Log(LogLevel::TRACE   , std::string(__FUNCTION__) + ": " + msg)
-#define LOG_DEBUG(msg)    logger.Log(LogLevel::DEBUG   , std::string(__FUNCTION__) + ": " + msg)
-#define LOG_INFO(msg)     logger.Log(LogLevel::INFO    , std::string(__FUNCTION__) + ": " + msg)
-#define LOG_WARN(msg)     logger.Log(LogLevel::WARN    , std::string(__FUNCTION__) + ": " + msg)
-#define LOG_ERR(msg)      logger.Log(LogLevel::ERR     , std::string(__FUNCTION__) + ": " + msg)
-#define LOG_CRITICAL(msg) logger.Log(LogLevel::CRITICAL, std::string(__FUNCTION__) + ": " + msg)
+#define LOG(level, ...)   logger.Log(level, std::string(__FUNCTION__) + ": ", __VA_ARGS__)
+#define LOG_TRACE(...)    logger.Log(LogLevel::TRACE   , std::string(__FUNCTION__) + ": ", __VA_ARGS__)
+#define LOG_DEBUG(...)    logger.Log(LogLevel::DEBUG   , std::string(__FUNCTION__) + ": ", __VA_ARGS__)
+#define LOG_INFO(...)     logger.Log(LogLevel::INFO    , std::string(__FUNCTION__) + ": ", __VA_ARGS__)
+#define LOG_WARN(...)     logger.Log(LogLevel::WARN    , std::string(__FUNCTION__) + ": ", __VA_ARGS__)
+#define LOG_ERR(...)      logger.Log(LogLevel::ERR     , std::string(__FUNCTION__) + ": ", __VA_ARGS__)
+#define LOG_CRITICAL(...) logger.Log(LogLevel::CRITICAL, std::string(__FUNCTION__) + ": ", __VA_ARGS__)
 
 extern Logger logger;
 
