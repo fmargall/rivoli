@@ -6,7 +6,10 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 
 # Add the main project for the executable
-add_executable(RIVOLI.App src/main.cpp src/logger.cpp src/logger.hpp)
+add_executable(RIVOLI.App src/main.cpp 
+               src/logger.hpp src/logger.cpp
+               src/configurator.hpp src/configurator.cpp)
+
 # Exterior submodules
 target_include_directories(RIVOLI.App PRIVATE ext/glm ext/eigen)
 
