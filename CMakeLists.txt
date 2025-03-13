@@ -10,6 +10,9 @@ add_executable(RIVOLI.App src/main.cpp
                src/logger.hpp src/logger.cpp
                src/configurator.hpp src/configurator.cpp)
 
+# Set RIVOLI.App as start-up project in Visual Studio 
+set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT RIVOLI.App)
+
 # Exterior submodules
 target_include_directories(RIVOLI.App PRIVATE ext/glm ext/eigen)
 
