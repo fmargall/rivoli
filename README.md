@@ -3,6 +3,46 @@
 # RIVOLI &middot; <a href="./LICENSE"> <img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="MIT License"> </a> <a href="https://github.com/qoomon/starlines"> <img src="https://starlines.qoo.monster/assets/fmargall/rivoli" align="right" alt="Starline counter"/> </a>
 <sup> *Radial-based Interpolation for Visualisation, Optics and Light-matter Interaction* </sup>
 
+## Documentation
+
+### Using a `.ini` file
+
+#### `[INPUT]`
+
+| Key | Description | Value | Required? |
+| --- | ----------- | ----- | --------- |
+| `inputAnglesUnit` | Unit in which angles are given in the input file | `degrees` or `radians` | Yes |
+| `inputParameterisation` | Parameterisation of the input coordinates | `spherical` or `rusinkiewicz` | Yes for > 2D dimensions |
+| `inputFilePath` | Relative or absolute path to the input data file | `type:string` | Yes |
+
+> [!Note]
+> The input file should have a `.txt` format with no header, each row containing the coordinates of each value and the value itself. Colums should be separated by a tab `\t` and rows by a new line `\n`.
+
+#### `[SOFTWARE]`
+
+| Key | Description | Value | Required? |
+| --- | ----------- | ----- | --------- |
+| `floatingPointFormat` |
+| `logLevel` |
+| `parallelComputing` |
+
+###### `[INTERPOLATION.RBF.LOCATION]`
+
+| Key | Description | Value | Required? |
+| --- | ----------- | ----- | --------- |
+| `locationRBFFilePath` |
+| `locationRBFParameterisation` |
+| `locationRBFAngleUnit` |
+
+> [!Warning]
+> Chosing the right locations for the RBF is crucial for the interpolation to work properly and may be complicated, a good positioning depending strongly of the chosen topology. Be aware that if you do not define RBF locations, the software will automatically locate the RBF on the data coordinates. This can lead to a much longer interpolator calculation time, as well as a higher number of output coefficients, with no guarantee of a better quality result.
+
+Documentation in progress...
+
+### Using a `.RBFCoeffs` file
+
+
+
 ## Dependencies
 
 > [!Note]
