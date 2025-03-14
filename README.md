@@ -26,3 +26,7 @@
 The following dependencies are used in this project:
  - [Eigen](https://gitlab.com/libeigen/eigen) - A C++ template library for linear algebra: matrices, vectors, numerical solvers, and related algorithms.
  - [glm](https://github.com/g-truc/glm) - OpenGL Mathematics (GLM) is a header only C++ mathematics library for graphics software based on the OpenGL Shading Language (GLSL) specifications.
+
+## Contact 
+
+François Margall &ndash; fr.margall@proton.me
