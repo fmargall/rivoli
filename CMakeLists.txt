@@ -17,7 +17,7 @@ set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT R
 target_include_directories(RIVOLI.App PRIVATE ext/glm ext/eigen)
 
 # Set the command arguments for the Visual Studio debugger
-set_target_properties(RIVOLI.App PROPERTIES VS_DEBUGGER_COMMAND_ARGUMENTS "resources/config.ini")
+set_target_properties(RIVOLI.App PROPERTIES VS_DEBUGGER_COMMAND_ARGUMENTS "../resources/config.ini")
 
 # Remove the ZERO_CHECK project
 set(CMAKE_SUPPRESS_REGENERATION true)

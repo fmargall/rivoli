@@ -28,7 +28,7 @@ MainConfig::MainConfig(const std::string& configFilePath) {
 			value.erase(value.find_last_not_of(" \t") + 1);
 
 			// Used to stop the loop if an invalid key is found
-			bool breaker = false;
+			bool warning = false, breaker = false;
 
 			if (key == "logLevel") {
 				if (value == "OFF"           || value == "0")
@@ -54,13 +54,15 @@ MainConfig::MainConfig(const std::string& configFilePath) {
 				else
 					breaker = true;
 			}
-			else
+			else {
 				LOG_WARN("Invalid key value: ", key, " in config file ",
-					     configFilePath, ". This line will be ignored");
+					      configFilePath, ". This line will be ignored");
+				warning = true;
+			}
 
-			if (breaker) // Logging the errors and stopping the configuration
+			if   (breaker)  // Logging the errors and stopping the configuration
 				LOG_CRITICAL("Invalid value for key ", key, " in configuration file: ", value);
-			else // Logging the modifications
+			if (!(warning)) // Logging the modifications
 				LOG_DEBUG(key, " set to: ", value);
 
 		}
@@ -72,6 +74,10 @@ std::string MainConfig::getFloatingPointPrecision() const {
 }
 
 template <typename FloatingPrecision>
-RuntimeConfig<FloatingPrecision>::RuntimeConfig(const MainConfig& mainConfig) {
+RuntimeConfig<FloatingPrecision>::RuntimeConfig(const MainConfig& mainConfig) : MainConfig(mainConfig) {
 	LOG_DEBUG("Runtime configuration initialised.");
 }
+
+// Explicit instantiation
+template class RuntimeConfig<float>;
+template class RuntimeConfig<double>;
