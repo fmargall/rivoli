@@ -58,7 +58,7 @@ public:
 };
 
 template <typename FloatingPrecision>
-class Topology2DSym : public Topology2D {
+class Topology2DSym : public Topology2D<FloatingPrecision> {
 public:
 	Topology2DSym() {}
 

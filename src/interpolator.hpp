@@ -5,6 +5,7 @@
 
 #include "configurator.hpp"
 #include "coordinate.hpp"
+#include "topology.hpp"
 
 // Forward declaration
 template <typename FloatingPrecision>
@@ -16,7 +17,10 @@ public:
 	RBFInterpolator(RuntimeConfig<FloatingPrecision>& runtimeConfig);
 
 private:
+	std::unique_ptr<Topology> m_topology;
+
 	std::function<FloatingPrecision(FloatingPrecision)> m_kernel;
+
 	std::vector<FloatingPrecision> m_coefficients;
 	std::vector<std::unique_ptr<Coordinate>> m_coordinates;
 };
