@@ -7,8 +7,10 @@ set(CMAKE_CXX_STANDARD_REQUIRED True)
 
 # Add the main project for the executable
 add_executable(RIVOLI.App src/main.cpp 
-               src/logger.hpp src/logger.cpp
-               src/configurator.hpp src/configurator.cpp)
+               src/configurator.hpp src/configurator.cpp
+               src/coordinate.hpp
+               src/interpolator.hpp src/interpolator.cpp
+               src/logger.hpp src/logger.cpp)
 
 # Set RIVOLI.App as start-up project in Visual Studio 
 set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT RIVOLI.App)

@@ -1,6 +1,8 @@
 #include <fstream>
 
 #include "configurator.hpp"
+#include "coordinate.hpp"
+#include "interpolator.hpp"
 #include "logger.hpp"
 
 MainConfig::MainConfig(const std::string& configFilePath) {
@@ -14,6 +16,8 @@ MainConfig::MainConfig(const std::string& configFilePath) {
 	// Browsing file to read configuration
 	std::string line; size_t lineID = 0;
 	while (std::getline(configFile, line)) {
+		lineID++; // Incrementing line number
+
 		if (line.empty() || line[0] == '#' || line[0] == '[')
 			continue; // This line contains no data to read.
 
@@ -54,6 +58,16 @@ MainConfig::MainConfig(const std::string& configFilePath) {
 				else
 					breaker = true;
 			}
+			else if (key == "kernel") {
+				if (value == "linear")
+					m_kernel = value;
+				else
+					breaker = true;
+			}
+			else if (key == "inputFilePath")
+				m_inputFilePath = value;
+			else if (key == "locationRBFFilePath")
+				m_locationRBFFilePath = value;
 			else {
 				LOG_WARN("Invalid key value: ", key, " in config file ",
 					      configFilePath, ". This line will be ignored");
@@ -66,7 +80,14 @@ MainConfig::MainConfig(const std::string& configFilePath) {
 				LOG_DEBUG(key, " set to: ", value);
 
 		}
+
+		else
+			// No '=' found means the line is unreadable.
+			LOG_WARN("Unable to read line number ", 
+				     lineID, " with value: ", line);
 	}
+
+	LOG_TRACE("Configuration file ", configFilePath, " read. MainConfig initialisiation over.");
 }
 
 std::string MainConfig::getFloatingPointPrecision() const {
@@ -75,7 +96,120 @@ std::string MainConfig::getFloatingPointPrecision() const {
 
 template <typename FloatingPrecision>
 RuntimeConfig<FloatingPrecision>::RuntimeConfig(const MainConfig& mainConfig) : MainConfig(mainConfig) {
-	LOG_DEBUG("Runtime configuration initialised.");
+	if      (typeid(FloatingPrecision) == typeid(float))
+		LOG_TRACE("Using single precision floating point");
+	else if (typeid(FloatingPrecision) == typeid(double))
+		LOG_TRACE("Using double precision floating point");
+	else
+		LOG_CRITICAL("Unknown floating point precision");
+
+	// Open the input file
+	std::ifstream inputFile(m_inputFilePath);
+	if (inputFile.is_open())
+		LOG_DEBUG("Input file " + m_inputFilePath + " opened successfully.");
+	else
+		LOG_CRITICAL("Input file " + m_inputFilePath + " could not be opened.");
+
+	// Reading the number of dimensions in the input datafile
+	std::string line; std::getline(inputFile, line);
+	std::istringstream s(line); FloatingPrecision columnValue;
+	size_t nbDimensions = 0;  while (s >> columnValue) nbDimensions++;
+	// One of the columns (thet last one) is for the value of the BRDF
+	LOG_DEBUG(--nbDimensions, " dimensions detected in the input file.");
+
+	// Reset cursor to the beginning
+	inputFile.clear(); inputFile.seekg(0);
+
+	// Parsing the input file
+	while (std::getline(inputFile, line)) {
+		if (line.empty())
+			continue; // Skip empty lines
+
+		std::istringstream lineStream(line);
+		FloatingPrecision value;
+
+		if      (nbDimensions == 2) {
+			FloatingPrecision theta, phi;
+			lineStream >> theta >> phi >> value;
+			m_coordinates.push_back(std::make_unique<Coordinate2D<FloatingPrecision>>(theta, phi));
+			LOG_TRACE("New 2D coordinate point added, with theta: ", theta, " and phi: ", phi);
+
+		}
+		else if (nbDimensions == 3) {
+			FloatingPrecision thetaOne, thetaTwo, phiTwo;
+			lineStream >> thetaOne >> thetaTwo >> phiTwo >> value;
+
+		}
+		else if (nbDimensions == 4) {
+			FloatingPrecision thetaOne, phiOne, thetaTwo, phiTwo;
+			lineStream >> thetaOne >> phiOne >> thetaTwo >> phiTwo >> value;
+
+		}
+		else
+			LOG_CRITICAL("RIVOLI supports only 2D, 3D, or 4D BRDF.");
+
+		m_values.push_back(value);
+	}
+
+	LOG_INFO("Input file ", m_inputFilePath, " loaded. ",m_values.size(), " configurations saved.");
+
+	
+	// Initialising RBF coordinates. If no RBF location file is
+	// provided, the RBF coordinates are the same as the input.
+	if (m_locationRBFFilePath == "none") {
+		// Making deep copy of the data
+		m_coordinatesRBF.reserve(m_coordinates.size());
+		for (const auto& coord : m_coordinates)
+			m_coordinatesRBF.push_back(std::make_unique<Coordinate>(*coord));
+
+		// Checking the number of coordinates
+		if (m_coordinates.size() != m_coordinatesRBF.size())
+			LOG_CRITICAL("RBF coordinates initialisation from input coordinates failed.");
+	}
+
+	else {
+		std::ifstream fileRBFLocation(m_locationRBFFilePath);
+		if (fileRBFLocation.is_open())
+			LOG_DEBUG("RBF location file " + m_locationRBFFilePath + " opened successfully.");
+		else
+			LOG_CRITICAL("RBF location file " + m_locationRBFFilePath + " could not be opened.");
+
+		std::string line;
+		while (std::getline(fileRBFLocation, line)) {
+			if (line.empty())
+				continue; // Skip empty lines
+
+			std::istringstream lineStream(line);
+			FloatingPrecision value;
+
+			if (nbDimensions == 2) {
+				FloatingPrecision theta, phi;
+				lineStream >> theta >> phi >> value;
+				m_coordinatesRBF.push_back(std::make_unique<Coordinate2D<FloatingPrecision>>(theta, phi));
+				LOG_TRACE("New 2D coordinate point added, with theta: ", theta, " and phi: ", phi);
+
+			}
+			else if (nbDimensions == 3) {
+				FloatingPrecision thetaOne, thetaTwo, phiTwo;
+				lineStream >> thetaOne >> thetaTwo >> phiTwo >> value;
+
+			}
+			else if (nbDimensions == 4) {
+				FloatingPrecision thetaOne, phiOne, thetaTwo, phiTwo;
+				lineStream >> thetaOne >> phiOne >> thetaTwo >> phiTwo >> value;
+
+			}
+			else
+				LOG_CRITICAL("RIVOLI supports only 2D, 3D, or 4D BRDF.");
+		}
+
+		LOG_DEBUG("RBF file ", m_locationRBFFilePath, " is loaded. ", 
+			      m_coordinatesRBF.size(), " configurations saved.");
+	}
+
+	// Initialising the RBF interpolator
+	RBFInterpolator<FloatingPrecision> interpolator(*this);
+
 }
 
 // Explicit instantiation
