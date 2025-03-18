@@ -28,6 +28,9 @@ protected:
 	std::string m_inputFilePath;
 	std::string m_locationRBFFilePath;
 	std::string m_floatingPointPrecision;
+
+	float m_regularisationParameter;
+	float m_nonNegativityCorrectionParameter;
 };
 
 template <typename FloatingPrecision>

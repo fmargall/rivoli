@@ -22,4 +22,7 @@ private:
 
 	std::vector<FloatingPrecision> m_coefficients;
 	std::vector<std::unique_ptr<Coordinate>> m_coordinates;
+
+	// Used to insure non-negativity interpolation
+	FloatingPrecision m_nonNegativityCorrectionParameter;
 };

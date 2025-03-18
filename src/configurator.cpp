@@ -82,6 +82,10 @@ MainConfig::MainConfig(const std::string& configFilePath) {
 			}
 			else if (key == "inputFilePath")
 				m_inputFilePath = value;
+			else if (key == "regularisationParameter")
+				m_regularisationParameter = std::stof(value);
+			else if (key == "nonNegativityCorrectionParameter")
+				m_nonNegativityCorrectionParameter = std::stof(value);
 			else if (key == "locationRBFFilePath")
 				m_locationRBFFilePath = value;
 			else {
@@ -184,6 +188,11 @@ RuntimeConfig<FloatingPrecision>::RuntimeConfig(const MainConfig& mainConfig) : 
 		// Checking the number of coordinates
 		if (m_coordinates.size() != m_coordinatesRBF.size())
 			LOG_CRITICAL("RBF coordinates initialisation from input coordinates failed.");
+
+		for (size_t i = 0; i < m_coordinates.size(); i++) {
+			if (typeid(*m_coordinates[i]) != typeid(*m_coordinatesRBF[i]))
+				LOG_CRITICAL("RBF coordinates initialisation from input coordinates failed.");
+		}
 	}
 
 	else {
