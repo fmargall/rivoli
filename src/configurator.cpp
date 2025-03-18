@@ -65,10 +65,18 @@ MainConfig::MainConfig(const std::string& configFilePath) {
 					breaker = true;
 			}
 			else if (key == "forceBilateralSymmetry") {
-				if (value == "true")
+				if      (value == "true")
 					m_forceBilateralSymmetry = true;
 				else if (value == "false")
 					m_forceBilateralSymmetry = false;
+				else
+					breaker = true;
+			}
+			else if (key == "forceReciprocity") {
+				if      (value == "true")
+					m_forceReciprocity = true;
+				else if (value == "false")
+					m_forceReciprocity = false;
 				else
 					breaker = true;
 			}
@@ -147,6 +155,8 @@ RuntimeConfig<FloatingPrecision>::RuntimeConfig(const MainConfig& mainConfig) : 
 		else if (nbDimensions == 3) {
 			FloatingPrecision thetaOne, thetaTwo, phiTwo;
 			lineStream >> thetaOne >> thetaTwo >> phiTwo >> value;
+			m_coordinates.push_back(std::make_unique<Coordinate3DSpherical<FloatingPrecision>>(thetaOne, thetaTwo, phiTwo));
+			LOG_TRACE("New 3D coordinate point added, with thetaOne: ", thetaOne, ", thetaTwo: ", thetaTwo, " and phiTwo: ", phiTwo);
 
 		}
 		else if (nbDimensions == 4) {
@@ -201,6 +211,8 @@ RuntimeConfig<FloatingPrecision>::RuntimeConfig(const MainConfig& mainConfig) : 
 			else if (nbDimensions == 3) {
 				FloatingPrecision thetaOne, thetaTwo, phiTwo;
 				lineStream >> thetaOne >> thetaTwo >> phiTwo >> value;
+				m_coordinatesRBF.push_back(std::make_unique<Coordinate3DSpherical<FloatingPrecision>>(thetaOne, thetaTwo, phiTwo));
+				LOG_TRACE("New 3D coordinate point added, with thetaOne: ", thetaOne, ", thetaTwo: ", thetaTwo, " and phiTwo: ", phiTwo);
 
 			}
 			else if (nbDimensions == 4) {
@@ -240,7 +252,26 @@ std::unique_ptr<Topology<FloatingPrecision>> RuntimeConfig<FloatingPrecision>::i
 		}
 	}
 	else if (runtimeConfig.m_nbDimensions == 3) {
-		LOG_DEBUG("Initialising 2D topology.");
+		if (runtimeConfig.m_forceBilateralSymmetry) {
+			if (runtimeConfig.m_forceReciprocity) {
+				topology = std::make_unique<Topology3DSphRecSym<FloatingPrecision>>();
+				LOG_DEBUG("BRDF topology initialised as 2D reciprocal symmetrical.");
+			}
+			else {
+				topology = std::make_unique<Topology3DSphSym<FloatingPrecision>>();
+				LOG_DEBUG("BRDF topology initialised as 3D symmetrical.");
+			}
+		}
+		else {
+			if (runtimeConfig.m_forceReciprocity) {
+				topology = std::make_unique<Topology3DSphRec<FloatingPrecision>>();
+				LOG_DEBUG("BRDF topology initialised as 3D reciprocal.");
+			}
+			else {
+				topology = std::make_unique<Topology3DSph<FloatingPrecision>>();
+				LOG_DEBUG("BRDF topology initialised as 3D.");
+			}
+		}
 	}
 	else
 		LOG_CRITICAL("RIVOLI currently supports only 2D or 3D BRDF.");

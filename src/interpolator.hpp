@@ -7,7 +7,6 @@
 #include "coordinate.hpp"
 #include "topology.hpp"
 
-// Forward declaration
 template <typename FloatingPrecision>
 class RuntimeConfig;
 

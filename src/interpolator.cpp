@@ -7,6 +7,9 @@
 template <typename FloatingPrecision>
 RBFInterpolator<FloatingPrecision>::RBFInterpolator(RuntimeConfig<FloatingPrecision>& runtimeConfig) {
 
+	// Initialising the topology
+	m_topology = RuntimeConfig<FloatingPrecision>::initTopology(runtimeConfig);
+
 	// Initialising the kernel function
 	if (runtimeConfig.m_kernel == "linear")
 		m_kernel = [](FloatingPrecision arg) { return arg; };
@@ -24,8 +27,8 @@ RBFInterpolator<FloatingPrecision>::RBFInterpolator(RuntimeConfig<FloatingPrecis
 
 		for (size_t rowID = 0; rowID < runtimeConfig.m_coordinates.size(); rowID++) {
 			for (size_t colID = 0; colID < runtimeConfig.m_coordinatesRBF.size(); colID++) {
-				//FloatingPrecision distance = m_topology.getDistance(runtimeConfig.m_coordinates[rowID],
-				//													runtimeConfig.m_coordinatesRBF[colID]);
+				FloatingPrecision distance = m_topology->getDistance(*(runtimeConfig.m_coordinates[rowID]), 
+															         *(runtimeConfig.m_coordinatesRBF[colID]));
 
 				//distanceMatrix(rowID, colID) = m_kernel(distance);
 			}

@@ -21,6 +21,7 @@ public:
 protected:
 	size_t m_nbDimensions;
 
+	bool m_forceReciprocity;
 	bool m_forceBilateralSymmetry;
 
 	std::string m_kernel;
