@@ -37,11 +37,11 @@ public:
 private:
 	friend class RBFInterpolator<FloatingPrecision>;
 
-	static std::unique_ptr<Topology> initTopology(RuntimeConfig<FloatingPrecision>& runtimeConfig);
+	static std::unique_ptr<Topology<FloatingPrecision>> initTopology(RuntimeConfig<FloatingPrecision>& runtimeConfig);
 
 	// Class containing the distance function related to the BRDF topology,
 	// accessed using m_topology.getDistance(bidirectionOne, bidirectionTwo)
-	std::unique_ptr<Topology> m_topology;
+	std::unique_ptr<Topology<FloatingPrecision>> m_topology;
 
 	// Input data, with their coordinates and values
 	std::vector<std::unique_ptr<Coordinate>> m_coordinates;

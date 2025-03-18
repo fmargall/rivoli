@@ -17,7 +17,7 @@ public:
 	RBFInterpolator(RuntimeConfig<FloatingPrecision>& runtimeConfig);
 
 private:
-	std::unique_ptr<Topology> m_topology;
+	std::unique_ptr<Topology<FloatingPrecision>> m_topology;
 
 	std::function<FloatingPrecision(FloatingPrecision)> m_kernel;
 

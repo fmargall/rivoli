@@ -37,23 +37,27 @@ FloatingPrecision haversine(const FloatingPrecision& arg) {
  */
 template <typename FloatingPrecision>
 FloatingPrecision greatCircleDistance(const FloatingPrecision& thetaOne, const FloatingPrecision& phiOne,
-	const FloatingPrecision& thetaTwo, const FloatingPrecision& phiTwo) {
+								      const FloatingPrecision& thetaTwo, const FloatingPrecision& phiTwo) {
 	return static_cast<FloatingPrecision>(2) * glm::asin(glm::sqrt(haversine(thetaTwo - thetaOne) + glm::sin(thetaTwo) * glm::sin(thetaOne) * haversine(phiTwo - phiOne)));
 }
 
+template <typename FloatingPrecision>
 class Topology {
-
+public:
+	virtual FloatingPrecision getDistance(const Coordinate& coordinateOne, const Coordinate& coordinateTwo) const = 0;
 };
 
 template <typename FloatingPrecision>
-class Topology2D : public Topology {
+class Topology2D : public Topology<FloatingPrecision> {
 public:
 	Topology2D() {}
 
-	FloatingPrecision getDistance(const Coordinate2D<FloatingPrecision>& coordinateOne,
-								  const Coordinate2D<FloatingPrecision>& coordinateTwo) {
-		return greatCircleDistance(coordinateOne.getTheta(), coordinateOne.getPhi(),
-								   coordinateTwo.getTheta(), coordinateTwo.getPhi());
+	FloatingPrecision getDistance(const Coordinate& coordinateOne,
+								  const Coordinate& coordinateTwo) const override {
+		const Coordinate2D<FloatingPrecision>& coordOne = dynamic_cast<const Coordinate2D<FloatingPrecision>&>(coordinateOne);
+		const Coordinate2D<FloatingPrecision>& coordTwo = dynamic_cast<const Coordinate2D<FloatingPrecision>&>(coordinateTwo);
+		return greatCircleDistance(coordOne.getTheta(), coordOne.getPhi(),
+								   coordTwo.getTheta(), coordTwo.getPhi());
 	}
 };
 
@@ -63,7 +67,7 @@ public:
 	Topology2DSym() {}
 
 	FloatingPrecision getDistance(const Coordinate2D<FloatingPrecision>& coordinateOne,
-								  const Coordinate2D<FloatingPrecision>& coordinateTwo) {
+								  const Coordinate2D<FloatingPrecision>& coordinateTwo) const {
 		std::vector<FloatingPrecision> pathsLengths(2); // Contains all possible paths
 
 		// Only two possibilities: others are the same by symmetry of the metric

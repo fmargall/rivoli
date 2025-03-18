@@ -225,9 +225,9 @@ RuntimeConfig<FloatingPrecision>::RuntimeConfig(const MainConfig& mainConfig) : 
 }
 
 template <typename FloatingPrecision>
-std::unique_ptr<Topology> RuntimeConfig<FloatingPrecision>::initTopology(RuntimeConfig<FloatingPrecision>& runtimeConfig) {
+std::unique_ptr<Topology<FloatingPrecision>> RuntimeConfig<FloatingPrecision>::initTopology(RuntimeConfig<FloatingPrecision>& runtimeConfig) {
 	// Initialising the topology pointer
-	std::unique_ptr<Topology> topology;
+	std::unique_ptr<Topology<FloatingPrecision>> topology;
 
 	if      (runtimeConfig.m_nbDimensions == 2) {
 		if (runtimeConfig.m_forceBilateralSymmetry) {
