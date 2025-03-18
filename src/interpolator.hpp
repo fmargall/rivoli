@@ -1,5 +1,5 @@
 #pragma once
-
+#include <functional>
 #include <memory>
 #include <vector>
 
@@ -16,6 +16,7 @@ public:
 	RBFInterpolator(RuntimeConfig<FloatingPrecision>& runtimeConfig);
 
 private:
+	std::function<FloatingPrecision(FloatingPrecision)> m_kernel;
 	std::vector<FloatingPrecision> m_coefficients;
 	std::vector<std::unique_ptr<Coordinate>> m_coordinates;
 };

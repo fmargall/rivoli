@@ -7,6 +7,10 @@
 #include "coordinate.hpp"
 #include "interpolator.hpp"
 
+// Forward declaration
+template <typename FloatingPrecision>
+class RBFInterpolator;
+
 class MainConfig {
 public:
 	MainConfig(const std::string& configFilePath);
@@ -26,6 +30,8 @@ public:
 	RuntimeConfig(const MainConfig& mainConfig);
 
 private:
+	friend class RBFInterpolator<FloatingPrecision>;
+
 	// Input data, with their coordinates and values
 	std::vector<std::unique_ptr<Coordinate>> m_coordinates;
 	std::vector<FloatingPrecision> m_values;
