@@ -95,6 +95,19 @@ RBFInterpolator<FloatingPrecision>::RBFInterpolator(RuntimeConfig<FloatingPrecis
 
 }
 
+template <typename FloatingPrecision>
+FloatingPrecision RBFInterpolator<FloatingPrecision>::interpolate(const std::unique_ptr<Coordinate>& coordinate) const 
+{
+	FloatingPrecision result = 0;
+	for (size_t i = 0; i < m_coordinates.size(); i++) {
+		FloatingPrecision distance = m_topology->getDistance(*m_coordinates[i], *coordinate);
+		result += m_coefficients[i] * m_kernel(distance);
+	}
+
+	// Non-negativity correction made if required
+	return glm::pow(result, m_nonNegativityCorrectionParameter);
+}
+
 // Explicit instantiation
 template class RBFInterpolator<float>;
 template class RBFInterpolator<double>;

@@ -15,6 +15,8 @@ class RBFInterpolator {
 public:
 	RBFInterpolator(RuntimeConfig<FloatingPrecision>& runtimeConfig);
 
+	FloatingPrecision interpolate(const std::unique_ptr<Coordinate>& coordinate) const;
+
 private:
 	std::unique_ptr<Topology<FloatingPrecision>> m_topology;
 
