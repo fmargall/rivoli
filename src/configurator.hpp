@@ -6,6 +6,7 @@
 
 #include "coordinate.hpp"
 #include "interpolator.hpp"
+#include "topology.hpp"
 
 // Forward declaration
 template <typename FloatingPrecision>
@@ -18,6 +19,10 @@ public:
 	std::string getFloatingPointPrecision() const;
 
 protected:
+	size_t m_nbDimensions;
+
+	bool m_forceBilateralSymmetry;
+
 	std::string m_kernel;
 	std::string m_inputFilePath;
 	std::string m_locationRBFFilePath;
@@ -31,6 +36,12 @@ public:
 
 private:
 	friend class RBFInterpolator<FloatingPrecision>;
+
+	static std::unique_ptr<Topology> initTopology(RuntimeConfig<FloatingPrecision>& runtimeConfig);
+
+	// Class containing the distance function related to the BRDF topology,
+	// accessed using m_topology.getDistance(bidirectionOne, bidirectionTwo)
+	std::unique_ptr<Topology> m_topology;
 
 	// Input data, with their coordinates and values
 	std::vector<std::unique_ptr<Coordinate>> m_coordinates;

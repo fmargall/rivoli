@@ -64,6 +64,14 @@ MainConfig::MainConfig(const std::string& configFilePath) {
 				else
 					breaker = true;
 			}
+			else if (key == "forceBilateralSymmetry") {
+				if (value == "true")
+					m_forceBilateralSymmetry = true;
+				else if (value == "false")
+					m_forceBilateralSymmetry = false;
+				else
+					breaker = true;
+			}
 			else if (key == "inputFilePath")
 				m_inputFilePath = value;
 			else if (key == "locationRBFFilePath")
@@ -116,6 +124,7 @@ RuntimeConfig<FloatingPrecision>::RuntimeConfig(const MainConfig& mainConfig) : 
 	size_t nbDimensions = 0;  while (s >> columnValue) nbDimensions++;
 	// One of the columns (thet last one) is for the value of the BRDF
 	LOG_DEBUG(--nbDimensions, " dimensions detected in the input file.");
+	m_nbDimensions = nbDimensions;
 
 	// Reset cursor to the beginning
 	inputFile.clear(); inputFile.seekg(0);
@@ -207,9 +216,36 @@ RuntimeConfig<FloatingPrecision>::RuntimeConfig(const MainConfig& mainConfig) : 
 			      m_coordinatesRBF.size(), " configurations saved.");
 	}
 
+	// Initialising the topology
+	m_topology = initTopology(*this);
+
 	// Initialising the RBF interpolator
 	RBFInterpolator<FloatingPrecision> interpolator(*this);
 
+}
+
+template <typename FloatingPrecision>
+std::unique_ptr<Topology> RuntimeConfig<FloatingPrecision>::initTopology(RuntimeConfig<FloatingPrecision>& runtimeConfig) {
+	// Initialising the topology pointer
+	std::unique_ptr<Topology> topology;
+
+	if      (runtimeConfig.m_nbDimensions == 2) {
+		if (runtimeConfig.m_forceBilateralSymmetry) {
+			topology = std::make_unique<Topology2DSym<FloatingPrecision>>();
+			LOG_DEBUG("BRDF topology initialised as 2D symmetrical.");
+		}
+		else {
+			topology = std::make_unique<Topology2D<FloatingPrecision>>();
+			LOG_DEBUG("BRDF topology initialised as 2D.");
+		}
+	}
+	else if (runtimeConfig.m_nbDimensions == 3) {
+		LOG_DEBUG("Initialising 2D topology.");
+	}
+	else
+		LOG_CRITICAL("RIVOLI currently supports only 2D or 3D BRDF.");
+
+	return topology;
 }
 
 // Explicit instantiation
