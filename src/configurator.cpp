@@ -2,6 +2,7 @@
 
 #include "configurator.hpp"
 #include "coordinate.hpp"
+#include "export.hpp"
 #include "interpolator.hpp"
 #include "logger.hpp"
 
@@ -35,19 +36,19 @@ MainConfig::MainConfig(const std::string& configFilePath) {
 			bool warning = false, breaker = false;
 
 			if (key == "logLevel") {
-				if (value == "OFF"           || value == "0")
+				if (value == "OFF" || value == "0")
 					logger.level = LogLevel::OFF;
 				else if (value == "CRITICAL" || value == "1")
 					logger.level = LogLevel::CRITICAL;
-				else if (value == "ERR"      || value == "2")
+				else if (value == "ERR" || value == "2")
 					logger.level = LogLevel::ERR;
-				else if (value == "WARN"     || value == "3")
+				else if (value == "WARN" || value == "3")
 					logger.level = LogLevel::WARN;
-				else if (value == "INFO"     || value == "4")
+				else if (value == "INFO" || value == "4")
 					logger.level = LogLevel::INFO;
-				else if (value == "DEBUG"    || value == "5")
+				else if (value == "DEBUG" || value == "5")
 					logger.level = LogLevel::DEBUG;
-				else if (value == "TRACE"    || value == "6")
+				else if (value == "TRACE" || value == "6")
 					logger.level = LogLevel::TRACE;
 				else
 					breaker = true;
@@ -65,7 +66,7 @@ MainConfig::MainConfig(const std::string& configFilePath) {
 					breaker = true;
 			}
 			else if (key == "forceBilateralSymmetry") {
-				if      (value == "true")
+				if (value == "true")
 					m_forceBilateralSymmetry = true;
 				else if (value == "false")
 					m_forceBilateralSymmetry = false;
@@ -73,7 +74,7 @@ MainConfig::MainConfig(const std::string& configFilePath) {
 					breaker = true;
 			}
 			else if (key == "forceReciprocity") {
-				if      (value == "true")
+				if (value == "true")
 					m_forceReciprocity = true;
 				else if (value == "false")
 					m_forceReciprocity = false;
@@ -82,6 +83,14 @@ MainConfig::MainConfig(const std::string& configFilePath) {
 			}
 			else if (key == "inputFilePath")
 				m_inputFilePath = value;
+			else if (key == "outputFilePath")
+				m_outputFilePath = value;
+			else if (key == "outputFormat") {
+				if (value == "MERL")
+					m_outputFormat = value;
+				else
+					breaker = true;
+			}
 			else if (key == "regularisationParameter")
 				m_regularisationParameter = std::stof(value);
 			else if (key == "nonNegativityCorrectionParameter")
@@ -174,7 +183,7 @@ RuntimeConfig<FloatingPrecision>::RuntimeConfig(const MainConfig& mainConfig) : 
 		m_values.push_back(value);
 	}
 
-	LOG_INFO("Input file ", m_inputFilePath, " loaded. ",m_values.size(), " configurations saved.");
+	LOG_INFO("Input file ", m_inputFilePath, " loaded. ", m_values.size(), " configurations saved.");
 
 	
 	// Initialising RBF coordinates. If no RBF location file is
@@ -186,13 +195,10 @@ RuntimeConfig<FloatingPrecision>::RuntimeConfig(const MainConfig& mainConfig) : 
 			m_coordinatesRBF.push_back(std::make_unique<Coordinate>(*coord));
 
 		// Checking the number of coordinates
-		if (m_coordinates.size() != m_coordinatesRBF.size())
+		if ((m_coordinates.size() != m_coordinatesRBF.size()) &&
+			(typeid(*m_coordinates[0]) != typeid(*m_coordinatesRBF[0])))
 			LOG_CRITICAL("RBF coordinates initialisation from input coordinates failed.");
 
-		for (size_t i = 0; i < m_coordinates.size(); i++) {
-			if (typeid(*m_coordinates[i]) != typeid(*m_coordinatesRBF[i]))
-				LOG_CRITICAL("RBF coordinates initialisation from input coordinates failed.");
-		}
 	}
 
 	else {
@@ -242,6 +248,11 @@ RuntimeConfig<FloatingPrecision>::RuntimeConfig(const MainConfig& mainConfig) : 
 
 	// Initialising the RBF interpolator
 	RBFInterpolator<FloatingPrecision> interpolator(*this);
+
+	// Export BRDF
+	if (m_outputFormat == "MERL")
+		exportToMERL(m_outputFilePath, interpolator, interpolator, interpolator);
+
 
 }
 

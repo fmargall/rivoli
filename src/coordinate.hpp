@@ -1,5 +1,7 @@
 #pragma once
 
+#include "coordinateConversion.hpp"
+
 class Coordinate {
 public:
 	// Adding a virtual constructor makes Coordinate polymorphic,
@@ -51,8 +53,30 @@ private:
 template <typename FloatingPrecision>
 class Coordinate3DRusinkiewicz : public Coordinate {
 public:
+	Coordinate3DRusinkiewicz(const FloatingPrecision& thetaH,
+							 const FloatingPrecision& thetaD,
+							 const FloatingPrecision& phiD)
+		: m_thetaH(thetaH), m_thetaD(thetaD), m_phiD(phiD) {}
+
+	explicit operator Coordinate3DSpherical<FloatingPrecision>() const {
+		auto [thetaI, thetaO, deltaPhi] = rusinkiewiczCoordToStandardCoord(m_thetaH, m_thetaD, m_phiD);
+		return Coordinate3DSpherical<FloatingPrecision>(thetaI, thetaO, deltaPhi);
+	}
+
+	FloatingPrecision getThetaH() const { return m_thetaH; }
+	FloatingPrecision getThetaD() const { return m_thetaD; }
+	FloatingPrecision getPhiD()   const { return m_phiD; }
+
+	Coordinate3DRusinkiewicz getBilateralSymmetrical() const {
+		return Coordinate3DRusinkiewicz(m_thetaH, m_thetaD, m_phiD + glm::half_pi<FloatingPrecision>());
+	}
+
+	Coordinate3DRusinkiewicz getReciprocal() const {
+		return Coordinate3DRusinkiewicz(m_thetaH, m_thetaD, m_phiD + glm::pi<FloatingPrecision>());
+	}
 
 private:
+	FloatingPrecision m_thetaH, m_thetaD, m_phiD;
 
 };
 

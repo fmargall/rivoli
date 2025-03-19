@@ -28,8 +28,8 @@ RBFInterpolator<FloatingPrecision>::RBFInterpolator(RuntimeConfig<FloatingPrecis
 		size_t iterationNumber = 0;
 		for (size_t rowID = 0; rowID < runtimeConfig.m_coordinates.size(); rowID++) {
 			for (size_t colID = 0; colID < runtimeConfig.m_coordinatesRBF.size(); colID++) {
-				FloatingPrecision distance = m_topology->getDistance(*(runtimeConfig.m_coordinates[rowID]), 
-															         *(runtimeConfig.m_coordinatesRBF[colID]));
+				FloatingPrecision distance = m_topology->getDistance(*runtimeConfig.m_coordinates[rowID], 
+															         *runtimeConfig.m_coordinatesRBF[colID]);
 				distanceMatrix(rowID, colID) = m_kernel(distance);
 
 				logger.displayProgressBar(++iterationNumber, runtimeConfig.m_coordinates.size() * (runtimeConfig.m_coordinatesRBF.size() - 1));
@@ -45,8 +45,8 @@ RBFInterpolator<FloatingPrecision>::RBFInterpolator(RuntimeConfig<FloatingPrecis
 		for (size_t rowID = 0; rowID < runtimeConfig.m_coordinates.size(); rowID++) {
 			// Matrix is symmetrical, so we only need to compute the upper triangle
 			for (size_t colID = 0; colID <= rowID; colID++) {
-				FloatingPrecision distance = m_topology->getDistance(*(runtimeConfig.m_coordinates[rowID]),
-																	 *(runtimeConfig.m_coordinatesRBF[colID]));
+				FloatingPrecision distance = m_topology->getDistance(*runtimeConfig.m_coordinates[rowID],
+																	 *runtimeConfig.m_coordinatesRBF[colID]);
 				distanceMatrix(rowID, colID) = m_kernel(distance);
 			}
 		}
@@ -88,8 +88,22 @@ RBFInterpolator<FloatingPrecision>::RBFInterpolator(RuntimeConfig<FloatingPrecis
 		// Saving computed coefficients
 		m_coefficients = std::vector<FloatingPrecision>(weightsVector.data(), weightsVector.data() + weightsVector.size());
 	}
-	
-	LOG_DEBUG("Computation of the RBF coefficients completed.");
+
+	// Saving the coordinates
+	m_coordinates.reserve(runtimeConfig.m_coordinates.size());
+	for (const auto& coord : runtimeConfig.m_coordinates) {
+		if (typeid(*coord) == typeid(Coordinate2D<FloatingPrecision>))
+			m_coordinates.push_back(std::make_unique<Coordinate2D<FloatingPrecision>>(
+								  dynamic_cast<const Coordinate2D<FloatingPrecision>&>(*coord)));
+		else if (typeid(*coord) == typeid(Coordinate3DSpherical<FloatingPrecision>))
+			m_coordinates.push_back(std::make_unique<Coordinate3DSpherical<FloatingPrecision>>(
+								  dynamic_cast<const Coordinate3DSpherical<FloatingPrecision>&>(*coord)));
+		else if (typeid(*coord) == typeid(Coordinate3DRusinkiewicz<FloatingPrecision>))
+			m_coordinates.push_back(std::make_unique<Coordinate3DRusinkiewicz<FloatingPrecision>>(
+								  dynamic_cast<const Coordinate3DRusinkiewicz<FloatingPrecision>&>(*coord)));
+		else
+			LOG_CRITICAL("Unsupported Coordinate type.");
+	}
 
 	LOG_DEBUG("RBF interpolator initialisation completed.");
 
@@ -98,7 +112,7 @@ RBFInterpolator<FloatingPrecision>::RBFInterpolator(RuntimeConfig<FloatingPrecis
 template <typename FloatingPrecision>
 FloatingPrecision RBFInterpolator<FloatingPrecision>::interpolate(const std::unique_ptr<Coordinate>& coordinate) const 
 {
-	FloatingPrecision result = 0;
+	FloatingPrecision result = static_cast<FloatingPrecision>(0);
 	for (size_t i = 0; i < m_coordinates.size(); i++) {
 		FloatingPrecision distance = m_topology->getDistance(*m_coordinates[i], *coordinate);
 		result += m_coefficients[i] * m_kernel(distance);

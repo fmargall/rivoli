@@ -29,6 +29,9 @@ protected:
 	std::string m_locationRBFFilePath;
 	std::string m_floatingPointPrecision;
 
+	std::string m_outputFormat;
+	std::string m_outputFilePath;
+
 	float m_regularisationParameter;
 	float m_nonNegativityCorrectionParameter;
 };
