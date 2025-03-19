@@ -66,9 +66,9 @@ void exportToMERL(
 		Coordinate3DSpherical<FloatingPrecision> interpolatedBidirectionSpherical = static_cast<Coordinate3DSpherical<FloatingPrecision>>(interpolatedBidirectionRusinkiewicz);
 		Coordinate2D<FloatingPrecision> interpolateBidirection2D(interpolatedBidirectionSpherical.getThetaO(), interpolatedBidirectionSpherical.getDeltaPhi());
 
-		datasetR[i] = interpolatorR.interpolate(std::make_unique<Coordinate2D<FloatingPrecision>>(interpolateBidirection2D));
-		datasetG[i] = interpolatorG.interpolate(std::make_unique<Coordinate2D<FloatingPrecision>>(interpolateBidirection2D));
-		datasetB[i] = interpolatorB.interpolate(std::make_unique<Coordinate2D<FloatingPrecision>>(interpolateBidirection2D));
+		datasetR[i] = interpolatorR.interpolate(std::make_unique<Coordinate3DSpherical<FloatingPrecision>>(interpolatedBidirectionSpherical));
+		datasetG[i] = interpolatorG.interpolate(std::make_unique<Coordinate3DSpherical<FloatingPrecision>>(interpolatedBidirectionSpherical));
+		datasetB[i] = interpolatorB.interpolate(std::make_unique<Coordinate3DSpherical<FloatingPrecision>>(interpolatedBidirectionSpherical));
 
 		// Tracking progress with parallel computing
 		logger.displayProgressBar(completedIterations.load(std::memory_order_relaxed), 180 * 90 * 90);

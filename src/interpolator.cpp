@@ -92,7 +92,7 @@ RBFInterpolator<FloatingPrecision>::RBFInterpolator(RuntimeConfig<FloatingPrecis
 	// Saving the coordinates
 	m_coordinates.reserve(runtimeConfig.m_coordinates.size());
 	for (const auto& coord : runtimeConfig.m_coordinates) {
-		if (typeid(*coord) == typeid(Coordinate2D<FloatingPrecision>))
+		if      (typeid(*coord) == typeid(Coordinate2D<FloatingPrecision>))
 			m_coordinates.push_back(std::make_unique<Coordinate2D<FloatingPrecision>>(
 								  dynamic_cast<const Coordinate2D<FloatingPrecision>&>(*coord)));
 		else if (typeid(*coord) == typeid(Coordinate3DSpherical<FloatingPrecision>))

@@ -57,25 +57,15 @@ public:
 
 	FloatingPrecision getDistance(const Coordinate& coordinateOne,
 								  const Coordinate& coordinateTwo) const override {
-
-		if (typeid(coordinateOne) != typeid(Coordinate2D<FloatingPrecision>) ||
-			typeid(coordinateTwo) != typeid(Coordinate2D<FloatingPrecision>)) {
-			LOG_CRITICAL("Error incoming.");
-		}
-		
 		const auto& coordinateOne2D = dynamic_cast<const Coordinate2D<FloatingPrecision>&>(coordinateOne);
 		const auto& coordinateTwo2D = dynamic_cast<const Coordinate2D<FloatingPrecision>&>(coordinateTwo);
-		FloatingPrecision result = getDistance(coordinateOne2D, coordinateTwo2D);
-		//LOG_TRACE("Result A: ", result);
-		return result;
+		return getDistance(coordinateOne2D, coordinateTwo2D);;
 	}
 
 	FloatingPrecision getDistance(const Coordinate2D<FloatingPrecision>& coordinateOne, 
 		                          const Coordinate2D<FloatingPrecision>& coordinateTwo) const {
-		
-		FloatingPrecision result = greatCircleDistance(coordinateOne.getTheta(), coordinateOne.getPhi(),
-													   coordinateTwo.getTheta(), coordinateTwo.getPhi());
-		return result;
+		return greatCircleDistance(coordinateOne.getTheta(), coordinateOne.getPhi(),
+								   coordinateTwo.getTheta(), coordinateTwo.getPhi());
 	}
 
 };
@@ -87,14 +77,9 @@ public:
 
 	FloatingPrecision getDistance(const Coordinate& coordinateOne, 
 		                          const Coordinate& coordinateTwo) const {
-		if (typeid(coordinateOne) != typeid(Coordinate2D<FloatingPrecision>) ||
-			typeid(coordinateTwo) != typeid(Coordinate2D<FloatingPrecision>)) {
-			LOG_CRITICAL("Error incoming.");
-		}
 		const auto& coordinateOne2D = dynamic_cast<const Coordinate2D<FloatingPrecision>&>(coordinateOne);
 		const auto& coordinateTwo2D = dynamic_cast<const Coordinate2D<FloatingPrecision>&>(coordinateTwo);
-		FloatingPrecision result = getDistance(coordinateOne2D, coordinateTwo2D);
-		return result;
+		return getDistance(coordinateOne2D, coordinateTwo2D);
 	}
 
 	FloatingPrecision getDistance(const Coordinate2D<FloatingPrecision>& coordinateOne,
@@ -106,9 +91,7 @@ public:
 		pathsLengths[1] = Topology2D<FloatingPrecision>::getDistance(coordinateOne, coordinateTwo.getBilateralSymmetrical());
 
 		// Riemannian distance is the geodesic, i.e. infimum of allpaths
-		FloatingPrecision result = *std::min_element(pathsLengths.begin(), pathsLengths.end());
-		//LOG_TRACE("Result D: ", result);
-		return result;
+		return *std::min_element(pathsLengths.begin(), pathsLengths.end());
 	}
 };
 
