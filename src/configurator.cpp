@@ -81,6 +81,14 @@ MainConfig::MainConfig(const std::string& configFilePath) {
 				else
 					breaker = true;
 			}
+			else if (key == "parallelComputing") {
+				if (value == "true")
+					m_parallelComputing = true;
+				else if (value == "false")
+					m_parallelComputing = false;
+				else
+					breaker = true;
+			}
 			else if (key == "inputFilePath")
 				m_inputFilePath = value;
 			else if (key == "outputFilePath")
@@ -251,7 +259,7 @@ RuntimeConfig<FloatingPrecision>::RuntimeConfig(const MainConfig& mainConfig) : 
 
 	// Export BRDF
 	if (m_outputFormat == "MERL")
-		exportToMERL(m_outputFilePath, interpolator, interpolator, interpolator);
+		exportToMERL(m_outputFilePath, interpolator, interpolator, interpolator, m_parallelComputing);
 
 
 }

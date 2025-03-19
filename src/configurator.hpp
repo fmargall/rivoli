@@ -34,6 +34,8 @@ protected:
 
 	float m_regularisationParameter;
 	float m_nonNegativityCorrectionParameter;
+
+	bool m_parallelComputing;
 };
 
 template <typename FloatingPrecision>

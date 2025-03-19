@@ -1,6 +1,7 @@
 #pragma once
 
 #include <fstream>
+#include <omp.h>
 #include <string>
 #include <vector>
 
@@ -18,7 +19,9 @@ void exportToMERL(
 	              
 	const RBFInterpolator<FloatingPrecision>& interpolatorR, 
 	const RBFInterpolator<FloatingPrecision>& interpolatorG, 
-	const RBFInterpolator<FloatingPrecision>& interpolatorB) 
+	const RBFInterpolator<FloatingPrecision>& interpolatorB,
+	
+	const bool& parallelComputing) 
 {
 	// Open the output file
 	std::ofstream outputFile(outputFilePath, std::ios::out | std::ios::binary);
@@ -45,6 +48,9 @@ void exportToMERL(
 	std::vector<double> datasetR(180 * 90 * 90);
 	std::vector<double> datasetG(180 * 90 * 90);
 	std::vector<double> datasetB(180 * 90 * 90);
+
+	std::atomic<size_t> completedIterations{ 0 };
+	#pragma omp parallel for private(thetaH, thetaD, phiD) if(parallelComputing)
 	for (int i = 0; i < 180 * 90 * 90; i++) {
 
 		size_t phiDID   =   i % 180;
@@ -64,7 +70,9 @@ void exportToMERL(
 		datasetG[i] = interpolatorG.interpolate(std::make_unique<Coordinate2D<FloatingPrecision>>(interpolateBidirection2D));
 		datasetB[i] = interpolatorB.interpolate(std::make_unique<Coordinate2D<FloatingPrecision>>(interpolateBidirection2D));
 
-		logger.displayProgressBar(i, 180 * 90 * 90);
+		// Tracking progress with parallel computing
+		logger.displayProgressBar(completedIterations.load(std::memory_order_relaxed), 180 * 90 * 90);
+		completedIterations.fetch_add(1, std::memory_order_relaxed);
 	}
 
 	// Pre-multiply datasets and convert to double for writing
@@ -79,4 +87,6 @@ void exportToMERL(
 	outputFile.write(reinterpret_cast<const char*>(adjustedB.data()), sizeof(double) * adjustedB.size());
 
 	outputFile.close();
+
+	LOG_INFO("MERL binary file ", outputFilePath, " created.");
 }
