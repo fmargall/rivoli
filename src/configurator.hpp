@@ -21,21 +21,21 @@ public:
 protected:
 	size_t m_nbDimensions;
 
-	bool m_forceReciprocity;
-	bool m_forceBilateralSymmetry;
+	bool m_forceReciprocity = true;
+	bool m_forceBilateralSymmetry = true;
 
-	std::string m_kernel;
+	std::string m_kernel = "linear";
 	std::string m_inputFilePath;
 	std::string m_locationRBFFilePath;
-	std::string m_floatingPointPrecision;
+	std::string m_floatingPointPrecision = "FP32";
 
 	std::string m_outputFormat;
 	std::string m_outputFilePath;
 
-	float m_regularisationParameter;
-	float m_nonNegativityCorrectionParameter;
+	float m_regularisationParameter = 0.f;
+	float m_nonNegativityCorrectionParameter = 1.0f;
 
-	bool m_parallelComputing;
+	bool m_parallelComputing = true;
 };
 
 template <typename FloatingPrecision>
