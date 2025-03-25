@@ -48,6 +48,8 @@ public:
 	virtual FloatingPrecision getDistance(const Coordinate& coordinateOne, 
 		                                  const Coordinate& coordinateTwo) const = 0;
 
+	virtual size_t getDimension() const = 0;
+
 };
 
 template <typename FloatingPrecision>
@@ -67,6 +69,8 @@ public:
 		return greatCircleDistance(coordinateOne.getTheta(), coordinateOne.getPhi(),
 								   coordinateTwo.getTheta(), coordinateTwo.getPhi());
 	}
+
+	size_t getDimension() const override { return 2; }
 
 };
 
@@ -117,6 +121,8 @@ public:
 						 glm::pow(topology2D.getDistance(coordinateOneOmegaO,
 											             coordinateTwoOmegaO), static_cast<FloatingPrecision>(2)));
 	}
+
+	size_t getDimension() const override { return 3; }
 };
 
 template <typename FloatingPrecision>

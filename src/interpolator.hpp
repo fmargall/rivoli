@@ -19,6 +19,8 @@ public:
 
 	void reduceInterpolator(const FloatingPrecision& threshold = static_cast<FloatingPrecision>(0));
 
+	std::vector<FloatingPrecision> getCoefficients() const;
+
 private:
 	std::unique_ptr<Topology<FloatingPrecision>> m_topology;
 

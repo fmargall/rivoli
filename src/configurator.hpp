@@ -29,9 +29,14 @@ protected:
 	std::string m_locationRBFFilePath;
 	std::string m_floatingPointPrecision = "FP32";
 
+	std::string m_inputParameterisation = "spherical";
+	std::string m_forceGrazingAnglesNullFunctionHemisphereOne = "none";
+	std::string m_forceGrazingAnglesNullFunctionHemisphereTwo = "none";
+
 	std::string m_outputFormat;
 	std::string m_outputFilePath;
 
+	float m_thresholdCoef = 0.f;
 	float m_regularisationParameter = 0.f;
 	float m_nonNegativityCorrectionParameter = 1.0f;
 

@@ -34,7 +34,8 @@ RBFInterpolator<FloatingPrecision>::RBFInterpolator(RuntimeConfig<FloatingPrecis
 															         *runtimeConfig.m_coordinatesRBF[colID]);
 				distanceMatrix(rowID, colID) = m_kernel(distance);
 
-				logger.displayProgressBar(++iterationNumber, runtimeConfig.m_coordinates.size() * (runtimeConfig.m_coordinatesRBF.size() - 1));
+				if (logger.level >= LogLevel::DEBUG)
+					logger.displayProgressBar(++iterationNumber, runtimeConfig.m_coordinates.size() * (runtimeConfig.m_coordinatesRBF.size() - 1));
 			}
 		}
 	}
@@ -151,6 +152,12 @@ void RBFInterpolator<FloatingPrecision>::reduceInterpolator(const FloatingPrecis
 
 	LOG_DEBUG("RBF Interpolator reduced to ", m_coefficients.size(), 
 		     " coefficients. Threshold has been set to ", threshold);
+}
+
+template <typename FloatingPrecision>
+std::vector<FloatingPrecision> RBFInterpolator<FloatingPrecision>::getCoefficients() const
+{
+	return m_coefficients;
 }
 
 // Explicit instantiation
