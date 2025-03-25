@@ -1,3 +1,5 @@
+#include <fstream>
+
 #include <Eigen/Dense>
 #include <glm/glm.hpp>
 
@@ -71,9 +73,9 @@ RBFInterpolator<FloatingPrecision>::RBFInterpolator(RuntimeConfig<FloatingPrecis
 		distanceMatrix += runtimeConfig.m_regularisationParameter * Eigen::MatrixXd::Identity(runtimeConfig.m_coordinates.size(), runtimeConfig.m_coordinates.size());
 		// Solving the linear system for a square matrix
 		Eigen::FullPivLU<Eigen::MatrixXd> luDecomposition(distanceMatrix);
-		Eigen::VectorXd weightsVector = luDecomposition.solve(resultVector);
+		Eigen::VectorXd coefsVector = luDecomposition.solve(resultVector);
 		// Saving computed coefficients
-		m_coefficients = std::vector<FloatingPrecision>(weightsVector.data(), weightsVector.data() + weightsVector.size());
+		m_coefficients = std::vector<FloatingPrecision>(coefsVector.data(), coefsVector.data() + coefsVector.size());
 
 	}
 	else {
@@ -84,14 +86,27 @@ RBFInterpolator<FloatingPrecision>::RBFInterpolator(RuntimeConfig<FloatingPrecis
 		pseudoInverse += runtimeConfig.m_regularisationParameter * Eigen::MatrixXd::Identity(runtimeConfig.m_coordinatesRBF.size(), runtimeConfig.m_coordinatesRBF.size());
 		// Solving the linear system for a non-square matrix
 		Eigen::FullPivLU<Eigen::MatrixXd> luDecomposition(pseudoInverse);
-		Eigen::VectorXd weightsVector = luDecomposition.solve(distanceMatrix.transpose() * resultVector);
+		Eigen::VectorXd coefsVector = luDecomposition.solve(distanceMatrix.transpose() * resultVector);
 		// Saving computed coefficients
-		m_coefficients = std::vector<FloatingPrecision>(weightsVector.data(), weightsVector.data() + weightsVector.size());
+		m_coefficients = std::vector<FloatingPrecision>(coefsVector.data(), coefsVector.data() + coefsVector.size());
+	}
+
+	// Saving the coefficients in DEBUG mode
+	if (logger.level >= LogLevel::DEBUG) {
+		std::ofstream outFile("weights.dat");
+		
+		if (outFile.is_open()) {
+			for (const auto& coef : m_coefficients) outFile << coef << "\n";
+			outFile.close();
+			LOG_DEBUG("Coefficients saved in weights.dat.");
+		}
+		else
+			LOG_CRITICAL("Impossible to open weights.dat to write coefficients.");
 	}
 
 	// Saving the coordinates
-	m_coordinates.reserve(runtimeConfig.m_coordinates.size());
-	for (const auto& coord : runtimeConfig.m_coordinates) {
+	m_coordinates.reserve(runtimeConfig.m_coordinatesRBF.size());
+	for (const auto& coord : runtimeConfig.m_coordinatesRBF) {
 		if      (typeid(*coord) == typeid(Coordinate2D<FloatingPrecision>))
 			m_coordinates.push_back(std::make_unique<Coordinate2D<FloatingPrecision>>(
 								  dynamic_cast<const Coordinate2D<FloatingPrecision>&>(*coord)));
@@ -120,6 +135,22 @@ FloatingPrecision RBFInterpolator<FloatingPrecision>::interpolate(const std::uni
 
 	// Non-negativity correction made if required
 	return glm::pow(result, m_nonNegativityCorrectionParameter);
+}
+
+template <typename FloatingPrecision>
+void RBFInterpolator<FloatingPrecision>::reduceInterpolator(const FloatingPrecision& threshold)
+{
+	for (auto iterator = m_coefficients.begin(); iterator != m_coefficients.end(); ) {
+		if (glm::abs(*iterator) < threshold) {
+			iterator = m_coefficients.erase(iterator);
+			m_coordinates.erase(m_coordinates.begin() + (iterator - m_coefficients.begin()));
+		}
+		else
+			++iterator;
+	}
+
+	LOG_DEBUG("RBF Interpolator reduced to ", m_coefficients.size(), 
+		     " coefficients. Threshold has been set to ", threshold);
 }
 
 // Explicit instantiation

@@ -33,6 +33,7 @@ bld/
 [Ll]ogs/
 [Oo]ut/
 [Bb]uild/
+[Pp]ython/
 
 # Data used by the software
 inputData.txt

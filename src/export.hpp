@@ -17,9 +17,9 @@ template <typename FloatingPrecision>
 void exportToMERL(
 	const std::string& outputFilePath, 
 	              
-	const RBFInterpolator<FloatingPrecision>& interpolatorR, 
-	const RBFInterpolator<FloatingPrecision>& interpolatorG, 
-	const RBFInterpolator<FloatingPrecision>& interpolatorB,
+	RBFInterpolator<FloatingPrecision>& interpolatorR, 
+	RBFInterpolator<FloatingPrecision>& interpolatorG, 
+	RBFInterpolator<FloatingPrecision>& interpolatorB,
 	
 	const bool& parallelComputing) 
 {
@@ -49,6 +49,16 @@ void exportToMERL(
 	std::vector<double> datasetG(180 * 90 * 90);
 	std::vector<double> datasetB(180 * 90 * 90);
 
+	// Reducing interpolator for faster computation. Will
+	// not affect the result if the threshold is set to 0
+	if (&interpolatorR == &interpolatorB && &interpolatorG == &interpolatorB)
+		interpolatorR.reduceInterpolator();
+	else {
+		interpolatorR.reduceInterpolator();
+		interpolatorG.reduceInterpolator();
+		interpolatorB.reduceInterpolator();
+	}
+
 	std::atomic<size_t> completedIterations{ 0 };
 	#pragma omp parallel for private(thetaH, thetaD, phiD) if(parallelComputing)
 	for (int i = 0; i < 180 * 90 * 90; i++) {
@@ -64,11 +74,19 @@ void exportToMERL(
 		// Compute the result here
 		Coordinate3DRusinkiewicz<FloatingPrecision> interpolatedBidirectionRusinkiewicz(thetaH, thetaD, phiD);
 		Coordinate3DSpherical<FloatingPrecision> interpolatedBidirectionSpherical = static_cast<Coordinate3DSpherical<FloatingPrecision>>(interpolatedBidirectionRusinkiewicz);
-		Coordinate2D<FloatingPrecision> interpolateBidirection2D(interpolatedBidirectionSpherical.getThetaO(), interpolatedBidirectionSpherical.getDeltaPhi());
 
-		datasetR[i] = interpolatorR.interpolate(std::make_unique<Coordinate3DSpherical<FloatingPrecision>>(interpolatedBidirectionSpherical));
-		datasetG[i] = interpolatorG.interpolate(std::make_unique<Coordinate3DSpherical<FloatingPrecision>>(interpolatedBidirectionSpherical));
-		datasetB[i] = interpolatorB.interpolate(std::make_unique<Coordinate3DSpherical<FloatingPrecision>>(interpolatedBidirectionSpherical));
+		// In the case where we are doing panchromatic interpolation,
+		// We can use the same interpolator for all the RGB channels.
+		if (&interpolatorR == &interpolatorB && &interpolatorG == &interpolatorB) {
+			datasetR[i] = interpolatorR.interpolate(std::make_unique<Coordinate3DSpherical<FloatingPrecision>>(interpolatedBidirectionSpherical));
+			datasetG[i] = datasetB[i] = datasetR[i];
+		}
+		// If not, we need to compute the BRDF values for each channel
+		else {
+			datasetR[i] = interpolatorR.interpolate(std::make_unique<Coordinate3DSpherical<FloatingPrecision>>(interpolatedBidirectionSpherical));
+			datasetG[i] = interpolatorG.interpolate(std::make_unique<Coordinate3DSpherical<FloatingPrecision>>(interpolatedBidirectionSpherical));
+			datasetB[i] = interpolatorB.interpolate(std::make_unique<Coordinate3DSpherical<FloatingPrecision>>(interpolatedBidirectionSpherical));
+		}
 
 		// Tracking progress with parallel computing
 		logger.displayProgressBar(completedIterations.load(std::memory_order_relaxed), 180 * 90 * 90);

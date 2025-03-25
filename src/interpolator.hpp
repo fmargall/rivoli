@@ -17,6 +17,8 @@ public:
 
 	FloatingPrecision interpolate(const std::unique_ptr<Coordinate>& coordinate) const;
 
+	void reduceInterpolator(const FloatingPrecision& threshold = static_cast<FloatingPrecision>(0));
+
 private:
 	std::unique_ptr<Topology<FloatingPrecision>> m_topology;
 

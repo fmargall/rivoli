@@ -170,14 +170,12 @@ RuntimeConfig<FloatingPrecision>::RuntimeConfig(const MainConfig& mainConfig) : 
 			FloatingPrecision theta, phi;
 			lineStream >> theta >> phi >> value;
 			m_coordinates.push_back(std::make_unique<Coordinate2D<FloatingPrecision>>(theta, phi));
-			LOG_TRACE("New 2D coordinate point added, with theta: ", theta, " and phi: ", phi);
 
 		}
 		else if (nbDimensions == 3) {
 			FloatingPrecision thetaOne, thetaTwo, phiTwo;
 			lineStream >> thetaOne >> thetaTwo >> phiTwo >> value;
 			m_coordinates.push_back(std::make_unique<Coordinate3DSpherical<FloatingPrecision>>(thetaOne, thetaTwo, phiTwo));
-			LOG_TRACE("New 3D coordinate point added, with thetaOne: ", thetaOne, ", thetaTwo: ", thetaTwo, " and phiTwo: ", phiTwo);
 
 		}
 		else if (nbDimensions == 4) {
@@ -188,6 +186,7 @@ RuntimeConfig<FloatingPrecision>::RuntimeConfig(const MainConfig& mainConfig) : 
 		else
 			LOG_CRITICAL("RIVOLI supports only 2D, 3D, or 4D BRDF.");
 
+		// For testing purposes
 		m_values.push_back(value);
 	}
 
@@ -208,7 +207,6 @@ RuntimeConfig<FloatingPrecision>::RuntimeConfig(const MainConfig& mainConfig) : 
 			LOG_CRITICAL("RBF coordinates initialisation from input coordinates failed.");
 
 	}
-
 	else {
 		std::ifstream fileRBFLocation(m_locationRBFFilePath);
 		if (fileRBFLocation.is_open())
@@ -228,14 +226,12 @@ RuntimeConfig<FloatingPrecision>::RuntimeConfig(const MainConfig& mainConfig) : 
 				FloatingPrecision theta, phi;
 				lineStream >> theta >> phi >> value;
 				m_coordinatesRBF.push_back(std::make_unique<Coordinate2D<FloatingPrecision>>(theta, phi));
-				LOG_TRACE("New 2D coordinate point added, with theta: ", theta, " and phi: ", phi);
 
 			}
 			else if (nbDimensions == 3) {
 				FloatingPrecision thetaOne, thetaTwo, phiTwo;
 				lineStream >> thetaOne >> thetaTwo >> phiTwo >> value;
 				m_coordinatesRBF.push_back(std::make_unique<Coordinate3DSpherical<FloatingPrecision>>(thetaOne, thetaTwo, phiTwo));
-				LOG_TRACE("New 3D coordinate point added, with thetaOne: ", thetaOne, ", thetaTwo: ", thetaTwo, " and phiTwo: ", phiTwo);
 
 			}
 			else if (nbDimensions == 4) {
@@ -254,13 +250,24 @@ RuntimeConfig<FloatingPrecision>::RuntimeConfig(const MainConfig& mainConfig) : 
 	// Initialising the topology
 	m_topology = initTopology(*this);
 
+	// Using the chosen topology, we can clean the RBF
+	// coordinates and suppress the useless duplicates
+	for (auto iteratorOne = m_coordinatesRBF.begin(); iteratorOne != m_coordinatesRBF.end(); ++iteratorOne) {
+		for (auto iteratorTwo = iteratorOne + 1; iteratorTwo != m_coordinatesRBF.end(); ) {
+			if (m_topology->getDistance(**iteratorOne, **iteratorTwo) == static_cast<FloatingPrecision>(0))
+				iteratorTwo = m_coordinatesRBF.erase(iteratorTwo);
+			else
+				++iteratorTwo;
+		}
+	}
+	LOG_DEBUG("RBF configurations cleaned. ", m_coordinatesRBF.size(), " configurations kept.");
+
 	// Initialising the RBF interpolator
 	RBFInterpolator<FloatingPrecision> interpolator(*this);
 
 	// Export BRDF
 	if (m_outputFormat == "MERL")
 		exportToMERL(m_outputFilePath, interpolator, interpolator, interpolator, m_parallelComputing);
-
 
 }
 
@@ -283,7 +290,7 @@ std::unique_ptr<Topology<FloatingPrecision>> RuntimeConfig<FloatingPrecision>::i
 		if (runtimeConfig.m_forceBilateralSymmetry) {
 			if (runtimeConfig.m_forceReciprocity) {
 				topology = std::make_unique<Topology3DSphRecSym<FloatingPrecision>>();
-				LOG_DEBUG("BRDF topology initialised as 2D reciprocal symmetrical.");
+				LOG_DEBUG("BRDF topology initialised as 3D reciprocal symmetrical.");
 			}
 			else {
 				topology = std::make_unique<Topology3DSphSym<FloatingPrecision>>();
