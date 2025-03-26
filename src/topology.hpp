@@ -45,6 +45,9 @@ FloatingPrecision greatCircleDistance(const FloatingPrecision& thetaOne, const F
 template <typename FloatingPrecision>
 class Topology {
 public:
+	virtual ~Topology() = default;
+	virtual std::unique_ptr<Topology> clone() const = 0; // Ajout de la méthode clone
+
 	virtual FloatingPrecision getDistance(const Coordinate& coordinateOne, 
 		                                  const Coordinate& coordinateTwo) const = 0;
 
@@ -56,6 +59,10 @@ template <typename FloatingPrecision>
 class Topology2D : public Topology<FloatingPrecision> {
 public:
 	Topology2D() {}
+
+	std::unique_ptr<Topology<FloatingPrecision>> clone() const override {
+		return std::make_unique<Topology2D>(*this);
+	}
 
 	FloatingPrecision getDistance(const Coordinate& coordinateOne,
 								  const Coordinate& coordinateTwo) const override {
@@ -78,6 +85,10 @@ template <typename FloatingPrecision>
 class Topology2DSym : public Topology2D<FloatingPrecision> {
 public:
 	Topology2DSym() {}
+
+	std::unique_ptr<Topology<FloatingPrecision>> clone() const override {
+		return std::make_unique<Topology2DSym>(*this);
+	}
 
 	FloatingPrecision getDistance(const Coordinate& coordinateOne, 
 		                          const Coordinate& coordinateTwo) const {
@@ -104,6 +115,10 @@ class Topology3DSph : public Topology<FloatingPrecision> {
 public:
 	Topology3DSph() {}
 
+	std::unique_ptr<Topology<FloatingPrecision>> clone() const override {
+		return std::make_unique<Topology3DSph>(*this);
+	}
+
 	FloatingPrecision getDistance(const Coordinate& coordinateOne, 
 		                          const Coordinate& coordinateTwo) const {
 		const auto& coordinateOne3DSph = dynamic_cast<const Coordinate3DSpherical<FloatingPrecision>&>(coordinateOne);
@@ -129,6 +144,10 @@ template <typename FloatingPrecision>
 class Topology3DSphRec : public Topology3DSph<FloatingPrecision> {
 public:
 	Topology3DSphRec() {}
+
+	std::unique_ptr<Topology<FloatingPrecision>> clone() const override {
+		return std::make_unique<Topology3DSphRec>(*this);
+	}
 
 	FloatingPrecision getDistance(const Coordinate& coordinateOne,
 								  const Coordinate& coordinateTwo) const {
@@ -157,6 +176,10 @@ class Topology3DSphSym : public Topology3DSph<FloatingPrecision> {
 public:
 	Topology3DSphSym() {}
 
+	std::unique_ptr<Topology<FloatingPrecision>> clone() const override {
+		return std::make_unique<Topology3DSphSym>(*this);
+	}
+
 	FloatingPrecision getDistance(const Coordinate& coordinateOne,
 								  const Coordinate& coordinateTwo) const {
 		const auto& coordinateOne3DSph = dynamic_cast<const Coordinate3DSpherical<FloatingPrecision>&>(coordinateOne);
@@ -181,6 +204,10 @@ template <typename FloatingPrecision>
 class Topology3DSphRecSym : public Topology3DSphRec<FloatingPrecision> {
 public:
 	Topology3DSphRecSym() {}
+
+	std::unique_ptr<Topology<FloatingPrecision>> clone() const override {
+		return std::make_unique<Topology3DSphRecSym>(*this);
+	}
 
 	FloatingPrecision getDistance(const Coordinate& coordinateOne,
 								  const Coordinate& coordinateTwo) const {

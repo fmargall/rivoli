@@ -17,7 +17,7 @@ add_executable(RIVOLI.App src/main.cpp
                src/interpolator.hpp src/interpolator.cpp
                src/logger.hpp src/logger.cpp
                src/topology.hpp
-               src/export.hpp)
+               src/export.hpp src/export.cpp)
 
 target_link_libraries(RIVOLI.App PUBLIC OpenMP::OpenMP_CXX)
 

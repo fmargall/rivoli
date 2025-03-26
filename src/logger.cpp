@@ -66,7 +66,7 @@ void Logger::displayProgressBar(const size_t currentIteration, const size_t numb
 	this->currentIteration.store(currentIteration);
 	this->numberIterations.store(numberIterations);
 
-	size_t progressBarCount = static_cast<size_t>((newProgressPercentage / 100) * progressBarWidth);
+	size_t progressBarCount = static_cast<size_t>((std::ceil(newProgressPercentage) / 100) * progressBarWidth);
 
 	std::cout << "           [";
 	for (size_t i = 0; i < progressBarWidth; ++i) {

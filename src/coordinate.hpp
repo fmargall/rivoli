@@ -7,6 +7,12 @@ public:
 	// Adding a virtual constructor makes Coordinate polymorphic,
 	// and so allows to use dynamic_cast in the topology distance
 	virtual ~Coordinate() = default;
+
+	virtual std::unique_ptr<Coordinate> clone() const {
+		LOG_CRITICAL("Cannot clone a base Coordinate object.");
+		return nullptr;
+	}
+
 };
 
 template <typename FloatingPrecision>
@@ -15,6 +21,10 @@ public:
 	Coordinate2D(const FloatingPrecision& theta, const FloatingPrecision& phi) : m_theta(theta), m_phi(phi) {
 		//if (theta > glm::half_pi<FloatingPrecision>())
 		//	LOG_ERR("Theta value is greater than pi/2: ", theta);
+	}
+
+	std::unique_ptr<Coordinate> clone() const override {
+		return std::make_unique<Coordinate2D>(*this);
 	}
 
 	Coordinate2D getBilateralSymmetrical() const {
@@ -39,6 +49,10 @@ public:
 		//	LOG_ERR("ThetaI value is greater than pi/2: ", thetaI);
 		//if (thetaO > glm::half_pi<FloatingPrecision>())
 		//	LOG_ERR("ThetaO value is greater than pi/2: ", thetaO);
+	}
+
+	std::unique_ptr<Coordinate> clone() const override {
+		return std::make_unique<Coordinate3DSpherical>(*this);
 	}
 
 	FloatingPrecision getThetaI()   const { return m_thetaI; }
@@ -69,6 +83,10 @@ public:
 			LOG_ERR("ThetaI value is greater than pi/2: ", thetaH);
 		if (thetaD > glm::half_pi<FloatingPrecision>())
 			LOG_ERR("ThetaO value is greater than pi/2: ", thetaD);
+	}
+
+	std::unique_ptr<Coordinate> clone() const override {
+		return std::make_unique<Coordinate3DRusinkiewicz>(*this);
 	}
 
 	explicit operator Coordinate3DSpherical<FloatingPrecision>() const {

@@ -5,10 +5,11 @@
 #include <vector>
 
 #include "coordinate.hpp"
+#include "export.hpp"
 #include "interpolator.hpp"
 #include "topology.hpp"
 
-// Forward declaration
+// Forward declarations
 template <typename FloatingPrecision>
 class RBFInterpolator;
 
@@ -19,6 +20,12 @@ public:
 	std::string getFloatingPointPrecision() const;
 
 protected:
+	template <typename FloatingPrecision>
+	friend void initRBFCoeffsFile(const std::string& outputFilePath,
+							      const RuntimeConfig<FloatingPrecision>& runtimeConfig,
+								  const bool& isRGB);
+
+	size_t m_nbClusters;
 	size_t m_nbDimensions;
 
 	bool m_forceReciprocity = true;
@@ -41,15 +48,29 @@ protected:
 	float m_nonNegativityCorrectionParameter = 1.0f;
 
 	bool m_parallelComputing = true;
+	bool m_uniqueLocationRBF = true;
 };
 
 template <typename FloatingPrecision>
 class RuntimeConfig : public MainConfig {
 public:
+	// Constructor from a parent class instance
 	RuntimeConfig(const MainConfig& mainConfig);
+	// Copy constructor
+	RuntimeConfig(const RuntimeConfig& other);
 
 private:
 	friend class RBFInterpolator<FloatingPrecision>;
+
+	template <typename FloatingPrecision>
+	friend void initRBFCoeffsFile(const std::string& outputFilePath,
+								  const RuntimeConfig<FloatingPrecision>& runtimeConfig,
+								  const bool& isRGB);
+	template <typename FloatingPrecision, typename DataType>
+	friend void writeToRBFCoeffs(const std::string& outputFilePath,
+						         const RuntimeConfig<FloatingPrecision>& runtimeConfig,
+							     const std::vector<DataType>& inputData,
+							     const size_t& clusterID);
 
 	static std::unique_ptr<Topology<FloatingPrecision>> initTopology(RuntimeConfig<FloatingPrecision>& runtimeConfig);
 

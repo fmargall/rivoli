@@ -1,6 +1,7 @@
 #pragma once
 
 #include <fstream>
+#include <mutex>
 #include <omp.h>
 #include <string>
 #include <vector>
@@ -10,8 +11,181 @@
 
 #include "arrays.hpp"
 #include "configurator.hpp"
+#include "coordinate.hpp"
 #include "interpolator.hpp"
 #include "logger.hpp"
+
+// Forward declarations
+template <typename FloatingPrecision>
+class RuntimeConfig;
+
+template <typename FloatingPrecision>
+class RBFInterpolator;
+
+// Mutex for writing to the output file
+extern std::mutex writeFileMutex;
+
+template <typename FloatingPrecision>
+void initRBFCoeffsFile(
+	const std::string& outputFilePath,
+	const RuntimeConfig<FloatingPrecision>& runtimeConfig,
+
+	const bool& isRGB
+) {
+	// Opening the output .RBFCoeffs file
+	std::ofstream outputDataFile(outputFilePath, std::ios::binary | std::ios::trunc);
+	if (outputDataFile.is_open())
+		LOG_DEBUG("Output file ", outputFilePath, " opened successfully.");
+	else
+		LOG_CRITICAL("Output file output.RBFCoeffs could not be opened.");
+
+	// Writing the version of the software
+	int versionMajor = 0, versionMinor = 1, versionPatch = 0;
+	outputDataFile.write(reinterpret_cast<char*>(&versionMajor), sizeof(int));
+	outputDataFile.write(reinterpret_cast<char*>(&versionMinor), sizeof(int));
+	outputDataFile.write(reinterpret_cast<char*>(&versionPatch), sizeof(int));
+
+	// Writing data type
+	int dataType;
+	if (isRGB) // 2 for float RGB, 3 for double RGB
+		dataType = (runtimeConfig.m_floatingPointPrecision == "FP32") ? 2 : 3;
+	else       // 0 for float, 1 for double
+		dataType = (runtimeConfig.m_floatingPointPrecision == "FP32") ? 0 : 1;
+	outputDataFile.write(reinterpret_cast<char*>(&dataType), sizeof(int));
+	
+	// Writing the number of dimensions
+	int nbDimensionsInt = static_cast<int>(runtimeConfig.m_nbDimensions);
+	outputDataFile.write(reinterpret_cast<char*>(&nbDimensionsInt), sizeof(int));
+
+	// Writing the parameterisation: SPH for spherical, RUS for Rusinkiewicz
+	std::string parameterisation = (runtimeConfig.m_inputParameterisation == "spherical") ? "SPH" : "RUS";
+	outputDataFile.write(parameterisation.c_str(), parameterisation.size());
+
+	// Writing the smoothing function for hemisphere one
+	std::string smoothingFunctionHemisphereOne;
+	if      (runtimeConfig.m_forceGrazingAnglesNullFunctionHemisphereOne == "linear")
+		smoothingFunctionHemisphereOne = "LIN";
+	else if (runtimeConfig.m_forceGrazingAnglesNullFunctionHemisphereOne == "cosine")
+		smoothingFunctionHemisphereOne = "COS";
+	else if (runtimeConfig.m_forceGrazingAnglesNullFunctionHemisphereOne == "none")
+		smoothingFunctionHemisphereOne = "NUL";
+	else
+		LOG_CRITICAL("Invalid smoothing function for hemisphere one: " + runtimeConfig.m_forceGrazingAnglesNullFunctionHemisphereOne);
+	outputDataFile.write(smoothingFunctionHemisphereOne.c_str(), smoothingFunctionHemisphereOne.size());
+
+	// Writing the smoothing function for hemisphere two
+	std::string smoothingFunctionHemisphereTwo;
+	if      (runtimeConfig.m_forceGrazingAnglesNullFunctionHemisphereTwo == "linear")
+		smoothingFunctionHemisphereTwo = "LIN";
+	else if (runtimeConfig.m_forceGrazingAnglesNullFunctionHemisphereTwo == "cosine")
+		smoothingFunctionHemisphereTwo = "COS";
+	else if (runtimeConfig.m_forceGrazingAnglesNullFunctionHemisphereTwo == "none")
+		smoothingFunctionHemisphereTwo = "NUL";
+	else
+		LOG_CRITICAL("Invalid smoothing function for hemisphere two: " + runtimeConfig.m_forceGrazingAnglesNullFunctionHemisphereTwo);
+	outputDataFile.write(smoothingFunctionHemisphereTwo.c_str(), smoothingFunctionHemisphereTwo.size());
+
+	float regularisationParameter = static_cast<float>(runtimeConfig.m_regularisationParameter);
+	outputDataFile.write(reinterpret_cast<char*>(&regularisationParameter), sizeof(float));
+	int nonNegativityCorrectionParameterInt = static_cast<int>(runtimeConfig.m_nonNegativityCorrectionParameter);
+	outputDataFile.write(reinterpret_cast<char*>(&nonNegativityCorrectionParameterInt), sizeof(int));
+
+	bool forceReciprocity = runtimeConfig.m_forceReciprocity;
+	bool forceBilateralSymmetry = runtimeConfig.m_forceBilateralSymmetry;
+	outputDataFile.write(reinterpret_cast<char*>(&forceReciprocity), sizeof(bool));
+	outputDataFile.write(reinterpret_cast<char*>(&forceBilateralSymmetry), sizeof(bool));
+
+	// Writing the RBF kernel
+	std::string kernel;
+	int kernelNbParams;
+	if (runtimeConfig.m_kernel == "linear") {
+		kernel = "LIN";
+		kernelNbParams = 0;
+	}
+	outputDataFile.write(kernel.c_str(), kernel.size());
+	outputDataFile.write(reinterpret_cast<char*>(&kernelNbParams), sizeof(int));
+
+	// Writing the threshold coefficient
+	float thresholdCoef = runtimeConfig.m_thresholdCoef;
+	outputDataFile.write(reinterpret_cast<char*>(&thresholdCoef), sizeof(float));
+	// Writing the number of clusters
+	int nbClusters = runtimeConfig.m_nbClusters;
+	outputDataFile.write(reinterpret_cast<char*>(&nbClusters), sizeof(int));
+	// Writing if unique location RBF mode
+	bool uniqueLocationRBF = runtimeConfig.m_uniqueLocationRBF;
+	outputDataFile.write(reinterpret_cast<char*>(&uniqueLocationRBF), sizeof(bool));
+
+	if (uniqueLocationRBF) {
+		// Writing the RBF coordinates
+		for (size_t coordinateID = 0; coordinateID < runtimeConfig.m_coordinatesRBF.size(); coordinateID++) {
+			const auto& coordinate = runtimeConfig.m_coordinatesRBF[coordinateID];
+			if (typeid(*coordinate) == typeid(Coordinate2D<FloatingPrecision>)) {
+				const auto& coord = static_cast<Coordinate2D<FloatingPrecision>&>(*coordinate);
+				FloatingPrecision theta = coord.getTheta();
+				FloatingPrecision phi   = coord.getPhi();
+				outputDataFile.write(reinterpret_cast<char*>(&theta), sizeof(FloatingPrecision));
+				outputDataFile.write(reinterpret_cast<char*>(&phi)  , sizeof(FloatingPrecision));
+			}
+			else if (typeid(*coordinate) == typeid(Coordinate3DSpherical<FloatingPrecision>)) {
+				const auto& coord = static_cast<Coordinate3DSpherical<FloatingPrecision>&>(*coordinate);
+				FloatingPrecision thetaI   = coord.getThetaI();
+				FloatingPrecision thetaO   = coord.getThetaO();
+				FloatingPrecision deltaPhi = coord.getDeltaPhi();
+				outputDataFile.write(reinterpret_cast<char*>(&thetaI)  , sizeof(FloatingPrecision));
+				outputDataFile.write(reinterpret_cast<char*>(&thetaO)  , sizeof(FloatingPrecision));
+				outputDataFile.write(reinterpret_cast<char*>(&deltaPhi), sizeof(FloatingPrecision));
+			}
+			else if (typeid(*coordinate) == typeid(Coordinate3DRusinkiewicz<FloatingPrecision>)) {
+				const auto& coord = static_cast<Coordinate3DRusinkiewicz<FloatingPrecision>&>(*coordinate);
+				FloatingPrecision thetaH = coord.getThetaH();
+				FloatingPrecision thetaD = coord.getThetaD();
+				FloatingPrecision phiD   = coord.getPhiD();
+				outputDataFile.write(reinterpret_cast<char*>(&thetaH), sizeof(FloatingPrecision));
+				outputDataFile.write(reinterpret_cast<char*>(&thetaD), sizeof(FloatingPrecision));
+				outputDataFile.write(reinterpret_cast<char*>(&phiD)  , sizeof(FloatingPrecision));
+			}
+			else
+				LOG_CRITICAL("Invalid coordinate type.");
+		}
+	}
+
+	outputDataFile.close();
+
+	LOG_DEBUG(outputFilePath, " initialised successfully.");
+}
+
+template <typename FloatingPrecision, typename DataType>
+void writeToRBFCoeffs(
+	const std::string& outputFilePath,
+	
+	const RuntimeConfig<FloatingPrecision>& runtimeConfig,
+	const std::vector<DataType>& inputData,
+	const size_t& clusterID = -1)
+{
+	// Lock mutex to protect the file access for writing
+	std::lock_guard<std::mutex> guard(writeFileMutex);
+
+	// Computing stream position
+	std::streampos streamPosition;
+
+	std::ofstream outputFile(outputFilePath, std::ios::in | std::ios::out | std::ios::binary);
+	if (outputFile.is_open()) {
+		outputFile.seekp(streamPosition);
+		// Writing the number of RBF only if needed
+		if (!(runtimeConfig.m_uniqueLocationRBF)) {
+
+		}
+		// Writing RBF locations if needed
+		// 
+		// Writing RBF coefficients
+		
+		// 
+		//outputFile.write(inputData.c_str(), inputData.size());
+		outputFile.close();
+	}
+	else
+		LOG_CRITICAL("Output file ", outputFilePath, " could not be opened.");
+}
 
 template <typename FloatingPrecision>
 void exportToMERL(

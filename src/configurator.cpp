@@ -1,5 +1,6 @@
 #include <filesystem>
 #include <fstream>
+#include <omp.h>
 
 #include "BrdfSamplesCoupole.hpp"
 #include "configurator.hpp"
@@ -147,6 +148,126 @@ RuntimeConfig<FloatingPrecision>::RuntimeConfig(const MainConfig& mainConfig) : 
 	
 	// The file that is about to be read comes from the Coupole
 	if (inputFilePath.extension() == ".brdfSamples") {
+		// Initialinsing threads
+		int numberOfThreads = 1;
+		if (m_parallelComputing)
+			numberOfThreads = omp_get_max_threads();
+
+		BrdfSamplesCoupole brdfSamples;
+		m_nbClusters = brdfSamples.prepareSparseRead(inputFilePath.string(), -1, false, numberOfThreads);
+		LOG_DEBUG("File ", inputFilePath.string(), " loaded.");
+
+		// Initialising the topology
+		m_nbDimensions = 3;
+		m_topology = initTopology(*this);
+
+		// Initialising RBF coordinates
+		std::ifstream fileRBFLocation(m_locationRBFFilePath);
+		if (fileRBFLocation.is_open())
+			LOG_DEBUG("RBF location file " + m_locationRBFFilePath + " opened successfully.");
+		else
+			LOG_CRITICAL("RBF location file " + m_locationRBFFilePath + " could not be opened.");
+
+		std::string line;
+		// Reading all RBF coordinates
+		while (std::getline(fileRBFLocation, line)) {
+			// Avoiding all empty lines
+			if (line.empty()) continue;
+
+			std::istringstream lineStream(line);
+
+			FloatingPrecision thetaOne, thetaTwo, phiTwo;
+			lineStream >> thetaOne >> thetaTwo >> phiTwo;
+			m_coordinatesRBF.push_back(std::make_unique<Coordinate3DSpherical<FloatingPrecision>>(thetaOne, thetaTwo, phiTwo));
+		}
+
+		LOG_DEBUG("RBF file ", m_locationRBFFilePath, " is loaded. ",
+				   m_coordinatesRBF.size(), " configurations saved.");
+
+		// Using the chosen topology, we can clean the RBF
+		// coordinates and suppress the useless duplicates
+		for (auto iteratorOne = m_coordinatesRBF.begin(); iteratorOne != m_coordinatesRBF.end(); ++iteratorOne) {
+			for (auto iteratorTwo = iteratorOne + 1; iteratorTwo != m_coordinatesRBF.end(); ) {
+				if (m_topology->getDistance(**iteratorOne, **iteratorTwo) == static_cast<FloatingPrecision>(0))
+					iteratorTwo = m_coordinatesRBF.erase(iteratorTwo);
+				else
+					++iteratorTwo;
+			}
+		}
+		
+		LOG_DEBUG("RBF configurations cleaned. ", m_coordinatesRBF.size(), " configurations kept.");
+
+		// Initialising the .RBFCoeffs file
+		initRBFCoeffsFile(m_outputFilePath, *this, true);
+
+		LOG_INFO("Starting coefficients computation for each cluster...");
+
+		std::atomic<size_t> completedIterations{ 0 };
+		#pragma omp parallel for num_threads(numberOfThreads)
+		for (int clusterID = 0; clusterID < m_nbClusters; clusterID++) {
+			// Create copy of current RuntimeConfig for each thread
+			RuntimeConfig<FloatingPrecision> threadConfig = *this;
+
+			size_t threadID = omp_get_thread_num();
+			brdfSamples.readOneCluster(clusterID, threadID);
+
+			// Computing RGB interpolators
+			threadConfig.m_coordinates.clear(); threadConfig.m_values.clear(); // Block for red channel interpolator
+			std::vector<glm::vec2> woVector;
+			std::vector<glm::vec2> wiVector;
+			std::vector<double> brdfVector;
+			brdfSamples.getData(threadID, 0, woVector, wiVector, brdfVector);
+			for (size_t sampleID = 0; sampleID < woVector.size(); sampleID++) {
+				threadConfig.m_coordinates.push_back(std::make_unique<Coordinate3DSpherical<FloatingPrecision>>(
+					static_cast<FloatingPrecision>(wiVector[sampleID].x),
+					static_cast<FloatingPrecision>(woVector[sampleID].x),
+					static_cast<FloatingPrecision>(wiVector[sampleID].y)));
+				threadConfig.m_values.push_back(static_cast<FloatingPrecision>(brdfVector[sampleID]));
+			}
+			RBFInterpolator<FloatingPrecision> interpolatorR(threadConfig);
+
+			threadConfig.m_coordinates.clear(); threadConfig.m_values.clear(); // Block for green channel interpolator
+			woVector.clear(); wiVector.clear(); brdfVector.clear();
+			brdfSamples.getData(threadID, 1, woVector, wiVector, brdfVector);
+			for (size_t sampleID = 0; sampleID < woVector.size(); sampleID++) {
+				threadConfig.m_coordinates.push_back(std::make_unique<Coordinate3DSpherical<FloatingPrecision>>(
+					static_cast<FloatingPrecision>(wiVector[sampleID].x),
+					static_cast<FloatingPrecision>(woVector[sampleID].x),
+					static_cast<FloatingPrecision>(wiVector[sampleID].y)));
+				threadConfig.m_values.push_back(static_cast<FloatingPrecision>(brdfVector[sampleID]));
+			}
+			RBFInterpolator<FloatingPrecision> interpolatorG(threadConfig);
+
+			threadConfig.m_coordinates.clear(); threadConfig.m_values.clear(); // Block for blue channel interpolator
+			woVector.clear(); wiVector.clear(); brdfVector.clear();
+			brdfSamples.getData(threadID, 2, woVector, wiVector, brdfVector);
+			for (size_t sampleID = 0; sampleID < woVector.size(); sampleID++) {
+				threadConfig.m_coordinates.push_back(std::make_unique<Coordinate3DSpherical<FloatingPrecision>>(
+					static_cast<FloatingPrecision>(wiVector[sampleID].x),
+					static_cast<FloatingPrecision>(woVector[sampleID].x),
+					static_cast<FloatingPrecision>(wiVector[sampleID].y)));
+				threadConfig.m_values.push_back(static_cast<FloatingPrecision>(brdfVector[sampleID]));
+			}
+			RBFInterpolator<FloatingPrecision> interpolatorB(threadConfig);
+
+			// Saving the coefficients
+			std::vector<glm::vec3> coefficients;
+			for (size_t coefID = 0; coefID < threadConfig.m_coordinatesRBF.size(); coefID++) {
+				FloatingPrecision coefR = interpolatorR.getCoefficients()[coefID];
+				FloatingPrecision coefG = interpolatorG.getCoefficients()[coefID];
+				FloatingPrecision coefB = interpolatorB.getCoefficients()[coefID];
+
+				// Writing the coefficients
+				glm::vec3 coefficient(coefR, coefG, coefB);
+				coefficients.push_back(coefficient);
+			}
+			writeToRBFCoeffs(threadConfig.m_outputFilePath, threadConfig, coefficients, clusterID);
+
+			logger.displayProgressBar(completedIterations.load(std::memory_order_relaxed), threadConfig.m_nbClusters + 1); // Strangest bug ever: if m_nbClusters is exactly 1041 (as it has already happened once), the progress bar does not appear. It won't happen for 1039, 1040 or 1042.
+			completedIterations.fetch_add(1, std::memory_order_relaxed);
+		}
+
+		/*
 		BrdfSamplesCoupole brdfSamples;
 		int nbClusters = brdfSamples.prepareSparseRead(inputFilePath.string());
 
@@ -323,6 +444,7 @@ RuntimeConfig<FloatingPrecision>::RuntimeConfig(const MainConfig& mainConfig) : 
 				exportToMERL("lastCluster.binary", interpolatorR, interpolatorG, interpolatorB, true);
 			}
 		}
+		*/
 	}
 	
 	else {
@@ -455,9 +577,29 @@ RuntimeConfig<FloatingPrecision>::RuntimeConfig(const MainConfig& mainConfig) : 
 		if (m_outputFormat == "MERL")
 			exportToMERL(m_outputFilePath, interpolator, interpolator, interpolator, m_parallelComputing);
 	}
-
 	
 }
+
+template <typename FloatingPrecision>
+RuntimeConfig<FloatingPrecision>::RuntimeConfig(const RuntimeConfig& other)
+	: MainConfig(other),
+	  m_topology(other.m_topology ? other.m_topology->clone() : nullptr),
+	  m_values(other.m_values),
+	  m_coefficients(other.m_coefficients)
+{
+	// Deep copy of coordinates
+	m_coordinates.reserve(other.m_coordinates.size());
+	for (const auto& coord : other.m_coordinates) {
+		m_coordinates.push_back(coord->clone());
+	}
+
+	// Deep copy of RBF coordinates
+	m_coordinatesRBF.reserve(other.m_coordinatesRBF.size());
+	for (const auto& coordRBF : other.m_coordinatesRBF) {
+		m_coordinatesRBF.push_back(coordRBF->clone());
+	}
+}
+
 
 template <typename FloatingPrecision>
 std::unique_ptr<Topology<FloatingPrecision>> RuntimeConfig<FloatingPrecision>::initTopology(RuntimeConfig<FloatingPrecision>& runtimeConfig) {
