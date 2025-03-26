@@ -148,7 +148,7 @@ RuntimeConfig<FloatingPrecision>::RuntimeConfig(const MainConfig& mainConfig) : 
 	// The file that is about to be read comes from the Coupole
 	if (inputFilePath.extension() == ".brdfSamples") {
 		BrdfSamplesCoupole brdfSamples;
-		int nbClusters = brdfSamples.prepareSparseRead(inputFilePath.string(), 100);
+		int nbClusters = brdfSamples.prepareSparseRead(inputFilePath.string());
 
 		LOG_TRACE("File ", inputFilePath.string(), " loaded.");
 
@@ -169,10 +169,9 @@ RuntimeConfig<FloatingPrecision>::RuntimeConfig(const MainConfig& mainConfig) : 
 				continue; // Skip empty lines
 
 			std::istringstream lineStream(line);
-			FloatingPrecision value;
 
 			FloatingPrecision thetaOne, thetaTwo, phiTwo;
-			lineStream >> thetaOne >> thetaTwo >> phiTwo >> value;
+			lineStream >> thetaOne >> thetaTwo >> phiTwo;
 			m_coordinatesRBF.push_back(std::make_unique<Coordinate3DSpherical<FloatingPrecision>>(thetaOne, thetaTwo, phiTwo));
 		}
 
@@ -317,8 +316,12 @@ RuntimeConfig<FloatingPrecision>::RuntimeConfig(const MainConfig& mainConfig) : 
 					LOG_CRITICAL("Error while writing the coefficients number ", coefID, " in the output file.");
 			}
 
-			LOG_INFO("Cluster ", clusterID, "/", nbClusters, " interpolated and written.");
+			//LOG_INFO("Cluster ", clusterID + 1, "/", nbClusters, " interpolated and written.");
 			//logger.displayProgressBar(clusterID, nbClusters);
+
+			if (clusterID == 0) {
+				exportToMERL("lastCluster.binary", interpolatorR, interpolatorG, interpolatorB, true);
+			}
 		}
 	}
 	

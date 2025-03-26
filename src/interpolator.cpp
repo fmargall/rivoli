@@ -22,6 +22,10 @@ RBFInterpolator<FloatingPrecision>::RBFInterpolator(RuntimeConfig<FloatingPrecis
 	Eigen::MatrixXd distanceMatrix = Eigen::MatrixXd::Zero(runtimeConfig.m_coordinates.size(),
 		                                                   runtimeConfig.m_coordinatesRBF.size());
 
+	if (runtimeConfig.m_coordinatesRBF.size() > runtimeConfig.m_coordinates.size())
+		LOG_WARN("Underdetermined problem: ", runtimeConfig.m_coordinates.size(), " data",
+			     " points for ", runtimeConfig.m_coordinatesRBF.size(), " RBF kernels.");
+
 	if (runtimeConfig.m_locationRBFFilePath != "none") {
 		// The distance matrix will not be a square matrix, so each
 		// coefficient needs to be computed with a two-nested loop.

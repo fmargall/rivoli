@@ -12,7 +12,10 @@ public:
 template <typename FloatingPrecision>
 class Coordinate2D : public Coordinate {
 public:
-	Coordinate2D(const FloatingPrecision& theta, const FloatingPrecision& phi) : m_theta(theta), m_phi(phi) {}
+	Coordinate2D(const FloatingPrecision& theta, const FloatingPrecision& phi) : m_theta(theta), m_phi(phi) {
+		//if (theta > glm::half_pi<FloatingPrecision>())
+		//	LOG_ERR("Theta value is greater than pi/2: ", theta);
+	}
 
 	Coordinate2D getBilateralSymmetrical() const {
 		return Coordinate2D(m_theta, glm::two_pi<FloatingPrecision>() - m_phi);
@@ -31,7 +34,12 @@ public:
 	Coordinate3DSpherical(const FloatingPrecision& thetaI, 
 		                  const FloatingPrecision& thetaO,
 		                  const FloatingPrecision& deltaPhi)
-		: m_thetaI(thetaI), m_thetaO(thetaO), m_deltaPhi(deltaPhi) {}
+		: m_thetaI(thetaI), m_thetaO(thetaO), m_deltaPhi(deltaPhi) {
+		//if (thetaI > glm::half_pi<FloatingPrecision>())
+		//	LOG_ERR("ThetaI value is greater than pi/2: ", thetaI);
+		//if (thetaO > glm::half_pi<FloatingPrecision>())
+		//	LOG_ERR("ThetaO value is greater than pi/2: ", thetaO);
+	}
 
 	FloatingPrecision getThetaI()   const { return m_thetaI; }
 	FloatingPrecision getThetaO()   const { return m_thetaO; }
@@ -56,7 +64,12 @@ public:
 	Coordinate3DRusinkiewicz(const FloatingPrecision& thetaH,
 							 const FloatingPrecision& thetaD,
 							 const FloatingPrecision& phiD)
-		: m_thetaH(thetaH), m_thetaD(thetaD), m_phiD(phiD) {}
+		: m_thetaH(thetaH), m_thetaD(thetaD), m_phiD(phiD) {
+		if (thetaH > glm::half_pi<FloatingPrecision>())
+			LOG_ERR("ThetaI value is greater than pi/2: ", thetaH);
+		if (thetaD > glm::half_pi<FloatingPrecision>())
+			LOG_ERR("ThetaO value is greater than pi/2: ", thetaD);
+	}
 
 	explicit operator Coordinate3DSpherical<FloatingPrecision>() const {
 		auto [thetaI, thetaO, deltaPhi] = rusinkiewiczCoordToStandardCoord(m_thetaH, m_thetaD, m_phiD);

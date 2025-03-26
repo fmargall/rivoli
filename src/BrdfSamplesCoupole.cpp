@@ -78,9 +78,10 @@ int BrdfSamplesCoupole::prepareSparseRead(std::string filename, int maxReadClust
     f.read(reinterpret_cast<char*>(samples.data()), sizeof(iVector3) * ncluster);
 
     int SampleStructSize = brdfSamples->getSizeSampleStruct();
+    unsigned long long totalDecal = 2 * sizeof(int) + ncluster * sizeof(iVector3);
+
     if(maxReadClusters!=-1) ncluster=std::min(maxReadClusters, ncluster);
 
-    unsigned long long totalDecal = 2 * sizeof(int) + ncluster * sizeof(iVector3);
     m_offsetReadCluster.resize(ncluster);
     LOG_DEBUG("Reading clusters...");
     for(int c=0; c<ncluster; c++){

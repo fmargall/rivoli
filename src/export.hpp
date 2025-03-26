@@ -23,6 +23,8 @@ void exportToMERL(
 	
 	const bool& parallelComputing) 
 {
+
+	LOG_INFO("Output file path name is: ", outputFilePath);
 	// Open the output file
 	std::ofstream outputFile(outputFilePath, std::ios::out | std::ios::binary);
 	if (outputFile.is_open())
