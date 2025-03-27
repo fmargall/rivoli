@@ -148,9 +148,9 @@ RuntimeConfig<FloatingPrecision>::RuntimeConfig(const MainConfig& mainConfig) : 
 
 	std::filesystem::path inputFilePath(m_inputFilePath);
 	
-	// The file that is about to be read comes from the Coupole
+	// The file that is read comes from the Coupole
 	if (inputFilePath.extension() == ".brdfSamples") {
-		// Initialinsing threads
+		// Initialising threads
 		int numberOfThreads = 1;
 		if (m_parallelComputing)
 			numberOfThreads = omp_get_max_threads();
@@ -269,7 +269,6 @@ RuntimeConfig<FloatingPrecision>::RuntimeConfig(const MainConfig& mainConfig) : 
 			logger.displayProgressBar(completedIterations.load(std::memory_order_relaxed), threadConfig.m_nbClusters + 1); // Strangest bug ever: if m_nbClusters is exactly 1041 (as it has already happened once), the progress bar does not appear. It won't happen for 1039, 1040 or 1042.
 			completedIterations.fetch_add(1, std::memory_order_relaxed);
 		}
-
 	}
 	
 	else {
