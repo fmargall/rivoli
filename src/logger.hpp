@@ -11,8 +11,9 @@ enum class LogLevel {
 	ERR      = 2,
 	WARN     = 3,
 	INFO     = 4,
-	DEBUG    = 5,
-	TRACE    = 6
+	VERBOSE  = 5,
+	DEBUG    = 6,
+	TRACE    = 7
 };
 
 struct Logger {
@@ -65,9 +66,10 @@ private:
 };
 
 // Creating macros for using the logger
-#define LOG(level, ...)   logger.Log(level, std::string(__FUNCTION__) + ": ", __VA_ARGS__)
+#define LOG(level, ...)   logger.Log(level             , std::string(__FUNCTION__) + ": ", __VA_ARGS__)
 #define LOG_TRACE(...)    logger.Log(LogLevel::TRACE   , std::string(__FUNCTION__) + ": ", __VA_ARGS__)
 #define LOG_DEBUG(...)    logger.Log(LogLevel::DEBUG   , std::string(__FUNCTION__) + ": ", __VA_ARGS__)
+#define LOG_VERBOSE(...)  logger.Log(LogLevel::VERBOSE , std::string(__FUNCTION__) + ": ", __VA_ARGS__)
 #define LOG_INFO(...)     logger.Log(LogLevel::INFO    , std::string(__FUNCTION__) + ": ", __VA_ARGS__)
 #define LOG_WARN(...)     logger.Log(LogLevel::WARN    , std::string(__FUNCTION__) + ": ", __VA_ARGS__)
 #define LOG_ERR(...)      logger.Log(LogLevel::ERR     , std::string(__FUNCTION__) + ": ", __VA_ARGS__)

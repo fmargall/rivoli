@@ -54,8 +54,8 @@ void initRBFCoeffsFile(
 	outputDataFile.write(reinterpret_cast<char*>(&dataType), sizeof(int));
 	
 	// Writing the number of dimensions
-	int nbDimensionsInt = static_cast<int>(runtimeConfig.m_nbDimensions);
-	outputDataFile.write(reinterpret_cast<char*>(&nbDimensionsInt), sizeof(int));
+	int nbDimensions = static_cast<int>(runtimeConfig.m_nbDimensions);
+	outputDataFile.write(reinterpret_cast<char*>(&nbDimensions), sizeof(int));
 
 	// Writing the parameterisation: SPH for spherical, RUS for Rusinkiewicz
 	std::string parameterisation = (runtimeConfig.m_inputParameterisation == "spherical") ? "SPH" : "RUS";
@@ -114,6 +114,9 @@ void initRBFCoeffsFile(
 	// Writing if unique location RBF mode
 	bool uniqueLocationRBF = runtimeConfig.m_uniqueLocationRBF;
 	outputDataFile.write(reinterpret_cast<char*>(&uniqueLocationRBF), sizeof(bool));
+	// Writing number of RBF per cluster
+	int nbRBF = runtimeConfig.m_coordinatesRBF.size();
+	outputDataFile.write(reinterpret_cast<char*>(&nbRBF), sizeof(int));
 
 	if (uniqueLocationRBF) {
 		// Writing the RBF coordinates
@@ -160,27 +163,112 @@ void writeToRBFCoeffs(
 	
 	const RuntimeConfig<FloatingPrecision>& runtimeConfig,
 	const std::vector<DataType>& inputData,
-	const size_t& clusterID = -1)
+	const size_t& clusterID = 0)
 {
 	// Lock mutex to protect the file access for writing
 	std::lock_guard<std::mutex> guard(writeFileMutex);
 
-	// Computing stream position
-	std::streampos streamPosition;
+	// Size of the header can vary depending on
+	// the kernel and its number of parameters.
+	std::streampos kernelNbParamsStreamPosition = 
+		5 *     sizeof(int)   + // 3: v.MAJOR.MINOR.PATCH, 1: dataType, 1: nbDimensions
+		4 * 4 * sizeof(char)  + // 1: parameterisation, 2: smoothingFunctionHemispheres, 1: kernel
+		                        //    /!\ 3 CHAR are encoded using 4 BYTES
+		1 *     sizeof(float) + // 1: regularisationParameter
+		2 *     sizeof(bool);   // 1: forceReciprocity, 1: forceBilateralSymmetry
+	int kernelNbParams = 0;
 
-	std::ofstream outputFile(outputFilePath, std::ios::in | std::ios::out | std::ios::binary);
+	std::fstream outputFile(outputFilePath, std::ios::in | std::ios::out | std::ios::binary);
 	if (outputFile.is_open()) {
-		outputFile.seekp(streamPosition);
-		// Writing the number of RBF only if needed
-		if (!(runtimeConfig.m_uniqueLocationRBF)) {
+		outputFile.seekp(kernelNbParamsStreamPosition);
 
+		// Reading the number of kernel parameters and moving after parameters
+		outputFile.read(reinterpret_cast<char*>(&kernelNbParams), sizeof(int));
+		std::streampos streamPosition = kernelNbParamsStreamPosition + static_cast<std::streamoff>(kernelNbParams * sizeof(float));
+
+		streamPosition +=
+			    sizeof(float) + // 1: threshold coefficient
+			2 * sizeof(int)   + // 1: number of clusters, 1: number of RBF per cluster
+			    sizeof(bool);   // 1: unique location RBF
+
+		if (runtimeConfig.m_uniqueLocationRBF)
+			// In unique location RBF mode, RBF coordinates are directly stored right after the header
+			streamPosition += runtimeConfig.m_nbDimensions * inputData.size() * sizeof(FloatingPrecision);
+		else
+			// In non-unique location RBF mode, we need to store the number of RBF for each cluster
+			streamPosition += clusterID * runtimeConfig.m_nbDimensions * inputData.size() * sizeof(FloatingPrecision);
+
+		// Adding to the stream position the location of the previous clusters
+		if (typeid(DataType) == typeid(FloatingPrecision))
+			// If DataType is FloatingPrecision it means that we are in scalar mode
+			// meaning that we do not store RGB values, but only one value per RBF.
+			streamPosition += clusterID * inputData.size() * sizeof(FloatingPrecision);
+		else
+			// If DataType is not FloatingPrecision, it means that we
+			// are in RGB mode meaning that we store 3 values per RBF
+			streamPosition += 3 * clusterID * inputData.size() * sizeof(FloatingPrecision);
+
+		outputFile.seekp(streamPosition);
+
+		// Writing the RBF location if needed
+		if (!(runtimeConfig.m_uniqueLocationRBF)) {
+			for (size_t i = 0; i < runtimeConfig.m_coordinatesRBF.size(); i++) {
+				const auto& coordinate = runtimeConfig.m_coordinatesRBF[i];
+				if      (typeid(*coordinate) == typeid(Coordinate2D<FloatingPrecision>)) {
+					const auto& coord = static_cast<Coordinate2D<FloatingPrecision>&>(*coordinate);
+					FloatingPrecision theta = coord.getTheta();
+					FloatingPrecision phi   = coord.getPhi();
+					outputFile.write(reinterpret_cast<const char*>(&theta), sizeof(FloatingPrecision));
+					outputFile.write(reinterpret_cast<const char*>(&phi)  , sizeof(FloatingPrecision));
+				}
+				else if (typeid(*coordinate) == typeid(Coordinate3DSpherical<FloatingPrecision>)) {
+					const auto& coord = static_cast<Coordinate3DSpherical<FloatingPrecision>&>(*coordinate);
+					FloatingPrecision thetaI   = coord.getThetaI();
+					FloatingPrecision thetaO   = coord.getThetaO();
+					FloatingPrecision deltaPhi = coord.getDeltaPhi();
+					outputFile.write(reinterpret_cast<const char*>(&thetaI)  , sizeof(FloatingPrecision));
+					outputFile.write(reinterpret_cast<const char*>(&thetaO)  , sizeof(FloatingPrecision));
+					outputFile.write(reinterpret_cast<const char*>(&deltaPhi), sizeof(FloatingPrecision));
+				}
+				else if (typeid(*coordinate) == typeid(Coordinate3DRusinkiewicz<FloatingPrecision>)) {
+					const auto& coord = static_cast<Coordinate3DRusinkiewicz<FloatingPrecision>&>(*coordinate);
+					FloatingPrecision thetaH = coord.getThetaH();
+					FloatingPrecision thetaD = coord.getThetaD();
+					FloatingPrecision phiD   = coord.getPhiD();
+					outputFile.write(reinterpret_cast<const char*>(&thetaH), sizeof(FloatingPrecision));
+					outputFile.write(reinterpret_cast<const char*>(&thetaD), sizeof(FloatingPrecision));
+					outputFile.write(reinterpret_cast<const char*>(&phiD)  , sizeof(FloatingPrecision));
+				}
+				else
+					LOG_CRITICAL("Invalid coordinate type.");
+			}
 		}
-		// Writing RBF locations if needed
-		// 
-		// Writing RBF coefficients
-		
-		// 
-		//outputFile.write(inputData.c_str(), inputData.size());
+
+		// Writing the RBF weights
+		for (size_t i = 0; i < inputData.size(); i++) {
+			if (typeid(DataType) == typeid(FloatingPrecision)) {
+				// We are in scalar mode, only one value is stored
+				const FloatingPrecision& value = reinterpret_cast<const FloatingPrecision&>(inputData[i]);
+				outputFile.write(reinterpret_cast<const char*>(&value), sizeof(FloatingPrecision));
+			}
+			else if (typeid(DataType) == typeid(glm::vec3)) {
+				// We are in RGB mode, three values are stored
+				const glm::vec3& value = reinterpret_cast<const glm::vec3&>(inputData[i]);
+				outputFile.write(reinterpret_cast<const char*>(&value.r), sizeof(FloatingPrecision));
+				outputFile.write(reinterpret_cast<const char*>(&value.g), sizeof(FloatingPrecision));
+				outputFile.write(reinterpret_cast<const char*>(&value.b), sizeof(FloatingPrecision));
+			}
+			else if (typeid(DataType) == typeid(glm::dvec3)) {
+				// We are in RGB mode, three values are stored
+				const glm::dvec3& value = reinterpret_cast<const glm::dvec3&>(inputData[i]);
+				outputFile.write(reinterpret_cast<const char*>(&value.r), sizeof(FloatingPrecision));
+				outputFile.write(reinterpret_cast<const char*>(&value.g), sizeof(FloatingPrecision));
+				outputFile.write(reinterpret_cast<const char*>(&value.b), sizeof(FloatingPrecision));
+			}
+			else
+				LOG_CRITICAL("Invalid data type.");
+		}
+
 		outputFile.close();
 	}
 	else

@@ -28,7 +28,7 @@ set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT R
 target_include_directories(RIVOLI.App PRIVATE ext/glm ext/eigen)
 
 # Add second project for the header only test
-add_executable(RIVOLI.HeaderOnly src/headerOnly.cpp src/rivoli.hpp
+add_executable(RIVOLI.HeaderOnly src/headerOnly.cpp src/loader.hpp
                src/coordinate.hpp src/coordinateConversion.hpp
                src/logger.hpp src/logger.cpp
                src/topology.hpp)

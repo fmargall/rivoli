@@ -37,6 +37,8 @@ void Logger::Log(LogLevel messageLevel, const char* message) {
 			std::cout << "[WARNING]  " << currentTimeChar << elapsedTimeString << message << std::endl; break;
 		case LogLevel::INFO:
 			std::cout << "[INFO]     " << currentTimeChar << elapsedTimeString << message << std::endl; break;
+		case LogLevel::VERBOSE:
+			std::cout << "[VERBOSE]  " << currentTimeChar << elapsedTimeString << message << std::endl; break;
 		case LogLevel::DEBUG:
 			std::cout << "[DEBUG]    " << currentTimeChar << elapsedTimeString << message << std::endl; break;
 		case LogLevel::TRACE:

@@ -67,14 +67,15 @@ public:
 	 * @note Can be used either to just read the data of the file only,
 			 or to instantiate the model.
 	 *
-	 * @param filePath: [string] Absolute or relative path to the file.
+	 * @param filePath : [string] Absolute or relative path to the file.
 	 *                  The file must have the type format '.RBFCoeff'
-	 * @param verbose : [bool] If true, prints the content of the file.
+	 * @param verbose  : [bool] If true, prints the content of the file.
+	 * @param clusterID: [size_t] ID of the cluster to read. Default is 0.
 	 *
 	 * @return [RBFModel] object containing the parameters of the model.
 	 *         Can be then used to compute the BRDF.
 	 */
-	static RBFModel readFile(const std::string& filePath, const bool verbose = false) {
+	static RBFModel readFile(const std::string& filePath, const bool verbose = false, const size_t& clusterID = 0) {
 		// Initialising model
 		RBFModel model;
 
@@ -102,7 +103,7 @@ public:
 
 		file.read(reinterpret_cast<char*>(&dataType), sizeof(int));
 		std::string floatPrecision, dataTypeString;
-		if (dataType == 0) {
+		if      (dataType == 0) {
 			floatPrecision = "single";
 			dataTypeString = "scalar";
 		}
@@ -112,6 +113,10 @@ public:
 		}
 		else if (dataType == 2) {
 			floatPrecision = "single";
+			dataTypeString = "RGB";
+		}
+		else if (dataType == 3) {
+			floatPrecision = "double";
 			dataTypeString = "RGB";
 		}
 		else
@@ -241,10 +246,16 @@ public:
 		int nbClusters;
 		file.read(reinterpret_cast<char*>(&nbClusters), sizeof(int));
 		if (nbClusters == 0) nbClusters++;
-		if (nbClusters >= 0)
-			LOG_INFO("Number of clusters: ", nbClusters);
-		else
+		if      (clusterID > nbClusters + 1)
+			LOG_CRITICAL("Invalid cluster required: ", clusterID, ". Only ", nbClusters, "clusters in file ", filePath);
+		else if (nbClusters <= 0)
 			LOG_CRITICAL("Invalid number of clusters (must be >= 0): ", nbClusters);
+		else
+			LOG_INFO("Number of clusters: ", nbClusters);
+
+		bool uniqueLocationRBF;
+		file.read(reinterpret_cast<char*>(&uniqueLocationRBF), sizeof(bool));
+		LOG_INFO("Unique location RBF: ", uniqueLocationRBF ? "true" : "false");
 
 		file.read(reinterpret_cast<char*>(&model.m_nbRBF), sizeof(int));
 		if (model.m_nbRBF > 0)
@@ -254,6 +265,11 @@ public:
 
 		// Reading of the header of the file over
 		// Reading and saving the RBF coordinates
+		if (!(uniqueLocationRBF)) {
+			std::streampos deltaStreamPosition = dimension * clusterID * model.m_nbRBF * sizeof(FloatingPrecision_t<ReturnType>);
+			file.seekg(deltaStreamPosition, std::ios::cur);
+		}
+
 		for (size_t i = 0; i < model.m_nbRBF; i++) {
 			if (file.eof()) // Check if the file has ended prematurely
 				LOG_CRITICAL("Reached EOF unexpectedly at coordinate number ", i);
@@ -284,12 +300,10 @@ public:
 		}
 
 		// Reading and saving the RBF weights
-		for (size_t clusterID = 0; clusterID < nbClusters; clusterID++) {
-			for (size_t rbfID = 0; rbfID < model.m_nbRBF; rbfID++) {
-				ReturnType weight;
-				file.read(reinterpret_cast<char*>(&weight), sizeof(ReturnType));
-				model.m_weights.push_back(weight);
-			}
+		for (size_t rbfID = 0; rbfID < model.m_nbRBF; rbfID++) {
+			ReturnType weight;
+			file.read(reinterpret_cast<char*>(&weight), sizeof(ReturnType));
+			model.m_weights.push_back(weight);
 		}
 
 		return model;
