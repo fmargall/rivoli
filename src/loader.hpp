@@ -121,8 +121,27 @@ public:
 		}
 		else
 			LOG_CRITICAL("Invalid data type : ", dataType);
-		
-		LOG_INFO("Data saved as ", dataTypeString, " in ", floatPrecision, " precision");
+
+		// Checking if the user has chosen the good instance of RBFModel
+		if ((typeid(ReturnType) == typeid(float)      && dataType == 0) ||
+			(typeid(ReturnType) == typeid(double)     && dataType == 1) ||
+			(typeid(ReturnType) == typeid(glm::vec3)  && dataType == 2) ||
+			(typeid(ReturnType) == typeid(glm::dvec3) && dataType == 3))
+			LOG_INFO("Data saved as ", dataTypeString, " in ", floatPrecision, " precision");
+		else {
+			LOG_WARN("Wrong instanciation of RBFModel. Input data is ", 
+				     dataTypeString, " ", floatPrecision, " precision.");
+			if      (dataType == 0)
+				LOG_CRITICAL("Please declare it as RBFModelf model = RBFModel<float>::readFile(...)");
+			else if (dataType == 1)
+				LOG_CRITICAL("Please declare it as RBFModeld model = RBFModel<double>::readFile(...)");
+			else if (dataType == 2)
+				LOG_CRITICAL("Please declare it as RBFModelvec3 model = RBFModel<glm::vec3>::readFile(...)");
+			else if (dataType == 3)
+				LOG_CRITICAL("Please declare it as RBFModeldvec3 model = RBFModel<glm::dvec3>::readFile(...)");
+			else
+				LOG_CRITICAL("The input type is currently not supported.");
+		}
 
 		file.read(reinterpret_cast<char*>(&dimension), sizeof(int));
 		if (dimension >= 2 && dimension <= 4)
