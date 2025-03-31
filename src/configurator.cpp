@@ -155,6 +155,9 @@ RuntimeConfig<FloatingPrecision>::RuntimeConfig(const MainConfig& mainConfig) : 
 		if (m_parallelComputing)
 			numberOfThreads = omp_get_max_threads();
 
+		// In the Coupole, RBF location will never be fixed
+		m_uniqueLocationRBF = false;
+
 		BrdfSamplesCoupole brdfSamples;
 		m_nbClusters = brdfSamples.prepareSparseRead(inputFilePath.string(), -1, false, numberOfThreads);
 		LOG_DEBUG("File ", inputFilePath.string(), " loaded.");
@@ -214,6 +217,8 @@ RuntimeConfig<FloatingPrecision>::RuntimeConfig(const MainConfig& mainConfig) : 
 			size_t threadID = omp_get_thread_num();
 			brdfSamples.readOneCluster(clusterID, threadID);
 
+			// In the coupole, thetaO does not change and is fixed
+			FloatingPrecision thetaI = static_cast<FloatingPrecision>(0.);
 			// Computing RGB interpolators
 			threadConfig.m_coordinates.clear(); threadConfig.m_values.clear(); // Block for red channel interpolator
 			std::vector<glm::vec2> woVector;
@@ -222,34 +227,56 @@ RuntimeConfig<FloatingPrecision>::RuntimeConfig(const MainConfig& mainConfig) : 
 			brdfSamples.getData(threadID, 0, woVector, wiVector, brdfVector);
 			for (size_t sampleID = 0; sampleID < woVector.size(); sampleID++) {
 				threadConfig.m_coordinates.push_back(std::make_unique<Coordinate3DSpherical<FloatingPrecision>>(
-					static_cast<FloatingPrecision>(wiVector[sampleID].x),
 					static_cast<FloatingPrecision>(woVector[sampleID].x),
+					static_cast<FloatingPrecision>(wiVector[sampleID].x),
 					static_cast<FloatingPrecision>(wiVector[sampleID].y)));
 				threadConfig.m_values.push_back(static_cast<FloatingPrecision>(brdfVector[sampleID]));
+				thetaI += static_cast<FloatingPrecision>(woVector[sampleID].x);
+			}
+			thetaI /= static_cast<float>(woVector.size());
+			for (auto& coordinate : threadConfig.m_coordinatesRBF) {
+				auto sphericalCoordinate = dynamic_cast<Coordinate3DSpherical<FloatingPrecision>*>(coordinate.get());
+				sphericalCoordinate->setThetaI(thetaI);
 			}
 			RBFInterpolator<FloatingPrecision> interpolatorR(threadConfig);
 
+			// In the coupole, thetaO does not change and is fixed
+			thetaI = static_cast<FloatingPrecision>(0.);
 			threadConfig.m_coordinates.clear(); threadConfig.m_values.clear(); // Block for green channel interpolator
 			woVector.clear(); wiVector.clear(); brdfVector.clear();
 			brdfSamples.getData(threadID, 1, woVector, wiVector, brdfVector);
 			for (size_t sampleID = 0; sampleID < woVector.size(); sampleID++) {
 				threadConfig.m_coordinates.push_back(std::make_unique<Coordinate3DSpherical<FloatingPrecision>>(
-					static_cast<FloatingPrecision>(wiVector[sampleID].x),
 					static_cast<FloatingPrecision>(woVector[sampleID].x),
+					static_cast<FloatingPrecision>(wiVector[sampleID].x),
 					static_cast<FloatingPrecision>(wiVector[sampleID].y)));
 				threadConfig.m_values.push_back(static_cast<FloatingPrecision>(brdfVector[sampleID]));
+				thetaI += static_cast<FloatingPrecision>(woVector[sampleID].x);
+			}
+			thetaI /= static_cast<float>(woVector.size());
+			for (auto& coordinate : threadConfig.m_coordinatesRBF) {
+				auto sphericalCoordinate = dynamic_cast<Coordinate3DSpherical<FloatingPrecision>*>(coordinate.get());
+				sphericalCoordinate->setThetaI(thetaI);
 			}
 			RBFInterpolator<FloatingPrecision> interpolatorG(threadConfig);
 
+			// In the coupole, thetaO does not change and is fixed
+			thetaI = static_cast<FloatingPrecision>(0.);
 			threadConfig.m_coordinates.clear(); threadConfig.m_values.clear(); // Block for blue channel interpolator
 			woVector.clear(); wiVector.clear(); brdfVector.clear();
 			brdfSamples.getData(threadID, 2, woVector, wiVector, brdfVector);
 			for (size_t sampleID = 0; sampleID < woVector.size(); sampleID++) {
 				threadConfig.m_coordinates.push_back(std::make_unique<Coordinate3DSpherical<FloatingPrecision>>(
-					static_cast<FloatingPrecision>(wiVector[sampleID].x),
 					static_cast<FloatingPrecision>(woVector[sampleID].x),
+					static_cast<FloatingPrecision>(wiVector[sampleID].x),
 					static_cast<FloatingPrecision>(wiVector[sampleID].y)));
 				threadConfig.m_values.push_back(static_cast<FloatingPrecision>(brdfVector[sampleID]));
+				thetaI += static_cast<FloatingPrecision>(woVector[sampleID].x);
+			}
+			thetaI /= static_cast<float>(woVector.size());
+			for (auto& coordinate : threadConfig.m_coordinatesRBF) {
+				auto sphericalCoordinate = dynamic_cast<Coordinate3DSpherical<FloatingPrecision>*>(coordinate.get());
+				sphericalCoordinate->setThetaI(thetaI);
 			}
 			RBFInterpolator<FloatingPrecision> interpolatorB(threadConfig);
 

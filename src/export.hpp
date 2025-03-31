@@ -32,12 +32,12 @@ void initRBFCoeffsFile(
 
 	const bool& isRGB
 ) {
-	// Opening the output .RBFCoeffs file
+	// Opening the output .RBFCoeffs file. If it exists, it will be overwritten.
 	std::ofstream outputDataFile(outputFilePath, std::ios::binary | std::ios::trunc);
 	if (outputDataFile.is_open())
 		LOG_DEBUG("Output file ", outputFilePath, " opened successfully.");
 	else
-		LOG_CRITICAL("Output file output.RBFCoeffs could not be opened.");
+		LOG_CRITICAL("Output file ", outputFilePath, " could not be opened.");
 
 	// Writing the version of the software
 	int versionMajor = 0, versionMinor = 1, versionPatch = 0;
@@ -188,7 +188,7 @@ void writeToRBFCoeffs(
 
 		streamPosition +=
 			    sizeof(float) + // 1: threshold coefficient
-			2 * sizeof(int)   + // 1: number of clusters, 1: number of RBF per cluster
+			3 * sizeof(int)   + // 1: number of kernel parameters, 1: number of clusters, 1: number of RBF per cluster
 			    sizeof(bool);   // 1: unique location RBF
 
 		if (runtimeConfig.m_uniqueLocationRBF)

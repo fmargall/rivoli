@@ -81,7 +81,7 @@ public:
 
 		// Setting the logger level
 		if (verbose)
-			logger.level = LogLevel::INFO;
+			logger.level = LogLevel::VERBOSE;
 		else
 			logger.level = LogLevel::WARN;
 
@@ -285,7 +285,11 @@ public:
 		// Reading of the header of the file over
 		// Reading and saving the RBF coordinates
 		if (!(uniqueLocationRBF)) {
+			// Moving the cursor to pass RBF coordinates
 			std::streampos deltaStreamPosition = dimension * clusterID * model.m_nbRBF * sizeof(FloatingPrecision_t<ReturnType>);
+			file.seekg(deltaStreamPosition, std::ios::cur);
+			// Moving the cursor to pass RBF weights
+			deltaStreamPosition = clusterID * model.m_nbRBF * sizeof(ReturnType);
 			file.seekg(deltaStreamPosition, std::ios::cur);
 		}
 
@@ -316,6 +320,12 @@ public:
 			}
 			else
 				LOG_CRITICAL("Invalid number of dimensions: ", dimension);
+		}
+
+		if (uniqueLocationRBF) {
+			// Moving the cursor to pass RBF Weights
+			std::streampos deltaStreamPosition = clusterID * model.m_nbRBF * sizeof(ReturnType);
+			file.seekg(deltaStreamPosition, std::ios::cur);
 		}
 
 		// Reading and saving the RBF weights

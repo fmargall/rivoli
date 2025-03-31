@@ -67,6 +67,10 @@ public:
 		return Coordinate3DSpherical(m_thetaO, m_thetaI, glm::two_pi<FloatingPrecision>() - m_deltaPhi);
 	}
 
+	void setThetaI  (const FloatingPrecision& thetaI  ) { m_thetaI   = thetaI; }
+	void setThetaO  (const FloatingPrecision& thetaO  ) { m_thetaO   = thetaO; }
+	void setDeltaPhi(const FloatingPrecision& deltaPhi) { m_deltaPhi = deltaPhi; }
+
 private:
 	FloatingPrecision m_thetaI, m_thetaO, m_deltaPhi;
 

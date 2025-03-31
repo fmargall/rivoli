@@ -36,6 +36,7 @@ bld/
 [Pp]ython/
 
 # Data used by the software
+*.zip
 inputData.txt
 resources/configOld.ini
 *.brdfSamples
