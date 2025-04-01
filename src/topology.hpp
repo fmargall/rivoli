@@ -347,10 +347,57 @@ public:
 	}
 
 	FloatingPrecision getDistance(const Coordinate& coordinateOne,
-								  const Coordinate& coordinateTwo) const {
-		const auto& coordinateOne3DSph = dynamic_cast<const Coordinate3DSpherical<FloatingPrecision>&>(coordinateOne);
-		const auto& coordinateTwo3DSph = dynamic_cast<const Coordinate3DSpherical<FloatingPrecision>&>(coordinateTwo);
-		return getDistance(coordinateOne3DSph, coordinateTwo3DSph);
+		                          const Coordinate& coordinateTwo) const {
+		try {
+			// The two given coordinates are of type Coordinate3DSpherical
+			const auto& coordinateOne3DSph = dynamic_cast<const Coordinate3DSpherical<FloatingPrecision>&>(coordinateOne);
+			const auto& coordinateTwo3DSph = dynamic_cast<const Coordinate3DSpherical<FloatingPrecision>&>(coordinateTwo);
+			return getDistance(coordinateOne3DSph, coordinateTwo3DSph);
+		}
+		catch (const std::bad_cast&) {
+			try {
+				// First coordinate is of type GrazingCoordinate, second is Coordinate3DSpherical
+				const auto& coordinateOneGrazing = dynamic_cast<const GrazingCoordinate&>(coordinateOne);
+				const auto& coordinateTwo3DSph   = dynamic_cast<const Coordinate3DSpherical<FloatingPrecision>&>(coordinateTwo);
+				return getDistance(coordinateOneGrazing, coordinateTwo3DSph);
+			}
+			catch (const std::bad_cast&) {
+				// First coordinate is of type Coordinate3DSpherical, second is GrazingCoordinate
+				const auto& coordinateOne3DSph   = dynamic_cast<const Coordinate3DSpherical<FloatingPrecision>&>(coordinateOne);
+				const auto& coordinateTwoGrazing = dynamic_cast<const GrazingCoordinate&>(coordinateTwo);
+				return getDistance(coordinateOne3DSph, coordinateTwoGrazing);
+			}
+		}
+	}
+
+	FloatingPrecision getDistance(const Coordinate3DSpherical<FloatingPrecision>& coordinateOne,
+		                          const GrazingCoordinate&                        coordinateTwoGrazing) const {
+		return getDistance(coordinateTwoGrazing, coordinateOne);
+	}
+
+	FloatingPrecision getDistance(const GrazingCoordinate&                        coordinateOneGrazing,
+		                          const Coordinate3DSpherical<FloatingPrecision>& coordinateTwo) const {
+		if (coordinateOneGrazing.getHemisphere() == 1) {
+			FloatingPrecision thetaI   = glm::half_pi<FloatingPrecision>();
+			FloatingPrecision thetaO   = coordinateTwo.getThetaO();
+			FloatingPrecision deltaPhi = coordinateTwo.getDeltaPhi();
+
+			Coordinate3DSpherical<FloatingPrecision> coordinateTwoProjection = Coordinate3DSpherical<FloatingPrecision>(thetaI, thetaO, deltaPhi);
+
+			return getDistance(coordinateTwoProjection, coordinateTwo);
+		}
+		else if (coordinateOneGrazing.getHemisphere() == 2) {
+			FloatingPrecision thetaI   = coordinateTwo.getThetaI();
+			FloatingPrecision thetaO   = glm::half_pi<FloatingPrecision>();
+			FloatingPrecision deltaPhi = coordinateTwo.getDeltaPhi();
+
+			Coordinate3DSpherical<FloatingPrecision> coordinateTwoProjection = Coordinate3DSpherical<FloatingPrecision>(thetaI, thetaO, deltaPhi);
+
+			return getDistance(coordinateTwoProjection, coordinateTwo);
+		}
+		else
+			LOG_CRITICAL("Grazing coordinate can be set only for hemisphere 1 or 2 in 3D topology"
+				         ". Selected hemisphere is: ", coordinateOneGrazing.getHemisphere());
 	}
 
 	FloatingPrecision getDistance(const Coordinate3DSpherical<FloatingPrecision>& coordinateOne,
