@@ -65,10 +65,46 @@ public:
 	}
 
 	FloatingPrecision getDistance(const Coordinate& coordinateOne,
-								  const Coordinate& coordinateTwo) const override {
-		const auto& coordinateOne2D = dynamic_cast<const Coordinate2D<FloatingPrecision>&>(coordinateOne);
-		const auto& coordinateTwo2D = dynamic_cast<const Coordinate2D<FloatingPrecision>&>(coordinateTwo);
-		return getDistance(coordinateOne2D, coordinateTwo2D);;
+		                          const Coordinate& coordinateTwo) const override {
+		try {
+			// The two given coordinates are of type Coordinate2D
+			const auto& coordinateOne2D = dynamic_cast<const Coordinate2D<FloatingPrecision>&>(coordinateOne);
+			const auto& coordinateTwo2D = dynamic_cast<const Coordinate2D<FloatingPrecision>&>(coordinateTwo);
+			return getDistance(coordinateOne2D, coordinateTwo2D);
+		}
+		catch (const std::bad_cast&) {
+			try {
+				// First coordinate is of type GrazingCoordinate, second is Coordinate2D
+				const auto& coordinateOneGrazing = dynamic_cast<const GrazingCoordinate&>(coordinateOne);
+				const auto& coordinateTwo2D      = dynamic_cast<const Coordinate2D<FloatingPrecision>&>(coordinateTwo);
+				return getDistance(coordinateOneGrazing, coordinateTwo2D);
+			}
+			catch (const std::bad_cast&) {
+				// First coordinate is of type Coordinate2D, second is GrazingCoordinate
+				const auto& coordinateOne2D      = dynamic_cast<const Coordinate2D<FloatingPrecision>&>(coordinateOne);
+				const auto& coordinateTwoGrazing = dynamic_cast<const GrazingCoordinate&>(coordinateTwo);
+				return getDistance(coordinateOne2D, coordinateTwoGrazing);
+			}
+		}
+	}
+
+	FloatingPrecision getDistance(const Coordinate2D<FloatingPrecision>& coordinateOne,
+								  const GrazingCoordinate&               coordinateTwoGrazing) const {
+		return getDistance(coordinateTwoGrazing, coordinateOne);
+	}
+
+	FloatingPrecision getDistance(const GrazingCoordinate&               coordinateOneGrazing,
+								  const Coordinate2D<FloatingPrecision>& coordinateTwo) const {
+		if (coordinateOneGrazing.getHemisphere() != 1)
+			LOG_CRITICAL("Grazing coordinate can be set only for hemisphere 1 in 2D topology"
+				         ". Selected hemisphere is: ", coordinateOneGrazing.getHemisphere());
+
+		FloatingPrecision theta = glm::half_pi<FloatingPrecision>();
+		FloatingPrecision phi = coordinateTwo.getPhi();
+
+		Coordinate2D<FloatingPrecision> coordinateTwoProjection = Coordinate2D<FloatingPrecision>(theta, phi);
+
+		return getDistance(coordinateTwoProjection, coordinateTwo);
 	}
 
 	FloatingPrecision getDistance(const Coordinate2D<FloatingPrecision>& coordinateOne, 
