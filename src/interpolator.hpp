@@ -25,6 +25,8 @@ private:
 	std::unique_ptr<Topology<FloatingPrecision>> m_topology;
 
 	std::function<FloatingPrecision(FloatingPrecision)> m_kernel;
+	std::function<FloatingPrecision(FloatingPrecision)> m_grazingAngleFctHemisphereOne;
+	std::function<FloatingPrecision(FloatingPrecision)> m_grazingAngleFctHemisphereTwo;
 
 	std::vector<FloatingPrecision> m_coefficients;
 	std::vector<std::unique_ptr<Coordinate>> m_coordinates;
