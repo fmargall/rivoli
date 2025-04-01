@@ -28,6 +28,9 @@ RBFInterpolator<FloatingPrecision>::RBFInterpolator(RuntimeConfig<FloatingPrecis
 	else
 		LOG_CRITICAL("Invalid grazing angle function for hemisphere one: " 
 			+ runtimeConfig.m_forceGrazingAnglesNullFunctionHemisphereOne);
+	LOG_VERBOSE("Grazing angle function for hemisphere one initialised to " 
+		    + runtimeConfig.m_forceGrazingAnglesNullFunctionHemisphereOne);
+
 	// Initialising grazing angle function for hemisphere two
 	if      (runtimeConfig.m_forceGrazingAnglesNullFunctionHemisphereTwo == "none")
 		m_grazingAngleFctHemisphereTwo = [](FloatingPrecision arg) { return static_cast<FloatingPrecision>(1.); };
@@ -38,14 +41,21 @@ RBFInterpolator<FloatingPrecision>::RBFInterpolator(RuntimeConfig<FloatingPrecis
 	else
 		LOG_CRITICAL("Invalid grazing angle function for hemisphere two: " 
 			+ runtimeConfig.m_forceGrazingAnglesNullFunctionHemisphereTwo);
+	LOG_VERBOSE("Grazing angle function for hemisphere two initialised to "
+		    + runtimeConfig.m_forceGrazingAnglesNullFunctionHemisphereTwo);
 
 	// Adding grazing coordinates if needed
-	if (runtimeConfig.m_forceGrazingAnglesNullFunctionHemisphereOne != "none")
+	if (runtimeConfig.m_forceGrazingAnglesNullFunctionHemisphereOne != "none" && runtimeConfig.m_coordinates.size() != 0) {
+		runtimeConfig.m_coefficients.push_back(static_cast<FloatingPrecision>(0));
 		runtimeConfig.m_coordinates.push_back(std::make_unique<GrazingCoordinate>(1));
-	if (runtimeConfig.m_forceGrazingAnglesNullFunctionHemisphereTwo != "none") {
+		LOG_VERBOSE("Grazing coordinate over hermisphere 1 added to the input data.");
+	}
+	if (runtimeConfig.m_forceGrazingAnglesNullFunctionHemisphereTwo != "none" && runtimeConfig.m_coordinates.size() != 0) {
 		if (runtimeConfig.m_topology->getDimension() == 2)
 			LOG_CRITICAL("Grazing coordinates can be set only for topologies > 2D.");
+		runtimeConfig.m_coefficients.push_back(static_cast<FloatingPrecision>(0));
 		runtimeConfig.m_coordinates.push_back(std::make_unique<GrazingCoordinate>(2));
+		LOG_VERBOSE("Grazing coordinate over hermisphere 2 added to the input data.");
 	}
 
 	// Initialising the RBF kernel matrix
@@ -99,7 +109,42 @@ RBFInterpolator<FloatingPrecision>::RBFInterpolator(RuntimeConfig<FloatingPrecis
 	// Initialisation of the result
 	Eigen::VectorXd resultVector(runtimeConfig.m_coordinates.size());
 	for (size_t i = 0; i < runtimeConfig.m_coordinates.size(); i++) {
+		// Adding the non negative correction over the input values:
 		resultVector(i) = glm::pow(runtimeConfig.m_values[i], power);
+		// Adding grazing angle correction for the first hemisphere:
+		if (runtimeConfig.m_forceGrazingAnglesNullFunctionHemisphereOne != "none") {
+			if      (typeid(*runtimeConfig.m_coordinates[i]) == typeid(Coordinate2D<FloatingPrecision>)) {
+				Coordinate2D<FloatingPrecision>& coord = dynamic_cast<Coordinate2D<FloatingPrecision>&>(*runtimeConfig.m_coordinates[i]);
+				resultVector(i) *= m_grazingAngleFctHemisphereOne(coord.getTheta());
+			}
+			else if (typeid(*runtimeConfig.m_coordinates[i]) == typeid(Coordinate3DSpherical<FloatingPrecision>)) {
+				Coordinate3DSpherical<FloatingPrecision>& coord = dynamic_cast<Coordinate3DSpherical<FloatingPrecision>&>(*runtimeConfig.m_coordinates[i]);
+				resultVector(i) *= m_grazingAngleFctHemisphereOne(coord.getThetaI());
+			}
+			else if (typeid(*runtimeConfig.m_coordinates[i]) == typeid(Coordinate3DRusinkiewicz<FloatingPrecision>)) {
+				Coordinate3DRusinkiewicz<FloatingPrecision>& coord = dynamic_cast<Coordinate3DRusinkiewicz<FloatingPrecision>&>(*runtimeConfig.m_coordinates[i]);
+				resultVector(i) *= m_grazingAngleFctHemisphereOne(coord.getThetaH());
+			}
+			else if (typeid(*runtimeConfig.m_coordinates[i]) == typeid(GrazingCoordinate))
+				resultVector(i) = static_cast<FloatingPrecision>(0);
+			else
+				LOG_CRITICAL("Unsupported Coordinate type for hemisphere one grazing angle correction.");
+		}
+		// Adding grazing angle correction for the second hemisphere:
+		if (runtimeConfig.m_forceGrazingAnglesNullFunctionHemisphereTwo != "none") {
+			if      (typeid(*runtimeConfig.m_coordinates[i]) == typeid(Coordinate3DSpherical<FloatingPrecision>)) {
+				Coordinate3DSpherical<FloatingPrecision>& coord = dynamic_cast<Coordinate3DSpherical<FloatingPrecision>&>(*runtimeConfig.m_coordinates[i]);
+				resultVector(i) *= m_grazingAngleFctHemisphereTwo(coord.getThetaO());
+			}
+			else if (typeid(*runtimeConfig.m_coordinates[i]) == typeid(Coordinate3DRusinkiewicz<FloatingPrecision>)) {
+				Coordinate3DRusinkiewicz<FloatingPrecision>& coord = dynamic_cast<Coordinate3DRusinkiewicz<FloatingPrecision>&>(*runtimeConfig.m_coordinates[i]);
+				resultVector(i) *= m_grazingAngleFctHemisphereTwo(coord.getThetaD());
+			}
+			else if (typeid(*runtimeConfig.m_coordinates[i]) == typeid(GrazingCoordinate))
+				resultVector(i) = static_cast<FloatingPrecision>(0);
+			else
+				LOG_CRITICAL("Unsupported Coordinate type for hemisphere two grazing angle correction.");
+		}
 	}
 
 	if (runtimeConfig.m_locationRBFFilePath == "none") {
@@ -167,6 +212,27 @@ FloatingPrecision RBFInterpolator<FloatingPrecision>::interpolate(const std::uni
 		FloatingPrecision distance = m_topology->getDistance(*m_coordinates[i], *coordinate);
 		result += m_coefficients[i] * m_kernel(distance);
 	}
+
+	// Grazing angle correction made if required
+	if (typeid(*coordinate) == typeid(Coordinate2D<FloatingPrecision>)) {
+		Coordinate2D<FloatingPrecision>& coord = dynamic_cast<Coordinate2D<FloatingPrecision>&>(*coordinate);
+		result /= m_grazingAngleFctHemisphereOne(coord.getTheta());
+	}
+	else if (typeid(*coordinate) == typeid(Coordinate3DSpherical<FloatingPrecision>)) {
+		Coordinate3DSpherical<FloatingPrecision>& coord = dynamic_cast<Coordinate3DSpherical<FloatingPrecision>&>(*coordinate);
+		result /= m_grazingAngleFctHemisphereOne(coord.getThetaI());
+		result /= m_grazingAngleFctHemisphereTwo(coord.getThetaO());
+	}
+	else if (typeid(*coordinate) == typeid(Coordinate3DRusinkiewicz<FloatingPrecision>)) {
+		Coordinate3DRusinkiewicz<FloatingPrecision>& coord = dynamic_cast<Coordinate3DRusinkiewicz<FloatingPrecision>&>(*coordinate);
+		result /= m_grazingAngleFctHemisphereOne(coord.getThetaH());
+		result /= m_grazingAngleFctHemisphereTwo(coord.getThetaD());
+	}
+	else if (typeid(*coordinate) == typeid(GrazingCoordinate)) {
+		result = static_cast<FloatingPrecision>(0);
+	}
+	else
+		LOG_CRITICAL("Unsupported Coordinate type.");
 
 	// Non-negativity correction made if required
 	return glm::pow(result, m_nonNegativityCorrectionParameter);

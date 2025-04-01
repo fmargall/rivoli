@@ -70,6 +70,18 @@ MainConfig::MainConfig(const std::string& configFilePath) {
 				else
 					breaker = true;
 			}
+			else if (key == "grazingAnglesFctHemisphereOne") {
+				if (value == "none" || value == "cosine" || value == "linear")
+					m_forceGrazingAnglesNullFunctionHemisphereOne = value;
+				else
+					breaker = true;
+			}
+			else if (key == "grazingAnglesFctHemisphereTwo") {
+				if (value == "none" || value == "cosine" || value == "linear")
+					m_forceGrazingAnglesNullFunctionHemisphereTwo = value;
+				else
+					breaker = true;
+			}
 			else if (key == "forceBilateralSymmetry") {
 				if (value == "true")
 					m_forceBilateralSymmetry = true;
@@ -119,7 +131,7 @@ MainConfig::MainConfig(const std::string& configFilePath) {
 			if   (breaker)  // Logging the errors and stopping the configuration
 				LOG_CRITICAL("Invalid value for key ", key, " in configuration file: ", value);
 			if (!(warning)) // Logging the modifications
-				LOG_DEBUG(key, " set to: ", value);
+				LOG_VERBOSE(key, " set to: ", value);
 
 		}
 
