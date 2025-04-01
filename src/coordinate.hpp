@@ -15,6 +15,20 @@ public:
 
 };
 
+class GrazingCoordinate : public Coordinate {
+public:
+	GrazingCoordinate(const size_t& hemisphere) : hemisphere(hemisphere) {}
+
+	std::unique_ptr<Coordinate> clone() const override {
+		return std::make_unique<GrazingCoordinate>(*this);
+	}
+
+	size_t getHemisphere() const { return hemisphere; }
+
+private:
+	const size_t hemisphere;
+};
+
 template <typename FloatingPrecision>
 class Coordinate2D : public Coordinate {
 public:
