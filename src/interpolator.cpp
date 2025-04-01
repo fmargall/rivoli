@@ -39,6 +39,15 @@ RBFInterpolator<FloatingPrecision>::RBFInterpolator(RuntimeConfig<FloatingPrecis
 		LOG_CRITICAL("Invalid grazing angle function for hemisphere two: " 
 			+ runtimeConfig.m_forceGrazingAnglesNullFunctionHemisphereTwo);
 
+	// Adding grazing coordinates if needed
+	if (runtimeConfig.m_forceGrazingAnglesNullFunctionHemisphereOne != "none")
+		runtimeConfig.m_coordinates.push_back(std::make_unique<GrazingCoordinate>(1));
+	if (runtimeConfig.m_forceGrazingAnglesNullFunctionHemisphereTwo != "none") {
+		if (runtimeConfig.m_topology->getDimension() == 2)
+			LOG_CRITICAL("Grazing coordinates can be set only for topologies > 2D.");
+		runtimeConfig.m_coordinates.push_back(std::make_unique<GrazingCoordinate>(2));
+	}
+
 	// Initialising the RBF kernel matrix
 	Eigen::MatrixXd distanceMatrix = Eigen::MatrixXd::Zero(runtimeConfig.m_coordinates.size(),
 		                                                   runtimeConfig.m_coordinatesRBF.size());
