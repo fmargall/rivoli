@@ -18,6 +18,27 @@ RBFInterpolator<FloatingPrecision>::RBFInterpolator(RuntimeConfig<FloatingPrecis
 	else
 		LOG_CRITICAL("Invalid kernel function: " + runtimeConfig.m_kernel);
 
+	// Initialising grazing angle function for hemisphere one
+	if      (runtimeConfig.m_forceGrazingAnglesNullFunctionHemisphereOne == "none")
+		m_grazingAngleFctHemisphereOne = [](FloatingPrecision arg) { return static_cast<FloatingPrecision>(1.); };
+	else if (runtimeConfig.m_forceGrazingAnglesNullFunctionHemisphereOne == "cosine")
+		m_grazingAngleFctHemisphereOne = [](FloatingPrecision arg) { return glm::cos(arg); };
+	else if (runtimeConfig.m_forceGrazingAnglesNullFunctionHemisphereOne == "linear")
+		m_grazingAngleFctHemisphereOne = [](FloatingPrecision arg) { return static_cast<FloatingPrecision>(1.) - arg / glm::half_pi<FloatingPrecision>(); };
+	else
+		LOG_CRITICAL("Invalid grazing angle function for hemisphere one: " 
+			+ runtimeConfig.m_forceGrazingAnglesNullFunctionHemisphereOne);
+	// Initialising grazing angle function for hemisphere two
+	if      (runtimeConfig.m_forceGrazingAnglesNullFunctionHemisphereTwo == "none")
+		m_grazingAngleFctHemisphereTwo = [](FloatingPrecision arg) { return static_cast<FloatingPrecision>(1.); };
+	else if (runtimeConfig.m_forceGrazingAnglesNullFunctionHemisphereTwo == "cosine")
+		m_grazingAngleFctHemisphereTwo = [](FloatingPrecision arg) { return glm::cos(arg); };
+	else if (runtimeConfig.m_forceGrazingAnglesNullFunctionHemisphereTwo == "linear")
+		m_grazingAngleFctHemisphereTwo = [](FloatingPrecision arg) { return static_cast<FloatingPrecision>(1.) - arg / glm::half_pi<FloatingPrecision>(); };
+	else
+		LOG_CRITICAL("Invalid grazing angle function for hemisphere two: " 
+			+ runtimeConfig.m_forceGrazingAnglesNullFunctionHemisphereTwo);
+
 	// Initialising the RBF kernel matrix
 	Eigen::MatrixXd distanceMatrix = Eigen::MatrixXd::Zero(runtimeConfig.m_coordinates.size(),
 		                                                   runtimeConfig.m_coordinatesRBF.size());
