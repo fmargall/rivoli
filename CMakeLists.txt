@@ -1,0 +1,16 @@
+cmake_minimum_required(VERSION 3.15)
+
+# Set the project name and version. While the project name should not be modified,
+# the version should be updated with each release, later automatically using CI/CD
+project(RIVOLI VERSION 0.4.0 LANGUAGES CXX)
+
+# Set the C++ standard
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED True)
+
+# OpenMP required for parallel computing
+find_package(OpenMP REQUIRED)
+
+# Add subdirectories
+add_subdirectory(src)
+add_subdirectory(tests)
