@@ -1,14 +1,110 @@
 {
   "version": 3,
+  "cmakeMinimumRequired": {
+    "major": 3,
+    "minor": 21,
+    "patch": 0
+  },
+
   "configurePresets": [
     {
-      "name": "Windows-x64-Release",
-      "generator": "Visual Studio 17 2022",
-      "architecture": "x64",
-      "binaryDir": "${sourceDir}/build/${presetName}",
+      "name": "windows-msvc-debug",
+      "displayName": "Windows (MSVC Debug)",
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/build/windows-msvc-debug",
+      "condition": {
+        "type": "equals",
+        "lhs": "${hostSystemName}",
+        "rhs": "Windows"
+      },
       "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
         "CMAKE_CXX_STANDARD": "17"
       }
+    },
+
+    {
+      "name": "windows-msvc-release",
+      "displayName": "Windows (MSVC Release)",
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/build/windows-msvc-release",
+      "condition": {
+        "type": "equals",
+        "lhs": "${hostSystemName}",
+        "rhs": "Windows"
+      },
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "CMAKE_CXX_STANDARD": "17"
+      }
+    },
+
+    {
+      "name": "wsl-gcc-debug",
+      "displayName": "WSL (GCC Debug)",
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/build/wsl-debug",
+      "condition": {
+        "type": "equals",
+        "lhs": "${hostSystemName}",
+        "rhs": "Linux"
+      },
+      "remote": {
+        "remoteMachine": "WSL"
+      },
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "CMAKE_CXX_STANDARD": "17"
+      }
+    },
+
+    {
+      "name": "wsl-gcc-release",
+      "displayName": "WSL (GCC Release)",
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/build/wsl-release",
+      "condition": {
+        "type": "equals",
+        "lhs": "${hostSystemName}",
+        "rhs": "Linux"
+      },
+      "remote": {
+        "remoteMachine": "WSL"
+      },
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "CMAKE_CXX_STANDARD": "17"
+      }
+    }
+  ],
+
+  "buildPresets": [
+    {
+      "name": "build-windows-msvc-debug",
+      "configurePreset": "windows-msvc-debug"
+    },
+    {
+      "name": "build-windows-msvc-release",
+      "configurePreset": "windows-msvc-release"
+    },
+    {
+      "name": "build-wsl-debug",
+      "configurePreset": "wsl-gcc-debug"
+    },
+    {
+      "name": "build-wsl-release",
+      "configurePreset": "wsl-gcc-release"
+    }
+  ],
+
+  "launchPresets": [
+    {
+      "name": "launch-rivoli-app",
+      "description": "Run RIVOLI.app with a config file",
+      "target": "RIVOLI.app",
+      "configuration": "Debug",
+      "args": [ "resources/config.ini" ],
+      "workingDirectory": "${sourceDir}"
     }
   ]
 }
