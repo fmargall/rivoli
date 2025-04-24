@@ -16,7 +16,7 @@ set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
 FetchContent_MakeAvailable(googletest)
 
 # Create test executable
-add_executable(RIVOLI.tests TestMain.cpp TestArrays.cpp TestCoordinateConversion.cpp
+add_executable(RIVOLI.tests TestMain.cpp TestArrays.cpp TestCoordinateConversion.cpp TestCoordinate.cpp
                ${CMAKE_SOURCE_DIR}/src/logger.cpp)
 
 # Include directories
