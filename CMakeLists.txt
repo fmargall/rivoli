@@ -4,6 +4,9 @@ cmake_minimum_required(VERSION 3.21)
 # the version should be updated with each release, later automatically using CI/CD
 project(RIVOLI VERSION 0.4.0 LANGUAGES CXX)
 
+# Used for parallel computing
+find_package(OpenMP REQUIRED)
+
 # Set the C++ standard
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED True)

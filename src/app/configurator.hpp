@@ -62,13 +62,18 @@ public:
 private:
 	friend class RBFInterpolator<FloatingPrecision>;
 
-	template <typename FloatingPrecision>
+	// We declare these functions as friends using a different template parameter name,
+	// (FloatingPrecisionType) in order to avoid shadowing the class template parameter
+	// (FloatingPrecision). This ensures compatibility with both MSVC, and GCC / Clang
+	// compilers, the latter refusing template shadowing.
+	template <typename FloatingPrecisionType>
 	friend void initRBFCoeffsFile(const std::string& outputFilePath,
-								  const RuntimeConfig<FloatingPrecision>& runtimeConfig,
+								  const RuntimeConfig<FloatingPrecisionType>& runtimeConfig,
 								  const bool& isRGB);
-	template <typename FloatingPrecision, typename DataType>
+
+	template <typename FloatingPrecisionType, typename DataType>
 	friend void writeToRBFCoeffs(const std::string& outputFilePath,
-						         const RuntimeConfig<FloatingPrecision>& runtimeConfig,
+						         const RuntimeConfig<FloatingPrecisionType>& runtimeConfig,
 							     const std::vector<DataType>& inputData,
 							     const size_t& clusterID);
 

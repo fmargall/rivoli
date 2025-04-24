@@ -46,14 +46,14 @@ RBFInterpolator<FloatingPrecision>::RBFInterpolator(RuntimeConfig<FloatingPrecis
 
 	// Adding grazing coordinates if needed
 	if (runtimeConfig.m_forceGrazingAnglesNullFunctionHemisphereOne != "none" && runtimeConfig.m_coordinates.size() != 0) {
-		runtimeConfig.m_coefficients.push_back(static_cast<FloatingPrecision>(0));
+		runtimeConfig.m_values.push_back(static_cast<FloatingPrecision>(0));
 		runtimeConfig.m_coordinates.push_back(std::make_unique<GrazingCoordinate>(1));
 		LOG_VERBOSE("Grazing coordinate over hermisphere 1 added to the input data.");
 	}
 	if (runtimeConfig.m_forceGrazingAnglesNullFunctionHemisphereTwo != "none" && runtimeConfig.m_coordinates.size() != 0) {
 		if (runtimeConfig.m_topology->getDimension() == 2)
 			LOG_CRITICAL("Grazing coordinates can be set only for topologies > 2D.");
-		runtimeConfig.m_coefficients.push_back(static_cast<FloatingPrecision>(0));
+		runtimeConfig.m_values.push_back(static_cast<FloatingPrecision>(0));
 		runtimeConfig.m_coordinates.push_back(std::make_unique<GrazingCoordinate>(2));
 		LOG_VERBOSE("Grazing coordinate over hermisphere 2 added to the input data.");
 	}
@@ -146,6 +146,8 @@ RBFInterpolator<FloatingPrecision>::RBFInterpolator(RuntimeConfig<FloatingPrecis
 				LOG_CRITICAL("Unsupported Coordinate type for hemisphere two grazing angle correction.");
 		}
 	}
+
+	LOG_DEBUG("Result vector initialised.");
 
 	if (runtimeConfig.m_locationRBFFilePath == "none") {
 		LOG_DEBUG("Computing RBF interpolator coefficients using a square matrix...");

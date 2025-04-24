@@ -13,8 +13,6 @@ BrdfSamplesCoupole::~BrdfSamplesCoupole()
 }
 
 void BrdfSamplesCoupole::init(VERSION_BRDF_SAMPLES version_brdf_samples, int ncluster){
-	LOG_DEBUG("Version: ", version_brdf_samples, " ncluster: ", ncluster);
-    LOG_CRITICAL("STOP");
 	m_ncluster = ncluster;
     m_version_brdf_samples=version_brdf_samples;
 
@@ -34,6 +32,11 @@ void BrdfSamplesCoupole::initFromFile(std::string filename){
     m_filename = filename;
     std::fstream f;
     f.open(filename, std::fstream::in | std::fstream::binary);
+    if (f.is_open())
+        LOG_DEBUG("brdfSamples file ", filename, " opened.");
+    else
+        LOG_CRITICAL("brdfSamples file ", filename, " could not be opened.");
+
     f.read(reinterpret_cast<char*>(&m_version_brdf_samples), sizeof(int));
     f.read(reinterpret_cast<char*>(&m_ncluster), sizeof(int));
 
@@ -66,6 +69,11 @@ int BrdfSamplesCoupole::prepareSparseRead(std::string filename, int maxReadClust
     m_filename = filename;
     std::fstream f;
     f.open(filename, std::fstream::in | std::fstream::binary);
+    if (f.is_open())
+        LOG_DEBUG("brdfSamples file ", filename, " opened.");
+    else
+        LOG_CRITICAL("brdfSamples file ", filename, " could not be opened.");
+
     f.read(reinterpret_cast<char*>(&m_version_brdf_samples), sizeof(int));
     int ncluster;
     f.read(reinterpret_cast<char*>(&ncluster), sizeof(int));

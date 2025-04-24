@@ -6,6 +6,9 @@ add_executable(${PROJECT_NAME}.app Main.cpp
                interpolator.cpp
                ${CMAKE_SOURCE_DIR}/src/logger.cpp)
 
+target_link_libraries(${PROJECT_NAME}.app PRIVATE OpenMP::OpenMP_CXX)
+
+
 # Add RIVOLI icon for the Windows executable
 if(WIN32)
     target_sources(${PROJECT_NAME}.app PRIVATE ${CMAKE_SOURCE_DIR}/src/app/resources.rc)
