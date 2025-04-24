@@ -1,5 +1,9 @@
 # Adding the executable
 add_executable(${PROJECT_NAME}.app Main.cpp
+               BrdfSamplesCoupole.cpp
+               configurator.cpp
+               export.cpp
+               interpolator.cpp
                ${CMAKE_SOURCE_DIR}/src/logger.cpp)
 
 # Add RIVOLI icon for the Windows executable
@@ -13,10 +17,6 @@ if(WIN32)
         ${CMAKE_CURRENT_BINARY_DIR}/resources/RIVOLI.ico
     )
 endif()
-
-target_sources(${PROJECT_NAME}.app PRIVATE
-    BrdfSamplesCoupole.cpp
-)
 
 target_include_directories(${PROJECT_NAME}.app PRIVATE 
                            ${CMAKE_SOURCE_DIR}/src

@@ -13,8 +13,9 @@ BrdfSamplesCoupole::~BrdfSamplesCoupole()
 }
 
 void BrdfSamplesCoupole::init(VERSION_BRDF_SAMPLES version_brdf_samples, int ncluster){
-
-    m_ncluster = ncluster;
+	LOG_DEBUG("Version: ", version_brdf_samples, " ncluster: ", ncluster);
+    LOG_CRITICAL("STOP");
+	m_ncluster = ncluster;
     m_version_brdf_samples=version_brdf_samples;
 
 

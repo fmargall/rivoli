@@ -14,6 +14,7 @@
       ],
       "env": {}
     },
+
     {
       "type": "default",
       "project": "CMakeLists.txt",
@@ -23,6 +24,7 @@
       "args": [
         "resources/config.ini"
       ],
+      "currentDir": "${workspaceRoot}",
       "env": {}
     }
   ]

@@ -20,6 +20,7 @@ inline std::string versionBRDFsamplesTOstring(VERSION_BRDF_SAMPLES versionBrdfSa
         case BRDF_SAMPLES_V1: return "v1 (θ_i/θ_o/Δφ (float) / f (float) / w (float))";
         case BRDF_SAMPLES_V2: return "v2 (to do ...)";
     }
+	LOG_DEBUG("True version: ", versionBrdfSamples);
     return "UNKNOWN";
 }
 
