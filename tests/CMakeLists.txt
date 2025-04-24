@@ -16,17 +16,16 @@ set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
 FetchContent_MakeAvailable(googletest)
 
 # Create test executable
-add_executable(RIVOLI.tests TestMain.cpp TestArrays.cpp TestCoordinateConversion.cpp TestCoordinate.cpp TestTopology.cpp
+add_executable(${PROJECT_NAME}.tests TestMain.cpp TestArrays.cpp TestCoordinateConversion.cpp TestCoordinate.cpp TestTopology.cpp
                ${CMAKE_SOURCE_DIR}/src/logger.cpp)
 
 # Include directories
-target_include_directories(RIVOLI.tests PRIVATE
+target_include_directories(${PROJECT_NAME}.tests PRIVATE
                            ${CMAKE_SOURCE_DIR}/src
                            ${CMAKE_SOURCE_DIR}/ext/glm
                            ${CMAKE_SOURCE_DIR}/ext/eigen)
 # Link libraries
-target_link_libraries(RIVOLI.tests
-  PRIVATE
+target_link_libraries(${PROJECT_NAME}.tests PRIVATE
     gtest_main
 )
 
