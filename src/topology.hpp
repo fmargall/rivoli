@@ -1,0 +1,490 @@
+#pragma once
+
+#include <glm/glm.hpp>
+#include <glm/gtc/constants.hpp>
+
+#include "coordinate.hpp"
+#include "logger.hpp"
+
+/*
+ * @brief Computes the haversine of an angle
+ *        Haversine is the square of the sine of half the angle
+ *
+ * @tparam FloatingPrecision FP precision. Usually float or double
+ *
+ * @param arg Angle, given in radians
+ *
+ * @return haversine of the angle, without units
+ */
+template <typename FloatingPrecision>
+FloatingPrecision haversine(const FloatingPrecision& arg) {
+	return glm::sin(arg / 2) * glm::sin(arg / 2);
+}
+
+/*
+ * @brief Computes the great circle distance between two points on a sphere
+ *
+ * @note Coordinates should be given in spherical coordinates following the
+		 convention of physicists ISO 80000-2:2019, i.e.:
+ *
+ * @tparam FloatingPrecision FP precision. Usually float or double
+ *
+ * @param thetaOne polar angle, or colatitude angle, of first  point in rad
+ * @param phiOne   azimuthal angle (longitude angle) of first  point in rad
+ * @param thetaTwo polar angle, or colatitude angle  of second point in rad
+ * @param phiTwo   azimuthal angle (longitude angle) of second point in rad
+ *
+ * @return great circle distance on a unit sphere with radius 1
+ */
+template <typename FloatingPrecision>
+FloatingPrecision greatCircleDistance(const FloatingPrecision& thetaOne, const FloatingPrecision& phiOne,
+								      const FloatingPrecision& thetaTwo, const FloatingPrecision& phiTwo) {
+	return static_cast<FloatingPrecision>(2) * glm::asin(glm::sqrt(haversine(thetaTwo - thetaOne) + glm::sin(thetaTwo) * glm::sin(thetaOne) * haversine(phiTwo - phiOne)));
+}
+
+template <typename FloatingPrecision>
+class Topology {
+public:
+	virtual ~Topology() = default;
+	virtual std::unique_ptr<Topology> clone() const = 0; // Ajout de la méthode clone
+
+	virtual FloatingPrecision getDistance(const Coordinate& coordinateOne, 
+		                                  const Coordinate& coordinateTwo) const = 0;
+
+	virtual size_t getDimension() const = 0;
+
+};
+
+template <typename FloatingPrecision>
+class Topology2D : public Topology<FloatingPrecision> {
+public:
+	Topology2D() {}
+
+	std::unique_ptr<Topology<FloatingPrecision>> clone() const override {
+		return std::make_unique<Topology2D>(*this);
+	}
+
+	FloatingPrecision getDistance(const Coordinate& coordinateOne,
+		                          const Coordinate& coordinateTwo) const override {
+		try {
+			// The two given coordinates are of type Coordinate2D
+			const auto& coordinateOne2D = dynamic_cast<const Coordinate2D<FloatingPrecision>&>(coordinateOne);
+			const auto& coordinateTwo2D = dynamic_cast<const Coordinate2D<FloatingPrecision>&>(coordinateTwo);
+			return getDistance(coordinateOne2D, coordinateTwo2D);
+		}
+		catch (const std::bad_cast&) {
+			try {
+				// First coordinate is of type GrazingCoordinate, second is Coordinate2D
+				const auto& coordinateOneGrazing = dynamic_cast<const GrazingCoordinate&>(coordinateOne);
+				const auto& coordinateTwo2D      = dynamic_cast<const Coordinate2D<FloatingPrecision>&>(coordinateTwo);
+				return getDistance(coordinateOneGrazing, coordinateTwo2D);
+			}
+			catch (const std::bad_cast&) {
+				// First coordinate is of type Coordinate2D, second is GrazingCoordinate
+				const auto& coordinateOne2D      = dynamic_cast<const Coordinate2D<FloatingPrecision>&>(coordinateOne);
+				const auto& coordinateTwoGrazing = dynamic_cast<const GrazingCoordinate&>(coordinateTwo);
+				return getDistance(coordinateOne2D, coordinateTwoGrazing);
+			}
+		}
+	}
+
+	FloatingPrecision getDistance(const Coordinate2D<FloatingPrecision>& coordinateOne,
+								  const GrazingCoordinate&               coordinateTwoGrazing) const {
+		return getDistance(coordinateTwoGrazing, coordinateOne);
+	}
+
+	FloatingPrecision getDistance(const GrazingCoordinate&               coordinateOneGrazing,
+								  const Coordinate2D<FloatingPrecision>& coordinateTwo) const {
+		if (coordinateOneGrazing.getHemisphere() != 1)
+			LOG_CRITICAL("Grazing coordinate can be set only for hemisphere 1 in 2D topology"
+				         ". Selected hemisphere is: ", coordinateOneGrazing.getHemisphere());
+
+		FloatingPrecision theta = glm::half_pi<FloatingPrecision>();
+		FloatingPrecision phi = coordinateTwo.getPhi();
+
+		Coordinate2D<FloatingPrecision> coordinateTwoProjection = Coordinate2D<FloatingPrecision>(theta, phi);
+
+		return getDistance(coordinateTwoProjection, coordinateTwo);
+	}
+
+	FloatingPrecision getDistance(const Coordinate2D<FloatingPrecision>& coordinateOne, 
+		                          const Coordinate2D<FloatingPrecision>& coordinateTwo) const {
+		return greatCircleDistance(coordinateOne.getTheta(), coordinateOne.getPhi(),
+								   coordinateTwo.getTheta(), coordinateTwo.getPhi());
+	}
+
+	size_t getDimension() const override { return 2; }
+
+};
+
+template <typename FloatingPrecision>
+class Topology2DSym : public Topology2D<FloatingPrecision> {
+public:
+	Topology2DSym() {}
+
+	std::unique_ptr<Topology<FloatingPrecision>> clone() const override {
+		return std::make_unique<Topology2DSym>(*this);
+	}
+
+	FloatingPrecision getDistance(const Coordinate& coordinateOne,
+		                          const Coordinate& coordinateTwo) const override {
+		try {
+			// The two given coordinates are of type Coordinate2D
+			const auto& coordinateOne2D = dynamic_cast<const Coordinate2D<FloatingPrecision>&>(coordinateOne);
+			const auto& coordinateTwo2D = dynamic_cast<const Coordinate2D<FloatingPrecision>&>(coordinateTwo);
+			return getDistance(coordinateOne2D, coordinateTwo2D);
+		}
+		catch (const std::bad_cast&) {
+			try {
+				// First coordinate is of type GrazingCoordinate, second is Coordinate2D
+				const auto& coordinateOneGrazing = dynamic_cast<const GrazingCoordinate&>(coordinateOne);
+				const auto& coordinateTwo2D      = dynamic_cast<const Coordinate2D<FloatingPrecision>&>(coordinateTwo);
+				return getDistance(coordinateOneGrazing, coordinateTwo2D);
+			}
+			catch (const std::bad_cast&) {
+				// First coordinate is of type Coordinate2D, second is GrazingCoordinate
+				const auto& coordinateOne2D      = dynamic_cast<const Coordinate2D<FloatingPrecision>&>(coordinateOne);
+				const auto& coordinateTwoGrazing = dynamic_cast<const GrazingCoordinate&>(coordinateTwo);
+				return getDistance(coordinateOne2D, coordinateTwoGrazing);
+			}
+		}
+	}
+
+	FloatingPrecision getDistance(const Coordinate2D<FloatingPrecision>& coordinateOne,
+		                          const GrazingCoordinate&               coordinateTwoGrazing) const {
+		return getDistance(coordinateTwoGrazing, coordinateOne);
+	}
+
+	FloatingPrecision getDistance(const GrazingCoordinate&               coordinateOneGrazing,
+		                          const Coordinate2D<FloatingPrecision>& coordinateTwo) const {
+		if (coordinateOneGrazing.getHemisphere() != 1)
+			LOG_CRITICAL("Grazing coordinate can be set only for hemisphere 1 in 2D symmetrical "
+				         "topology. Selected hemisphere is: ", coordinateOneGrazing.getHemisphere());
+
+		FloatingPrecision theta = glm::half_pi<FloatingPrecision>();
+		FloatingPrecision phi   = coordinateTwo.getPhi();
+
+		Coordinate2D<FloatingPrecision> coordinateTwoProjection = Coordinate2D<FloatingPrecision>(theta, phi);
+
+		return getDistance(coordinateTwoProjection, coordinateTwo);
+	}
+
+	FloatingPrecision getDistance(const Coordinate2D<FloatingPrecision>& coordinateOne,
+								  const Coordinate2D<FloatingPrecision>& coordinateTwo) const {
+		std::vector<FloatingPrecision> pathsLengths(2); // Contains all possible paths
+
+		// Only two possibilities: others are the same by symmetry of the metric
+		pathsLengths[0] = Topology2D<FloatingPrecision>::getDistance(coordinateOne, coordinateTwo);
+		pathsLengths[1] = Topology2D<FloatingPrecision>::getDistance(coordinateOne, coordinateTwo.getBilateralSymmetrical());
+
+		// Riemannian distance is the geodesic, i.e. infimum of allpaths
+		return *std::min_element(pathsLengths.begin(), pathsLengths.end());
+	}
+};
+
+template <typename FloatingPrecision>
+class Topology3DSph : public Topology<FloatingPrecision> {
+public:
+	Topology3DSph() {}
+
+	std::unique_ptr<Topology<FloatingPrecision>> clone() const override {
+		return std::make_unique<Topology3DSph>(*this);
+	}
+
+	FloatingPrecision getDistance(const Coordinate& coordinateOne, 
+		                          const Coordinate& coordinateTwo) const {
+		try {
+			// The two given coordinates are of type Coordinate3DSpherical
+			const auto& coordinateOne3DSph = dynamic_cast<const Coordinate3DSpherical<FloatingPrecision>&>(coordinateOne);
+			const auto& coordinateTwo3DSph = dynamic_cast<const Coordinate3DSpherical<FloatingPrecision>&>(coordinateTwo);
+			return getDistance(coordinateOne3DSph, coordinateTwo3DSph);
+		}
+		catch (const std::bad_cast&) {
+			try {
+				// First coordinate is of type GrazingCoordinate, second is Coordinate3DSpherical
+				const auto& coordinateOneGrazing = dynamic_cast<const GrazingCoordinate&>(coordinateOne);
+				const auto& coordinateTwo3DSph   = dynamic_cast<const Coordinate3DSpherical<FloatingPrecision>&>(coordinateTwo);
+				return getDistance(coordinateOneGrazing, coordinateTwo3DSph);
+			}
+			catch (const std::bad_cast&) {
+				// First coordinate is of type Coordinate3DSpherical, second is GrazingCoordinate
+				const auto& coordinateOne3DSph   = dynamic_cast<const Coordinate3DSpherical<FloatingPrecision>&>(coordinateOne);
+				const auto& coordinateTwoGrazing = dynamic_cast<const GrazingCoordinate&>(coordinateTwo);
+				return getDistance(coordinateOne3DSph, coordinateTwoGrazing);
+			}
+		}
+	}
+
+	FloatingPrecision getDistance(const Coordinate3DSpherical<FloatingPrecision>& coordinateOne,
+		                          const GrazingCoordinate&                        coordinateTwoGrazing) const {
+		return getDistance(coordinateTwoGrazing, coordinateOne);
+	}
+
+	FloatingPrecision getDistance(const GrazingCoordinate&                        coordinateOneGrazing,
+		                          const Coordinate3DSpherical<FloatingPrecision>& coordinateTwo) const {
+		if (coordinateOneGrazing.getHemisphere() == 1) {
+			FloatingPrecision thetaI   = glm::half_pi<FloatingPrecision>();
+			FloatingPrecision thetaO   = coordinateTwo.getThetaO();
+			FloatingPrecision deltaPhi = coordinateTwo.getDeltaPhi();
+
+			Coordinate3DSpherical<FloatingPrecision> coordinateTwoProjection = Coordinate3DSpherical<FloatingPrecision>(thetaI, thetaO, deltaPhi);
+
+			return getDistance(coordinateTwoProjection, coordinateTwo);
+		}
+		else if (coordinateOneGrazing.getHemisphere() == 2) {
+			FloatingPrecision thetaI   = coordinateTwo.getThetaI();
+			FloatingPrecision thetaO   = glm::half_pi<FloatingPrecision>();
+			FloatingPrecision deltaPhi = coordinateTwo.getDeltaPhi();
+
+			Coordinate3DSpherical<FloatingPrecision> coordinateTwoProjection = Coordinate3DSpherical<FloatingPrecision>(thetaI, thetaO, deltaPhi);
+
+			return getDistance(coordinateTwoProjection, coordinateTwo);
+		}
+		else
+			LOG_CRITICAL("Grazing coordinate can be set only for hemisphere 1 or 2 in 3D topology"
+				         ". Selected hemisphere is: ", coordinateOneGrazing.getHemisphere());
+	}
+
+	FloatingPrecision getDistance(const Coordinate3DSpherical<FloatingPrecision>& coordinateOne,
+							      const Coordinate3DSpherical<FloatingPrecision>& coordinateTwo) const {
+		Topology2D<FloatingPrecision> topology2D;
+		Coordinate2D<FloatingPrecision> coordinateOneOmegaO = Coordinate2D<FloatingPrecision>(coordinateOne.getThetaO(), coordinateOne.getDeltaPhi());
+		Coordinate2D<FloatingPrecision> coordinateTwoOmegaO = Coordinate2D<FloatingPrecision>(coordinateTwo.getThetaO(), coordinateTwo.getDeltaPhi());		
+
+		return glm::sqrt(glm::pow(coordinateTwo.getThetaI() - coordinateOne.getThetaI(), static_cast<FloatingPrecision>(2)) +
+						 glm::pow(topology2D.getDistance(coordinateOneOmegaO,
+											             coordinateTwoOmegaO), static_cast<FloatingPrecision>(2)));
+	}
+
+	size_t getDimension() const override { return 3; }
+};
+
+template <typename FloatingPrecision>
+class Topology3DSphRec : public Topology3DSph<FloatingPrecision> {
+public:
+	Topology3DSphRec() {}
+
+	std::unique_ptr<Topology<FloatingPrecision>> clone() const override {
+		return std::make_unique<Topology3DSphRec>(*this);
+	}
+
+	FloatingPrecision getDistance(const Coordinate& coordinateOne,
+		                          const Coordinate& coordinateTwo) const {
+		try {
+			// The two given coordinates are of type Coordinate3DSpherical
+			const auto& coordinateOne3DSph = dynamic_cast<const Coordinate3DSpherical<FloatingPrecision>&>(coordinateOne);
+			const auto& coordinateTwo3DSph = dynamic_cast<const Coordinate3DSpherical<FloatingPrecision>&>(coordinateTwo);
+			return getDistance(coordinateOne3DSph, coordinateTwo3DSph);
+		}
+		catch (const std::bad_cast&) {
+			try {
+				// First coordinate is of type GrazingCoordinate, second is Coordinate3DSpherical
+				const auto& coordinateOneGrazing = dynamic_cast<const GrazingCoordinate&>(coordinateOne);
+				const auto& coordinateTwo3DSph   = dynamic_cast<const Coordinate3DSpherical<FloatingPrecision>&>(coordinateTwo);
+				return getDistance(coordinateOneGrazing, coordinateTwo3DSph);
+			}
+			catch (const std::bad_cast&) {
+				// First coordinate is of type Coordinate3DSpherical, second is GrazingCoordinate
+				const auto& coordinateOne3DSph   = dynamic_cast<const Coordinate3DSpherical<FloatingPrecision>&>(coordinateOne);
+				const auto& coordinateTwoGrazing = dynamic_cast<const GrazingCoordinate&>(coordinateTwo);
+				return getDistance(coordinateOne3DSph, coordinateTwoGrazing);
+			}
+		}
+	}
+
+	FloatingPrecision getDistance(const Coordinate3DSpherical<FloatingPrecision>& coordinateOne,
+		                          const GrazingCoordinate&                        coordinateTwoGrazing) const {
+		return getDistance(coordinateTwoGrazing, coordinateOne);
+	}
+
+	FloatingPrecision getDistance(const GrazingCoordinate&                        coordinateOneGrazing,
+		                          const Coordinate3DSpherical<FloatingPrecision>& coordinateTwo) const {
+		if (coordinateOneGrazing.getHemisphere() == 1) {
+			FloatingPrecision thetaI   = glm::half_pi<FloatingPrecision>();
+			FloatingPrecision thetaO   = coordinateTwo.getThetaO();
+			FloatingPrecision deltaPhi = coordinateTwo.getDeltaPhi();
+
+			Coordinate3DSpherical<FloatingPrecision> coordinateTwoProjection = Coordinate3DSpherical<FloatingPrecision>(thetaI, thetaO, deltaPhi);
+
+			return getDistance(coordinateTwoProjection, coordinateTwo);
+		}
+		else if (coordinateOneGrazing.getHemisphere() == 2) {
+			FloatingPrecision thetaI   = coordinateTwo.getThetaI();
+			FloatingPrecision thetaO   = glm::half_pi<FloatingPrecision>();
+			FloatingPrecision deltaPhi = coordinateTwo.getDeltaPhi();
+
+			Coordinate3DSpherical<FloatingPrecision> coordinateTwoProjection = Coordinate3DSpherical<FloatingPrecision>(thetaI, thetaO, deltaPhi);
+
+			return getDistance(coordinateTwoProjection, coordinateTwo);
+		}
+		else
+			LOG_CRITICAL("Grazing coordinate can be set only for hemisphere 1 or 2 in 3D topology"
+				         ". Selected hemisphere is: ", coordinateOneGrazing.getHemisphere());
+	}
+
+	FloatingPrecision getDistance(const Coordinate3DSpherical<FloatingPrecision>& coordinateOne,
+		                          const Coordinate3DSpherical<FloatingPrecision>& coordinateTwo) const {
+		std::vector<FloatingPrecision> pathsLengths(4); // Contains all possible paths
+
+		pathsLengths[0] = Topology3DSph<FloatingPrecision>::getDistance(coordinateOne, coordinateTwo);
+		pathsLengths[1] = Topology3DSph<FloatingPrecision>::getDistance(coordinateOne, coordinateTwo.getReciprocal());
+		pathsLengths[2] = Topology3DSph<FloatingPrecision>::getDistance(coordinateOne.getReciprocal(), coordinateTwo);
+		pathsLengths[3] = Topology3DSph<FloatingPrecision>::getDistance(coordinateOne.getReciprocal(), coordinateTwo.getReciprocal());
+
+		// Riemannian distance is the geodesic, i.e. infimum of allpaths
+		return *std::min_element(pathsLengths.begin(), pathsLengths.end());
+	}
+
+};
+
+template <typename FloatingPrecision>
+class Topology3DSphSym : public Topology3DSph<FloatingPrecision> {
+public:
+	Topology3DSphSym() {}
+
+	std::unique_ptr<Topology<FloatingPrecision>> clone() const override {
+		return std::make_unique<Topology3DSphSym>(*this);
+	}
+
+	FloatingPrecision getDistance(const Coordinate& coordinateOne,
+		                          const Coordinate& coordinateTwo) const {
+		try {
+			// The two given coordinates are of type Coordinate3DSpherical
+			const auto& coordinateOne3DSph = dynamic_cast<const Coordinate3DSpherical<FloatingPrecision>&>(coordinateOne);
+			const auto& coordinateTwo3DSph = dynamic_cast<const Coordinate3DSpherical<FloatingPrecision>&>(coordinateTwo);
+			return getDistance(coordinateOne3DSph, coordinateTwo3DSph);
+		}
+		catch (const std::bad_cast&) {
+			try {
+				// First coordinate is of type GrazingCoordinate, second is Coordinate3DSpherical
+				const auto& coordinateOneGrazing = dynamic_cast<const GrazingCoordinate&>(coordinateOne);
+				const auto& coordinateTwo3DSph   = dynamic_cast<const Coordinate3DSpherical<FloatingPrecision>&>(coordinateTwo);
+				return getDistance(coordinateOneGrazing, coordinateTwo3DSph);
+			}
+			catch (const std::bad_cast&) {
+				// First coordinate is of type Coordinate3DSpherical, second is GrazingCoordinate
+				const auto& coordinateOne3DSph   = dynamic_cast<const Coordinate3DSpherical<FloatingPrecision>&>(coordinateOne);
+				const auto& coordinateTwoGrazing = dynamic_cast<const GrazingCoordinate&>(coordinateTwo);
+				return getDistance(coordinateOne3DSph, coordinateTwoGrazing);
+			}
+		}
+	}
+
+	FloatingPrecision getDistance(const Coordinate3DSpherical<FloatingPrecision>& coordinateOne,
+		                          const GrazingCoordinate&                        coordinateTwoGrazing) const {
+		return getDistance(coordinateTwoGrazing, coordinateOne);
+	}
+
+	FloatingPrecision getDistance(const GrazingCoordinate&                        coordinateOneGrazing,
+		                          const Coordinate3DSpherical<FloatingPrecision>& coordinateTwo) const {
+		if (coordinateOneGrazing.getHemisphere() == 1) {
+			FloatingPrecision thetaI   = glm::half_pi<FloatingPrecision>();
+			FloatingPrecision thetaO   = coordinateTwo.getThetaO();
+			FloatingPrecision deltaPhi = coordinateTwo.getDeltaPhi();
+
+			Coordinate3DSpherical<FloatingPrecision> coordinateTwoProjection = Coordinate3DSpherical<FloatingPrecision>(thetaI, thetaO, deltaPhi);
+
+			return getDistance(coordinateTwoProjection, coordinateTwo);
+		}
+		else if (coordinateOneGrazing.getHemisphere() == 2) {
+			FloatingPrecision thetaI   = coordinateTwo.getThetaI();
+			FloatingPrecision thetaO   = glm::half_pi<FloatingPrecision>();
+			FloatingPrecision deltaPhi = coordinateTwo.getDeltaPhi();
+
+			Coordinate3DSpherical<FloatingPrecision> coordinateTwoProjection = Coordinate3DSpherical<FloatingPrecision>(thetaI, thetaO, deltaPhi);
+
+			return getDistance(coordinateTwoProjection, coordinateTwo);
+		}
+		else
+			LOG_CRITICAL("Grazing coordinate can be set only for hemisphere 1 or 2 in 3D topology"
+				         ". Selected hemisphere is: ", coordinateOneGrazing.getHemisphere());
+	}
+
+	FloatingPrecision getDistance(const Coordinate3DSpherical<FloatingPrecision>& coordinateOne,
+								  const Coordinate3DSpherical<FloatingPrecision>& coordinateTwo) const {
+		std::vector<FloatingPrecision> pathsLengths(2); // Contains all possible paths
+
+		pathsLengths[0] = Topology3DSph<FloatingPrecision>::getDistance(coordinateOne, coordinateTwo);
+		pathsLengths[1] = Topology3DSph<FloatingPrecision>::getDistance(coordinateOne, coordinateTwo.getBilateralSymmetrical());
+
+		// Riemannian distance is the geodesic, i.e. infimum of allpaths
+		return *std::min_element(pathsLengths.begin(), pathsLengths.end());
+	}
+
+};
+
+template <typename FloatingPrecision>
+class Topology3DSphRecSym : public Topology3DSphRec<FloatingPrecision> {
+public:
+	Topology3DSphRecSym() {}
+
+	std::unique_ptr<Topology<FloatingPrecision>> clone() const override {
+		return std::make_unique<Topology3DSphRecSym>(*this);
+	}
+
+	FloatingPrecision getDistance(const Coordinate& coordinateOne,
+		                          const Coordinate& coordinateTwo) const {
+		try {
+			// The two given coordinates are of type Coordinate3DSpherical
+			const auto& coordinateOne3DSph = dynamic_cast<const Coordinate3DSpherical<FloatingPrecision>&>(coordinateOne);
+			const auto& coordinateTwo3DSph = dynamic_cast<const Coordinate3DSpherical<FloatingPrecision>&>(coordinateTwo);
+			return getDistance(coordinateOne3DSph, coordinateTwo3DSph);
+		}
+		catch (const std::bad_cast&) {
+			try {
+				// First coordinate is of type GrazingCoordinate, second is Coordinate3DSpherical
+				const auto& coordinateOneGrazing = dynamic_cast<const GrazingCoordinate&>(coordinateOne);
+				const auto& coordinateTwo3DSph   = dynamic_cast<const Coordinate3DSpherical<FloatingPrecision>&>(coordinateTwo);
+				return getDistance(coordinateOneGrazing, coordinateTwo3DSph);
+			}
+			catch (const std::bad_cast&) {
+				// First coordinate is of type Coordinate3DSpherical, second is GrazingCoordinate
+				const auto& coordinateOne3DSph   = dynamic_cast<const Coordinate3DSpherical<FloatingPrecision>&>(coordinateOne);
+				const auto& coordinateTwoGrazing = dynamic_cast<const GrazingCoordinate&>(coordinateTwo);
+				return getDistance(coordinateOne3DSph, coordinateTwoGrazing);
+			}
+		}
+	}
+
+	FloatingPrecision getDistance(const Coordinate3DSpherical<FloatingPrecision>& coordinateOne,
+		                          const GrazingCoordinate&                        coordinateTwoGrazing) const {
+		return getDistance(coordinateTwoGrazing, coordinateOne);
+	}
+
+	FloatingPrecision getDistance(const GrazingCoordinate&                        coordinateOneGrazing,
+		                          const Coordinate3DSpherical<FloatingPrecision>& coordinateTwo) const {
+		if (coordinateOneGrazing.getHemisphere() == 1) {
+			FloatingPrecision thetaI   = glm::half_pi<FloatingPrecision>();
+			FloatingPrecision thetaO   = coordinateTwo.getThetaO();
+			FloatingPrecision deltaPhi = coordinateTwo.getDeltaPhi();
+
+			Coordinate3DSpherical<FloatingPrecision> coordinateTwoProjection = Coordinate3DSpherical<FloatingPrecision>(thetaI, thetaO, deltaPhi);
+
+			return getDistance(coordinateTwoProjection, coordinateTwo);
+		}
+		else if (coordinateOneGrazing.getHemisphere() == 2) {
+			FloatingPrecision thetaI   = coordinateTwo.getThetaI();
+			FloatingPrecision thetaO   = glm::half_pi<FloatingPrecision>();
+			FloatingPrecision deltaPhi = coordinateTwo.getDeltaPhi();
+
+			Coordinate3DSpherical<FloatingPrecision> coordinateTwoProjection = Coordinate3DSpherical<FloatingPrecision>(thetaI, thetaO, deltaPhi);
+
+			return getDistance(coordinateTwoProjection, coordinateTwo);
+		}
+		else
+			LOG_CRITICAL("Grazing coordinate can be set only for hemisphere 1 or 2 in 3D topology"
+				         ". Selected hemisphere is: ", coordinateOneGrazing.getHemisphere());
+	}
+
+	FloatingPrecision getDistance(const Coordinate3DSpherical<FloatingPrecision>& coordinateOne,
+								  const Coordinate3DSpherical<FloatingPrecision>& coordinateTwo) const {
+		std::vector<FloatingPrecision> pathsLengths(2); // Contains all possible paths
+
+		pathsLengths[0] = Topology3DSphRec<FloatingPrecision>::getDistance(coordinateOne, coordinateTwo);
+		pathsLengths[1] = Topology3DSphRec<FloatingPrecision>::getDistance(coordinateOne, coordinateTwo.getBilateralSymmetrical());
+
+		// Riemannian distance is the geodesic, i.e. infimum of allpaths
+		return *std::min_element(pathsLengths.begin(), pathsLengths.end());
+	}
+
+};
