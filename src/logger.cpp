@@ -103,5 +103,5 @@ void Logger::displayProgressBar(const size_t currentIteration, const size_t numb
 }
 
 // Global logger instance : is always initialized to
-// TRACE (6) and will be modified by the config file
+// TRACE (7) and will be modified by the config file
 Logger logger(LogLevel::TRACE);

@@ -10,7 +10,7 @@
       "comment": "launch.vs.json file used to pass command-line arguments for testing",
       "debuggerConfiguration": "gdb",
       "args": [
-        "resources/config.ini"
+        "../../../../resources/configLinux.ini"
       ],
       "env": {}
     },

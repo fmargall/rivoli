@@ -22,6 +22,9 @@ MainConfig::MainConfig(const std::string& configFilePath) {
 	while (std::getline(configFile, line)) {
 		lineID++; // Incrementing line number
 
+		// Carriage return \r cause incompatibility between Linux and Windows
+		line.erase(std::remove(line.begin(), line.end(), '\r'), line.end());
+
 		if (line.empty() || line[0] == '#' || line[0] == '[')
 			continue; // This line contains no data to read.
 
@@ -137,8 +140,7 @@ MainConfig::MainConfig(const std::string& configFilePath) {
 
 		else
 			// No '=' found means the line is unreadable.
-			LOG_WARN("Unable to read line number ", 
-				     lineID, " with value: ", line);
+			LOG_WARN("Unable to read line number ", lineID, ": ", line);
 	}
 
 	LOG_TRACE("Configuration file ", configFilePath, " read. MainConfig initialisiation over.");
