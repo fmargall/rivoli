@@ -1,0 +1,26 @@
+# This CITATION.cff file was generated with cffinit.
+# Visit https://bit.ly/cffinit to generate yours today!
+
+cff-version: 1.2.0
+title: RIVOLI
+message: >-
+  If you use this software, please cite it using the
+  metadata from this file.
+type: software
+authors:
+  - given-names: François
+    family-names: Margall
+    email: francois.margall@inria.fr
+    affiliation: INRIA
+    orcid: 'https://orcid.org/0009-0004-0585-087X'
+repository-code: 'https://github.com/fmargall/RIVOLI'
+abstract: >-
+  Physically-based interpolation code by radial basis
+  function dedicated to BRDF data reconstruction.
+keywords:
+  - interpolation
+  - brdf-modelling
+license: MIT
+commit: 7c63372
+version: v0.6.0
+date-released: '2025-04-25'
