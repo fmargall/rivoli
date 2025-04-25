@@ -65,6 +65,16 @@ public:
 		//	LOG_ERR("ThetaO value is greater than pi/2: ", thetaO);
 	}
 
+	Coordinate3DSpherical(const std::tuple<FloatingPrecision, FloatingPrecision, FloatingPrecision>& sphericalTuple)
+		: m_thetaI(std::get<0>(sphericalTuple)),
+		  m_thetaO(std::get<1>(sphericalTuple)),
+		  m_deltaPhi(std::get<2>(sphericalTuple)) {
+		//if (m_thetaI > glm::half_pi<FloatingPrecision>())
+		//	LOG_ERR("ThetaI value is greater than pi/2: ", m_thetaI);
+		//if (m_thetaO > glm::half_pi<FloatingPrecision>())
+		//	LOG_ERR("ThetaO value is greater than pi/2: ", m_thetaO);
+	}
+
 	std::unique_ptr<Coordinate> clone() const override {
 		return std::make_unique<Coordinate3DSpherical>(*this);
 	}
@@ -98,9 +108,19 @@ public:
 							 const FloatingPrecision& phiD)
 		: m_thetaH(thetaH), m_thetaD(thetaD), m_phiD(phiD) {
 		if (thetaH > glm::half_pi<FloatingPrecision>())
-			LOG_ERR("ThetaI value is greater than pi/2: ", thetaH);
+			LOG_ERR("ThetaH value is greater than pi/2: ", thetaH);
 		if (thetaD > glm::half_pi<FloatingPrecision>())
-			LOG_ERR("ThetaO value is greater than pi/2: ", thetaD);
+			LOG_ERR("ThetaD value is greater than pi/2: ", thetaD);
+	}
+
+	Coordinate3DRusinkiewicz(const std::tuple<FloatingPrecision, FloatingPrecision, FloatingPrecision>& rusinkiewiczTuple)
+		: m_thetaH(std::get<0>(rusinkiewiczTuple)), 
+		  m_thetaD(std::get<1>(rusinkiewiczTuple)), 
+		  m_phiD(std::get<2>(rusinkiewiczTuple)) {
+		if (m_thetaH > glm::half_pi<FloatingPrecision>())
+			LOG_ERR("ThetaH value is greater than pi/2: ", m_thetaH);
+		if (m_thetaD > glm::half_pi<FloatingPrecision>())
+			LOG_ERR("ThetaD value is greater than pi/2: ", m_thetaD);
 	}
 
 	std::unique_ptr<Coordinate> clone() const override {

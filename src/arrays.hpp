@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cmath>
 #include <vector>
 
 #include "logger.hpp"
@@ -30,11 +31,11 @@
  *            here: https://numpy.org/doc/stable/reference/generated/numpy.isclose.html
  *
  * @author  Francois Margall
- * @contact francois.margall@onera.fr
+ * @contact francois.margall@inria.fr
  */
 template <typename FloatingPrecision>
 bool isClose(
-	const FloatingPrecision& argOne, 
+	const FloatingPrecision& argOne,
 	const FloatingPrecision& argTwo,
 	const FloatingPrecision& rTol = static_cast<FloatingPrecision>(1e-5),
 	const FloatingPrecision& aTol = static_cast<FloatingPrecision>(1e-8))
@@ -44,17 +45,17 @@ bool isClose(
 
 template <typename FloatingPrecision>
 std::vector<FloatingPrecision> linspace(
-	const FloatingPrecision& start, 
-	const FloatingPrecision& end, 
-	const size_t& numPoints) 
+	const FloatingPrecision& start,
+	const FloatingPrecision& end,
+	const size_t& numPoints)
 {
 	std::vector<FloatingPrecision> result(numPoints);
 	if (start >= end)
 		LOG_CRITICAL("'start' should be inferior to 'end'");
-	
+
 	FloatingPrecision step = (end - start) / static_cast<FloatingPrecision>(numPoints - 1);
 	for (size_t i = 0; i < numPoints; ++i)
 		result[i] = start + i * step;
-	
+
 	return result;
 }

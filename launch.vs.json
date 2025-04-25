@@ -1,0 +1,31 @@
+{
+  "version": "0.2.1",
+  "defaults": {},
+  "configurations": [
+    {
+      "type": "cppgdb",
+      "name": "RIVOLI.app",
+      "project": "CMakeLists.txt",
+      "projectTarget": "RIVOLI.app",
+      "comment": "launch.vs.json file used to pass command-line arguments for testing",
+      "debuggerConfiguration": "gdb",
+      "args": [
+        "../../../../resources/configLinux.ini"
+      ],
+      "env": {}
+    },
+
+    {
+      "type": "default",
+      "project": "CMakeLists.txt",
+      "projectTarget": "RIVOLI.app.exe (src\\app\\RIVOLI.app.exe)",
+      "comment": "launch.vs.json file used to pass command-line arguments for testing",
+      "name": "RIVOLI.app.exe (src\\app\\RIVOLI.app.exe)",
+      "args": [
+        "resources/config.ini"
+      ],
+      "currentDir": "${workspaceRoot}",
+      "env": {}
+    }
+  ]
+}

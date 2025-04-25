@@ -1,5 +1,6 @@
 #include "logger.hpp"
 
+#include <cmath>
 #include <iomanip>
 #include <iostream>
 #include <stdexcept>
@@ -9,7 +10,11 @@ Logger::Logger(LogLevel logLevel) : level(logLevel) {
 	lastLogTime = std::chrono::system_clock::now();
 	if (LogLevel::TRACE <= level) {
 		currentTimeInstanced = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
-		ctime_s(currentTimeChar, sizeof(currentTimeChar), &currentTimeInstanced); currentTimeChar[24] = '\0';
+		#ifdef _WIN32 // ctime_s is used for Windows compatibility
+			ctime_s(currentTimeChar, sizeof(currentTimeChar), &currentTimeInstanced); currentTimeChar[24] = '\0';
+		#else         // ctime_r is used for Linux compatibility
+			ctime_r(&currentTimeInstanced, currentTimeChar); currentTimeChar[24] = '\0';
+		#endif        // Both are thread-safe while using ctime only is not
 		std::cout << "[TRACE]    " << currentTimeChar << " Logger: instanced" << std::endl;
 	}
 }
@@ -22,7 +27,11 @@ void Logger::Log(LogLevel messageLevel, const char* message) {
 	elapsedTime = std::chrono::duration_cast<std::chrono::milliseconds>(currentTime - lastLogTime);
 
 	currentTimeInstanced = std::chrono::system_clock::to_time_t(currentTime); // Printing current time
-	ctime_s(currentTimeChar, sizeof(currentTimeChar), &currentTimeInstanced); currentTimeChar[24] = '\0';
+	#ifdef _WIN32 // ctime_s is used for Windows compatibility
+		ctime_s(currentTimeChar, sizeof(currentTimeChar), &currentTimeInstanced); currentTimeChar[24] = '\0';
+	#else         // ctime_r is used for Linux compatibility
+		ctime_r(&currentTimeInstanced, currentTimeChar); currentTimeChar[24] = '\0';
+	#endif        // Both are thread-safe while using ctime only is not
 
 	elapsedTimeString = " +" + std::to_string(elapsedTime.count() / 1000.0) + "\b\b\b s "; // \b for 3 digits
 
@@ -94,5 +103,5 @@ void Logger::displayProgressBar(const size_t currentIteration, const size_t numb
 }
 
 // Global logger instance : is always initialized to
-// TRACE (6) and will be modified by the config file
+// TRACE (7) and will be modified by the config file
 Logger logger(LogLevel::TRACE);
