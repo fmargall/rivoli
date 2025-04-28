@@ -22,6 +22,7 @@ if(WIN32)
 endif()
 
 target_include_directories(${PROJECT_NAME}.app PRIVATE 
+                           ${CMAKE_CURRENT_BINARY_DIR} # This include allows to find the version.hpp
                            ${CMAKE_SOURCE_DIR}/src
                            ${CMAKE_SOURCE_DIR}/ext/glm
                            ${CMAKE_SOURCE_DIR}/ext/eigen)

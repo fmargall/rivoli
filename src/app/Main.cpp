@@ -2,9 +2,10 @@
 
 #include "configurator.hpp"
 #include "../logger.hpp"
+#include "../version.hpp"
 
 int main(int argc, char* argv[]) {
-	LOG_TRACE("RIVOLI program started.");
+	LOG_TRACE("RIVOLI program v", RIVOLI_VERSION, " started.");
 
 	// Read configuration file
 	if (argc != 2)
