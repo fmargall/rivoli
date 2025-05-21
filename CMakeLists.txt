@@ -11,6 +11,12 @@ find_package(OpenMP REQUIRED)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 
+# Will generate debug symbols (even in Release mode) for profiling
+if(MSVC)
+	set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /Zi")
+	set(CMAKE_EXE_LINKER_FLAGS_RELEASE "${CMAKE_EXE_LINKER_FLAGS_RELEASE} /DEBUG")
+endif()
+
 # Add subdirectories
 add_subdirectory(src)
 add_subdirectory(tests)
