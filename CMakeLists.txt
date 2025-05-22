@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.21)
 
 # Set the project name and version. While the project name should not be modified,
 # the version should be updated with each release, later automatically using CI/CD
-project(RIVOLI VERSION 0.6.0 LANGUAGES CXX)
+project(RIVOLI VERSION 0.6.1 LANGUAGES CXX)
 
 # Used for parallel computing
 find_package(OpenMP REQUIRED)
