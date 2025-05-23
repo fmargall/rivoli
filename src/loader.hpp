@@ -255,12 +255,14 @@ public:
 		else
 			LOG_CRITICAL("Invalid kernel: ", kernelStr, " with number of parameters: ", kernelNbParams);
 
-		float thresholdCoef;
-		file.read(reinterpret_cast<char*>(&thresholdCoef), sizeof(float));
-		if (thresholdCoef >= 0)
-			LOG_INFO("Threshold coefficient: ", thresholdCoef);
+		float thresholdCoefficient;
+		file.read(reinterpret_cast<char*>(&thresholdCoefficient), sizeof(float));
+		if (thresholdCoefficient >= 0) {
+			LOG_INFO("Threshold coefficient: ", thresholdCoefficient);
+			model.m_thresholdCoefficient = static_cast<FloatingPrecision_t<ReturnType>>(thresholdCoefficient);
+		}
 		else
-			LOG_CRITICAL("Invalid threshold coefficient (must be >= 0): ", thresholdCoef);
+			LOG_CRITICAL("Invalid threshold coefficient (must be >= 0): ", thresholdCoefficient);
 
 		int nbClusters;
 		file.read(reinterpret_cast<char*>(&nbClusters), sizeof(int));
@@ -428,6 +430,12 @@ public:
 
 		FloatingPrecision_t<ReturnType> result = static_cast<FloatingPrecision_t<ReturnType>>(0);
 		for (size_t i = 0; i < m_nbRBF; i++) {
+
+			// Ignore some of the RBF it their associated is negligible compared to the threshold
+			FloatingPrecision_t<ReturnType> weight = m_weights[clusterID * (m_nbRBF)+i][channel];
+			if (glm::abs(weight) <= m_thresholdCoefficient)
+				continue;
+
 			// Compute the distance between the input bidirection and the stored one for the RBF weight
 			FloatingPrecision_t<ReturnType> distance = static_cast<FloatingPrecision_t<ReturnType>>(0);
 
@@ -438,7 +446,7 @@ public:
 			localRBFResult = m_kernel(distance);
 
 			if constexpr (std::is_same_v<ReturnType, glm::vec3> || std::is_same_v<ReturnType, glm::dvec3>)
-				result += m_weights[clusterID * (m_nbRBF)+i][channel] * localRBFResult;
+				result += weight * localRBFResult;
 		}
 
 		// Add non-negativity correction if needed
@@ -448,6 +456,7 @@ public:
 	}
 
 	FloatingPrecision_t<ReturnType> m_nonNegativityCorrectionParameter;
+	FloatingPrecision_t<ReturnType> m_thresholdCoefficient;
 
 	std::string m_parameterisation;
 	std::unique_ptr<Topology<FloatingPrecision_t<ReturnType>>> m_topology;
