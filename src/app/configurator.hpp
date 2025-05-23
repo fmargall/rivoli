@@ -17,6 +17,9 @@ class MainConfig {
 public:
 	MainConfig(const std::string& configFilePath);
 
+	// Virtual destructor
+	virtual ~MainConfig() = default;
+
 	std::string getFloatingPointPrecision() const;
 
 protected:

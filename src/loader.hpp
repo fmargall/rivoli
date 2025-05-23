@@ -400,6 +400,53 @@ public:
 		return result;
 	}
 
+	FloatingPrecision_t<ReturnType> eval(glm::vec2 wi, glm::vec2 wo, size_t clusterID = 0, size_t channel = 0) {
+		if ((typeid(ReturnType) == typeid(float)) || (typeid(ReturnType) == typeid(double)))
+			LOG_CRITICAL("eval() function called with four arguments only works for RGB models."
+				         " Please call eval() with three arguments only for scalar BRDF models.");
+		if (channel < 0 || channel > 2)
+			LOG_CRITICAL("Invalid channel: ", channel, ". Must be among {0: Red, 1: Green, 2: Blue}.");
+
+		// Converting the input coordinate to the right type
+		FloatingPrecision_t<ReturnType> thetaI = static_cast<FloatingPrecision_t<ReturnType>>(wi.x);
+		FloatingPrecision_t<ReturnType> phiI   = static_cast<FloatingPrecision_t<ReturnType>>(wi.y);
+		FloatingPrecision_t<ReturnType> thetaO = static_cast<FloatingPrecision_t<ReturnType>>(wo.x);
+		FloatingPrecision_t<ReturnType> phiO   = static_cast<FloatingPrecision_t<ReturnType>>(wo.y);
+		std::unique_ptr<Coordinate> inputCoordinate;
+		if (m_topology->getDimension() == 2)
+			inputCoordinate = std::make_unique<Coordinate2D<FloatingPrecision_t<ReturnType>>>(thetaO, phiO);
+		else if (m_topology->getDimension() == 3) {
+			if (m_parameterisation == "spherical")
+				inputCoordinate = std::make_unique<Coordinate3DSpherical<FloatingPrecision_t<ReturnType>>>(thetaI, thetaO, phiO);
+			else if (m_parameterisation == "rusinkiewicz")
+				inputCoordinate = std::make_unique<Coordinate3DRusinkiewicz<FloatingPrecision_t<ReturnType>>>(thetaI, thetaO, phiO);
+			else
+				LOG_CRITICAL("Invalid parameterisation: ", m_parameterisation);
+		}
+		else
+			LOG_CRITICAL("Invalid number of dimensions: ", m_topology->getDimension());
+
+		FloatingPrecision_t<ReturnType> result = static_cast<FloatingPrecision_t<ReturnType>>(0);
+		for (size_t i = 0; i < m_nbRBF; i++) {
+			// Compute the distance between the input bidirection and the stored one for the RBF weight
+			FloatingPrecision_t<ReturnType> distance = static_cast<FloatingPrecision_t<ReturnType>>(0);
+
+			// Compute the distance between the input bidirection and the stored one for the RBF weight
+			distance = m_topology->getDistance(*inputCoordinate, *m_coordinates[i]);
+
+			FloatingPrecision_t<ReturnType> localRBFResult = static_cast<FloatingPrecision_t<ReturnType>>(0);
+			localRBFResult = m_kernel(distance);
+
+			if constexpr (std::is_same_v<ReturnType, glm::vec3> || std::is_same_v<ReturnType, glm::dvec3>)
+				result += m_weights[clusterID * (m_nbRBF)+i][channel] * localRBFResult;
+		}
+
+		// Add non-negativity correction if needed
+		result = power(result, m_nonNegativityCorrectionParameter);
+
+		return result;
+	}
+
 	FloatingPrecision_t<ReturnType> m_nonNegativityCorrectionParameter;
 
 	std::string m_parameterisation;

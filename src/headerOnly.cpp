@@ -1,3 +1,5 @@
+#include <glm/glm.hpp>
+
 #include "loader.hpp"
 
 int main() {
@@ -7,9 +9,8 @@ int main() {
 	for (size_t thetaID = 0; thetaID <= 100; thetaID++) {
 		for (size_t phiID = 0; phiID <= 100; phiID++) {
 			float theta = glm::radians(90.) * thetaID / 100;
-			float phi = glm::two_pi<float>() * phiID / 100;
-			glm::vec3 res = model.eval(glm::vec2(glm::radians(5.), 0.f), glm::vec2(theta, phi));
-			float red = res.r;
+			float phi   = glm::two_pi<float>() * phiID / 100;
+			float red   = model.eval(glm::vec2(glm::radians(5.), 0.f), glm::vec2(theta, phi), 0, 0);
 			file << theta << " " << phi << " " << red << "\n";
 		}
 	}

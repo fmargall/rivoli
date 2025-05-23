@@ -17,6 +17,10 @@ if(MSVC)
 	set(CMAKE_EXE_LINKER_FLAGS_RELEASE "${CMAKE_EXE_LINKER_FLAGS_RELEASE} /DEBUG")
 endif()
 
+# Use Address Sanitizer for debugging. Should be removed for final Release
+#add_compile_options(/fsanitize=address)
+#add_link_options(/INFERASANLIBS)
+
 # Add subdirectories
 add_subdirectory(src)
 add_subdirectory(tests)
