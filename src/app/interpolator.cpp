@@ -12,6 +12,18 @@ RBFInterpolator<FloatingPrecision>::RBFInterpolator(RuntimeConfig<FloatingPrecis
 	// Initialising the topology
 	m_topology = RuntimeConfig<FloatingPrecision>::initTopology(runtimeConfig);
 
+	// Initialising the threshold coefficient
+	FloatingPrecision thresholdCoefficient = runtimeConfig.m_thresholdCoef;
+	if (thresholdCoefficient < static_cast<FloatingPrecision>(0)) {
+		LOG_ERR("Threshold coefficient (", thresholdCoefficient, ") must be non"
+			    "-negative. Has been corrected to ", thresholdCoefficient, ".");
+		thresholdCoefficient = -thresholdCoefficient;
+	}
+	if (thresholdCoefficient > static_cast<FloatingPrecision>(1))
+		LOG_WARN("Threshold coefficient is set to a high value (", thresholdCoefficient, "). "
+				 "This may lead to strong depreciation of the quality of the interpolation.");
+	m_thresholdCoefficient = thresholdCoefficient;
+
 	// Initialising the kernel function
 	if (runtimeConfig.m_kernel == "linear")
 		m_kernel = [](FloatingPrecision arg) { return arg; };
@@ -211,6 +223,10 @@ FloatingPrecision RBFInterpolator<FloatingPrecision>::interpolate(const std::uni
 {
 	FloatingPrecision result = static_cast<FloatingPrecision>(0);
 	for (size_t i = 0; i < m_coordinates.size(); i++) {
+		// We can avoid a useless computation if the coefficient is negligeable
+		if (m_coefficients[i] <= m_thresholdCoefficient)
+			continue;
+
 		FloatingPrecision distance = m_topology->getDistance(*m_coordinates[i], *coordinate);
 		result += m_coefficients[i] * m_kernel(distance);
 	}

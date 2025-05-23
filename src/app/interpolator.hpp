@@ -33,4 +33,11 @@ private:
 
 	// Used to insure non-negativity interpolation
 	FloatingPrecision m_nonNegativityCorrectionParameter;
+
+	// Can speed up the interpolation when set to a value greater than 0
+	// Caution: this will not reduce the number of coefficients. It will
+	// only pass some of them during the computation, but won't suppress
+	// them from the list of coefficients. For deleting them completely,
+	// use the reduceInterpolator function.
+	FloatingPrecision m_thresholdCoefficient = static_cast<FloatingPrecision>(0);
 };
