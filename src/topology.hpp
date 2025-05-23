@@ -63,7 +63,7 @@ FloatingPrecision haversine(const FloatingPrecision& arg) {
  */
 template <typename FloatingPrecision>
 FloatingPrecision greatCircleDistance(const FloatingPrecision& thetaOne, const FloatingPrecision& phiOne,
-								                           const FloatingPrecision& thetaTwo, const FloatingPrecision& phiTwo) {
+								      const FloatingPrecision& thetaTwo, const FloatingPrecision& phiTwo) {
 	return static_cast<FloatingPrecision>(2) * glm::asin(glm::sqrt(haversine(thetaTwo - thetaOne) + glm::sin(thetaTwo) * glm::sin(thetaOne) * haversine(phiTwo - phiOne)));
 }
 
