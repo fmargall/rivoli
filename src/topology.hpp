@@ -345,8 +345,8 @@ public:
 		return std::make_unique<Topology3DSphRec>(*this);
 	}
 
-	FloatingPrecision getDistance(const Coordinate& coordinateOne,
-		                          const Coordinate& coordinateTwo) const {
+	FORCE_INLINE FloatingPrecision getDistance(const Coordinate& coordinateOne,
+											   const Coordinate& coordinateTwo) const {
 		try {
 			// The two given coordinates are of type Coordinate3DSpherical
 			const auto& coordinateOne3DSph = dynamic_cast<const Coordinate3DSpherical<FloatingPrecision>&>(coordinateOne);
@@ -369,13 +369,13 @@ public:
 		}
 	}
 
-	FloatingPrecision getDistance(const Coordinate3DSpherical<FloatingPrecision>& coordinateOne,
-		                          const GrazingCoordinate&                        coordinateTwoGrazing) const {
+	FORCE_INLINE FloatingPrecision getDistance(const Coordinate3DSpherical<FloatingPrecision>& coordinateOne,
+											   const GrazingCoordinate&                        coordinateTwoGrazing) const {
 		return getDistance(coordinateTwoGrazing, coordinateOne);
 	}
 
-	FloatingPrecision getDistance(const GrazingCoordinate&                        coordinateOneGrazing,
-		                          const Coordinate3DSpherical<FloatingPrecision>& coordinateTwo) const {
+	FORCE_INLINE FloatingPrecision getDistance(const GrazingCoordinate&                        coordinateOneGrazing,
+											   const Coordinate3DSpherical<FloatingPrecision>& coordinateTwo) const {
 		if (coordinateOneGrazing.getHemisphere() == 1) {
 			FloatingPrecision thetaI   = glm::half_pi<FloatingPrecision>();
 			FloatingPrecision thetaO   = coordinateTwo.getThetaO();
@@ -408,8 +408,8 @@ public:
 	 *			FloatingPrecision and ternary operators is much faster, and should almost always
 	 *			be preferred.
 	 */
-	FloatingPrecision getDistanceSquared(const Coordinate3DSpherical<FloatingPrecision>& coordinateOne,
-		                                 const Coordinate3DSpherical<FloatingPrecision>& coordinateTwo) const {
+	FORCE_INLINE FloatingPrecision getDistanceSquared(const Coordinate3DSpherical<FloatingPrecision>& coordinateOne,
+													  const Coordinate3DSpherical<FloatingPrecision>& coordinateTwo) const {
 		FloatingPrecision distanceOneSquared, distanceTwoSquared, distanceThreeSquared, distanceFourSquared; // Contains all possible paths
 
 		Coordinate3DSpherical<FloatingPrecision> coordinateOneReciprocal = coordinateOne.getReciprocal();
@@ -433,8 +433,8 @@ public:
 		return (minOne < minTwo) ? minOne : minTwo;
 	}
 
-	FloatingPrecision getDistance(const Coordinate3DSpherical<FloatingPrecision>& coordinateOne,
-								  const Coordinate3DSpherical<FloatingPrecision>& coordinateTwo) const {
+	FORCE_INLINE FloatingPrecision getDistance(const Coordinate3DSpherical<FloatingPrecision>& coordinateOne,
+											   const Coordinate3DSpherical<FloatingPrecision>& coordinateTwo) const {
 		return glm::sqrt(getDistanceSquared(coordinateOne, coordinateTwo));
 	}
 
@@ -449,8 +449,8 @@ public:
 		return std::make_unique<Topology3DSphSym>(*this);
 	}
 
-	FloatingPrecision getDistance(const Coordinate& coordinateOne,
-		                          const Coordinate& coordinateTwo) const {
+	FORCE_INLINE FloatingPrecision getDistance(const Coordinate& coordinateOne,
+											   const Coordinate& coordinateTwo) const {
 		try {
 			// The two given coordinates are of type Coordinate3DSpherical
 			const auto& coordinateOne3DSph = dynamic_cast<const Coordinate3DSpherical<FloatingPrecision>&>(coordinateOne);
@@ -473,13 +473,13 @@ public:
 		}
 	}
 
-	FloatingPrecision getDistance(const Coordinate3DSpherical<FloatingPrecision>& coordinateOne,
-		                          const GrazingCoordinate&                        coordinateTwoGrazing) const {
+	FORCE_INLINE FloatingPrecision getDistance(const Coordinate3DSpherical<FloatingPrecision>& coordinateOne,
+											   const GrazingCoordinate&                        coordinateTwoGrazing) const {
 		return getDistance(coordinateTwoGrazing, coordinateOne);
 	}
 
-	FloatingPrecision getDistance(const GrazingCoordinate&                        coordinateOneGrazing,
-		                          const Coordinate3DSpherical<FloatingPrecision>& coordinateTwo) const {
+	FORCE_INLINE FloatingPrecision getDistance(const GrazingCoordinate&                        coordinateOneGrazing,
+											   const Coordinate3DSpherical<FloatingPrecision>& coordinateTwo) const {
 		if (coordinateOneGrazing.getHemisphere() == 1) {
 			FloatingPrecision thetaI   = glm::half_pi<FloatingPrecision>();
 			FloatingPrecision thetaO   = coordinateTwo.getThetaO();
@@ -512,8 +512,8 @@ public:
 	 *			FloatingPrecision and ternary operators is much faster, and should almost always
 	 *			be preferred.
 	 */
-	FloatingPrecision getDistance(const Coordinate3DSpherical<FloatingPrecision>& coordinateOne,
-								  const Coordinate3DSpherical<FloatingPrecision>& coordinateTwo) const {
+	FORCE_INLINE FloatingPrecision getDistance(const Coordinate3DSpherical<FloatingPrecision>& coordinateOne,
+											   const Coordinate3DSpherical<FloatingPrecision>& coordinateTwo) const {
 		FloatingPrecision distanceOneSquared, distanceTwoSquared; // Contains all possible paths
 
 		// In order to optimize the computation, it is useless to call several times the glm::sqrt function.
