@@ -200,7 +200,8 @@ public:
 	 *          came from the way that path lengths were stored and how the minimum was returned
 	 *          We were using a std::vector and std::min_element to get the minimum value.
 	 *          For this function and the others equivalents, the following implementation using
-				FloatingPrecision and std::min is much faster and should always be preferred.
+	 *			FloatingPrecision and ternary operators is much faster, and should almost always
+	 *			be preferred.
 	 */
 	FloatingPrecision getDistance(const Coordinate2D<FloatingPrecision>& coordinateOne,
 								  const Coordinate2D<FloatingPrecision>& coordinateTwo) const {
@@ -211,7 +212,7 @@ public:
 		distanceTwo = Topology2D<FloatingPrecision>::getDistance(coordinateOne, coordinateTwo.getBilateralSymmetrical());
 
 		// Riemannian distance is the geodesic, i.e. infimum of allpaths
-		return std::min({ distanceOne, distanceTwo });
+		return (distanceOne < distanceTwo) ? distanceOne : distanceTwo;
 	}
 };
 
@@ -397,7 +398,8 @@ public:
 	 *          came from the way that path lengths were stored and how the minimum was returned
 	 *          We were using a std::vector and std::min_element to get the minimum value. 
 	 *          For this function and the others equivalents, the following implementation using
-				FloatingPrecision and std::min is much faster and should always be preferred.
+	 *			FloatingPrecision and ternary operators is much faster, and should almost always
+	 *			be preferred.
 	 */
 	FloatingPrecision getDistance(const Coordinate3DSpherical<FloatingPrecision>& coordinateOne,
 		                          const Coordinate3DSpherical<FloatingPrecision>& coordinateTwo) const {
@@ -411,8 +413,15 @@ public:
 		distanceThree = Topology3DSph<FloatingPrecision>::getDistance(coordinateOneReciprocal, coordinateTwo);
 		distanceFour  = Topology3DSph<FloatingPrecision>::getDistance(coordinateOneReciprocal, coordinateTwoReciprocal);
 
-		// Riemannian distance is the geodesic, i.e. infimum of allpaths
-		return std::min({ distanceOne, distanceTwo, distanceThree, distanceFour });
+		// Riemannian distance is the geodesic, i.e. infimum of all paths
+		// NB : since this function is on the hot path of the program, it should be optimised as
+		// much as possible. Using std::min with four arguments costs too much because lists are
+		// initialised in background. Using std::min in cascade is better, and could achieve the
+		// same result as the following, depending on the compiler optimisations. This solution,
+		// however, is the fastest in any cases.
+		FloatingPrecision minOne = (distanceOne   < distanceTwo ) ? distanceOne   : distanceTwo;
+		FloatingPrecision minTwo = (distanceThree < distanceFour) ? distanceThree : distanceFour;
+		return (minOne < minTwo) ? minOne : minTwo;
 	}
 
 };
@@ -486,7 +495,8 @@ public:
 	 *          came from the way that path lengths were stored and how the minimum was returned
 	 *          We were using a std::vector and std::min_element to get the minimum value.
 	 *          For this function and the others equivalents, the following implementation using
-				FloatingPrecision and std::min is much faster and should always be preferred.
+	 *			FloatingPrecision and ternary operators is much faster, and should almost always
+	 *			be preferred.
 	 */
 	FloatingPrecision getDistance(const Coordinate3DSpherical<FloatingPrecision>& coordinateOne,
 								  const Coordinate3DSpherical<FloatingPrecision>& coordinateTwo) const {
@@ -496,7 +506,7 @@ public:
 		distanceTwo = Topology3DSph<FloatingPrecision>::getDistance(coordinateOne, coordinateTwo.getBilateralSymmetrical());
 
 		// Riemannian distance is the geodesic, i.e. infimum of allpaths
-		return std::min({ distanceOne, distanceTwo });
+		return (distanceOne < distanceTwo) ? distanceOne : distanceTwo;
 	}
 
 };
@@ -570,7 +580,8 @@ public:
 	 *          came from the way that path lengths were stored and how the minimum was returned
 	 *          We were using a std::vector and std::min_element to get the minimum value.
 	 *          For this function and the others equivalents, the following implementation using
-				FloatingPrecision and std::min is much faster and should always be preferred.
+	 *			FloatingPrecision and ternary operators is much faster, and should almost always
+	 *			be preferred.
 	 */
 	FloatingPrecision getDistance(const Coordinate3DSpherical<FloatingPrecision>& coordinateOne,
 								  const Coordinate3DSpherical<FloatingPrecision>& coordinateTwo) const {
@@ -580,7 +591,7 @@ public:
 		distanceTwo = Topology3DSphRec<FloatingPrecision>::getDistance(coordinateOne, coordinateTwo.getBilateralSymmetrical());
 
 		// Riemannian distance is the geodesic, i.e. infimum of allpaths
-		return std::min({ distanceOne, distanceTwo });
+		return (distanceOne < distanceTwo) ? distanceOne : distanceTwo;
 	}
 
 };
