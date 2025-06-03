@@ -3,7 +3,7 @@
 #include "loader.hpp"
 
 int main() {
-	RBFModelvec3 model = RBFModel<glm::vec3>::readFile("brdfManteauAinou.RBFCoeffs", true, 0);
+	RBFModelvec3 model = RBFModel<glm::vec3>::readFile("../../../brdfManteauAinou.RBFCoeffs", true, 0);
 
 	std::ofstream file("data.txt");
 	for (size_t thetaID = 0; thetaID <= 100; thetaID++) {

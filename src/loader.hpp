@@ -396,6 +396,28 @@ public:
 			result += m_weights[clusterID * (m_nbRBF) + i] * localRBFResult;
 		}
 
+		// Grazing angle correction made if required
+		if      (m_topology->getDimension() == 2) {
+			Coordinate2D<FloatingPrecision_t<ReturnType>>& coord = dynamic_cast<Coordinate2D<FloatingPrecision_t<ReturnType>>&>(*inputCoordinate);
+			result /= m_smoothingFunctionHemisphereOne(coord.getTheta());
+		}
+		else if (m_topology->getDimension() == 3) {
+			if      (m_parameterisation == "spherical") {
+				Coordinate3DSpherical<FloatingPrecision_t<ReturnType>>& coord = dynamic_cast<Coordinate3DSpherical<FloatingPrecision_t<ReturnType>>&>(*inputCoordinate);
+				result /= m_smoothingFunctionHemisphereOne(coord.getThetaI());
+				result /= m_smoothingFunctionHemisphereTwo(coord.getThetaO());
+			}
+			else if (m_parameterisation == "rusinkiewicz") {
+				Coordinate3DRusinkiewicz<FloatingPrecision_t<ReturnType>>& coord = dynamic_cast<Coordinate3DRusinkiewicz<FloatingPrecision_t<ReturnType>>&>(*inputCoordinate);
+				result /= m_smoothingFunctionHemisphereOne(coord.getThetaH());
+				result /= m_smoothingFunctionHemisphereTwo(coord.getThetaD());
+			}
+			else
+				LOG_CRITICAL("Invalid parameterisation: ", m_parameterisation);
+		}
+		else
+			LOG_CRITICAL("Invalid number of dimensions: ", m_topology->getDimension());
+
 		// Add non-negativity correction if needed
 		result = power(result, m_nonNegativityCorrectionParameter);
 
@@ -448,6 +470,28 @@ public:
 			if constexpr (std::is_same_v<ReturnType, glm::vec3> || std::is_same_v<ReturnType, glm::dvec3>)
 				result += weight * localRBFResult;
 		}
+
+		// Grazing angle correction made if required
+		if      (m_topology->getDimension() == 2) {
+			Coordinate2D<FloatingPrecision_t<ReturnType>>& coord = dynamic_cast<Coordinate2D<FloatingPrecision_t<ReturnType>>&>(*inputCoordinate);
+			result /= m_smoothingFunctionHemisphereOne(coord.getTheta());
+		}
+		else if (m_topology->getDimension() == 3) {
+			if (m_parameterisation == "spherical") {
+				Coordinate3DSpherical<FloatingPrecision_t<ReturnType>>& coord = dynamic_cast<Coordinate3DSpherical<FloatingPrecision_t<ReturnType>>&>(*inputCoordinate);
+				result /= m_smoothingFunctionHemisphereOne(coord.getThetaI());
+				result /= m_smoothingFunctionHemisphereTwo(coord.getThetaO());
+			}
+			else if (m_parameterisation == "rusinkiewicz") {
+				Coordinate3DRusinkiewicz<FloatingPrecision_t<ReturnType>>& coord = dynamic_cast<Coordinate3DRusinkiewicz<FloatingPrecision_t<ReturnType>>&>(*inputCoordinate);
+				result /= m_smoothingFunctionHemisphereOne(coord.getThetaH());
+				result /= m_smoothingFunctionHemisphereTwo(coord.getThetaD());
+			}
+			else
+				LOG_CRITICAL("Invalid parameterisation: ", m_parameterisation);
+		}
+		else
+			LOG_CRITICAL("Invalid number of dimensions: ", m_topology->getDimension());
 
 		// Add non-negativity correction if needed
 		result = power(result, m_nonNegativityCorrectionParameter);
