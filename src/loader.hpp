@@ -161,8 +161,8 @@ public:
 		char smoothingFunctionHemisphereOne[4] = { 0 }; // Fourth character is null terminator
 		file.read(smoothingFunctionHemisphereOne, 3);
 		std::string smoothingFunctionHemisphereOneStr(smoothingFunctionHemisphereOne);
-		if (smoothingFunctionHemisphereOneStr == "NUL") {
-			model.m_smoothingFunctionHemisphereOne = [](FloatingPrecision_t<ReturnType> arg) { return arg; };
+		if      (smoothingFunctionHemisphereOneStr == "NUL") {
+			model.m_smoothingFunctionHemisphereOne = [](FloatingPrecision_t<ReturnType> arg) { return static_cast<FloatingPrecision_t<ReturnType>>(1.); };
 			LOG_INFO("Smoothing function hemisphere one: none");
 		}
 		else if (smoothingFunctionHemisphereOneStr == "COS") {
@@ -176,7 +176,7 @@ public:
 		file.read(smoothingFunctionHemisphereTwo, 3);
 		std::string smoothingFunctionHemisphereTwoStr(smoothingFunctionHemisphereTwo);
 		if (smoothingFunctionHemisphereTwoStr == "NUL") {
-			model.m_smoothingFunctionHemisphereTwo = [](FloatingPrecision_t<ReturnType> arg) { return arg; };
+			model.m_smoothingFunctionHemisphereTwo = [](FloatingPrecision_t<ReturnType> arg) { return static_cast<FloatingPrecision_t<ReturnType>>(1.); };
 			LOG_INFO("Smoothing function hemisphere two: none");
 		}
 		else if (smoothingFunctionHemisphereTwoStr == "COS") {
