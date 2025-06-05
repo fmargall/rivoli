@@ -437,7 +437,7 @@ public:
 		return result;
 	}
 
-	FloatingPrecision_t<ReturnType> eval(glm::vec2 wi, glm::vec2 wo, size_t clusterID = 0, size_t channel = 0) {
+	FloatingPrecision_t<ReturnType> eval(glm::vec2 wi, glm::vec2 wo, size_t clusterID, size_t channel) {
 		if ((typeid(ReturnType) == typeid(float)) || (typeid(ReturnType) == typeid(double)))
 			LOG_CRITICAL("eval() function called with four arguments only works for RGB models."
 				         " Please call eval() with three arguments only for scalar BRDF models.");
