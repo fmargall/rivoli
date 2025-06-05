@@ -70,12 +70,13 @@ public:
 	 * @param filePath : [string] Absolute or relative path to the file.
 	 *                  The file must have the type format '.RBFCoeff'
 	 * @param verbose  : [bool] If true, prints the content of the file.
-	 * @param clusterID: [size_t] ID of the cluster to read. Default is 0.
+	 * @param clusterID: [int] ID of the cluster to read. Default is 0.
+	 *                   If set to -1, will read all the clusters.
 	 *
 	 * @return [RBFModel] object containing the parameters of the model.
 	 *         Can be then used to compute the BRDF.
 	 */
-	static RBFModel readFile(const std::string& filePath, const bool verbose = false, const size_t& clusterID = 0) {
+	static RBFModel readFile(const std::string& filePath, const bool verbose = false, const int& clusterID = 0) {
 		// Initialising model
 		RBFModel model;
 
@@ -284,57 +285,68 @@ public:
 		else
 			LOG_CRITICAL("Invalid number of RBF models (must be > 0): ", model.m_nbRBF);
 
-		// Reading of the header of the file over
-		// Reading and saving the RBF coordinates
-		if (!(uniqueLocationRBF)) {
-			// Moving the cursor to pass RBF coordinates
-			std::streampos deltaStreamPosition = dimension * clusterID * model.m_nbRBF * sizeof(FloatingPrecision_t<ReturnType>);
-			file.seekg(deltaStreamPosition, std::ios::cur);
-			// Moving the cursor to pass RBF weights
-			deltaStreamPosition = clusterID * model.m_nbRBF * sizeof(ReturnType);
-			file.seekg(deltaStreamPosition, std::ios::cur);
-		}
+		std::streampos positionEndOfHeader = file.tellg();
 
-		for (size_t i = 0; i < model.m_nbRBF; i++) {
-			if (file.eof()) // Check if the file has ended prematurely
-				LOG_CRITICAL("Reached EOF unexpectedly at coordinate number ", i);
+		for (size_t localClusterID = (clusterID >= 0 ? clusterID : 0);
+			 localClusterID < (clusterID >= 0 ? clusterID + 1 : nbClusters);
+			 localClusterID++) {
 
-			if (!file) // Checks if the file is still in a good state
-				LOG_CRITICAL("Error reading the file at coordinate number ", i);
+			// Repositioning the cursor
+			file.clear(); file.seekg(positionEndOfHeader, std::ios::beg);
 
-			if (dimension == 2) {
-				FloatingPrecision_t<ReturnType> theta, phi;
-				file.read(reinterpret_cast<char*>(&theta), sizeof(FloatingPrecision_t<ReturnType>));
-				file.read(reinterpret_cast<char*>(&phi)  , sizeof(FloatingPrecision_t<ReturnType>));
-				model.m_coordinates.push_back(std::make_unique<Coordinate2D<FloatingPrecision_t<ReturnType>>>(theta, phi));
+			// Reading of the header of the file over
+			// Reading and saving the RBF coordinates
+			if (!(uniqueLocationRBF)) {
+				// Moving the cursor to pass RBF coordinates
+				std::streampos deltaStreamPosition = dimension * localClusterID * model.m_nbRBF * sizeof(FloatingPrecision_t<ReturnType>);
+				file.seekg(deltaStreamPosition, std::ios::cur);
+				// Moving the cursor to pass RBF weights
+				deltaStreamPosition = localClusterID * model.m_nbRBF * sizeof(ReturnType);
+				file.seekg(deltaStreamPosition, std::ios::cur);
 			}
-			else if (dimension == 3) {
-				FloatingPrecision_t<ReturnType> thetaOne, thetaTwo, phiTwo;
-				file.read(reinterpret_cast<char*>(&thetaOne), sizeof(FloatingPrecision_t<ReturnType>));
-				file.read(reinterpret_cast<char*>(&thetaTwo), sizeof(FloatingPrecision_t<ReturnType>));
-				file.read(reinterpret_cast<char*>(&phiTwo)  , sizeof(FloatingPrecision_t<ReturnType>));
-				if      (model.m_parameterisation == "spherical")
-					model.m_coordinates.push_back(std::make_unique<Coordinate3DSpherical<FloatingPrecision_t<ReturnType>>>(thetaOne, thetaTwo, phiTwo));
-				else if (model.m_parameterisation == "rusinkiewicz") 
-					model.m_coordinates.push_back(std::make_unique<Coordinate3DRusinkiewicz<FloatingPrecision_t<ReturnType>>>(thetaOne, thetaTwo, phiTwo));
+
+			for (size_t i = 0; i < model.m_nbRBF; i++) {
+				if (file.eof()) // Check if the file has ended prematurely
+					LOG_CRITICAL("Reached EOF unexpectedly at coordinate number ", i);
+
+				if (!file) // Checks if the file is still in a good state
+					LOG_CRITICAL("Error reading the file at coordinate number ", i);
+
+				if (dimension == 2) {
+					FloatingPrecision_t<ReturnType> theta, phi;
+					file.read(reinterpret_cast<char*>(&theta), sizeof(FloatingPrecision_t<ReturnType>));
+					file.read(reinterpret_cast<char*>(&phi), sizeof(FloatingPrecision_t<ReturnType>));
+					model.m_coordinates.push_back(std::make_unique<Coordinate2D<FloatingPrecision_t<ReturnType>>>(theta, phi));
+				}
+				else if (dimension == 3) {
+					FloatingPrecision_t<ReturnType> thetaOne, thetaTwo, phiTwo;
+					file.read(reinterpret_cast<char*>(&thetaOne), sizeof(FloatingPrecision_t<ReturnType>));
+					file.read(reinterpret_cast<char*>(&thetaTwo), sizeof(FloatingPrecision_t<ReturnType>));
+					file.read(reinterpret_cast<char*>(&phiTwo), sizeof(FloatingPrecision_t<ReturnType>));
+					if (model.m_parameterisation == "spherical")
+						model.m_coordinates.push_back(std::make_unique<Coordinate3DSpherical<FloatingPrecision_t<ReturnType>>>(thetaOne, thetaTwo, phiTwo));
+					else if (model.m_parameterisation == "rusinkiewicz")
+						model.m_coordinates.push_back(std::make_unique<Coordinate3DRusinkiewicz<FloatingPrecision_t<ReturnType>>>(thetaOne, thetaTwo, phiTwo));
+					else
+						LOG_CRITICAL("Invalid parameterisation: ", model.m_parameterisation);
+				}
 				else
-					LOG_CRITICAL("Invalid parameterisation: ", model.m_parameterisation);
+					LOG_CRITICAL("Invalid number of dimensions: ", dimension);
 			}
-			else
-				LOG_CRITICAL("Invalid number of dimensions: ", dimension);
-		}
 
-		if (uniqueLocationRBF) {
-			// Moving the cursor to pass RBF Weights
-			std::streampos deltaStreamPosition = clusterID * model.m_nbRBF * sizeof(ReturnType);
-			file.seekg(deltaStreamPosition, std::ios::cur);
-		}
+			if (uniqueLocationRBF) {
+				// Moving the cursor to pass RBF Weights
+				std::streampos deltaStreamPosition = localClusterID * model.m_nbRBF * sizeof(ReturnType);
+				file.seekg(deltaStreamPosition, std::ios::cur);
+			}
 
-		// Reading and saving the RBF weights
-		for (size_t rbfID = 0; rbfID < model.m_nbRBF; rbfID++) {
-			ReturnType weight;
-			file.read(reinterpret_cast<char*>(&weight), sizeof(ReturnType));
-			model.m_weights.push_back(weight);
+			// Reading and saving the RBF weights
+			for (size_t rbfID = 0; rbfID < model.m_nbRBF; rbfID++) {
+				ReturnType weight;
+				file.read(reinterpret_cast<char*>(&weight), sizeof(ReturnType));
+				model.m_weights.push_back(weight);
+			}
+
 		}
 
 		return model;
