@@ -67,6 +67,34 @@ FloatingPrecision greatCircleDistance(const FloatingPrecision& thetaOne, const F
 	return static_cast<FloatingPrecision>(2) * glm::asin(glm::sqrt(haversine(thetaTwo - thetaOne) + glm::sin(thetaTwo) * glm::sin(thetaOne) * haversine(phiTwo - phiOne)));
 }
 
+/*
+ * @brief Computes the great circle distance between two points on a sphere
+ *        with a bilateral symmetry.
+ *
+ * @note This function avoids to call twice the greatCircleDistance method,
+ *       by using the fact that minimizing the distance between two points,
+ *       is mathematically the same as doing the following computation.
+ *       Coordinates should be given in spherical coordinates following the
+ *		 convention of physicists ISO 80000-2:2019, i.e.:
+ *
+ * @tparam FloatingPrecision FP precision. Usually float or double
+ *
+ * @param thetaOne polar angle, or colatitude angle, of first  point in rad
+ * @param phiOne   azimuthal angle (longitude angle) of first  point in rad
+ * @param thetaTwo polar angle, or colatitude angle  of second point in rad
+ * @param phiTwo   azimuthal angle (longitude angle) of second point in rad
+ *
+ * @return great circle distance on a unit sphere with radius 1
+ */
+template <typename FloatingPrecision>
+FloatingPrecision greatCircleDistanceSymSph(const FloatingPrecision& thetaOne, const FloatingPrecision& phiOne,
+											const FloatingPrecision& thetaTwo, const FloatingPrecision& phiTwo) {
+	FloatingPrecision haversineDiffSymPhis = (static_cast<FloatingPrecision>(1) - glm::cos(phiOne) * glm::cos(phiTwo) 
+		                                                               - glm::abs(glm::sin(phiOne) * glm::sin(phiTwo))) / static_cast<FloatingPrecision>(2);
+	
+	return static_cast<FloatingPrecision>(2) * glm::asin(glm::sqrt(haversine(thetaTwo - thetaOne) + glm::sin(thetaTwo) * glm::sin(thetaOne) * haversineDiffSymPhis))
+}
+
 template <typename FloatingPrecision>
 class Topology {
 public:
