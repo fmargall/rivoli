@@ -89,10 +89,13 @@ FloatingPrecision greatCircleDistance(const FloatingPrecision& thetaOne, const F
 template <typename FloatingPrecision>
 FloatingPrecision greatCircleDistanceSymSph(const FloatingPrecision& thetaOne, const FloatingPrecision& phiOne,
 											const FloatingPrecision& thetaTwo, const FloatingPrecision& phiTwo) {
+	// Minimising the whole expression of the great circle distance when varying the phi values involves to also
+	// minimise the haversine(phiTwo - phiOne) itself. It can be derived that minimising its value by adding one
+	// 2PI - phiTwo and/or 2PI - phiOne is exactly the same as the following.
 	FloatingPrecision haversineDiffSymPhis = (static_cast<FloatingPrecision>(1) - glm::cos(phiOne) * glm::cos(phiTwo) 
 		                                                               - glm::abs(glm::sin(phiOne) * glm::sin(phiTwo))) / static_cast<FloatingPrecision>(2);
 	
-	return static_cast<FloatingPrecision>(2) * glm::asin(glm::sqrt(haversine(thetaTwo - thetaOne) + glm::sin(thetaTwo) * glm::sin(thetaOne) * haversineDiffSymPhis))
+	return static_cast<FloatingPrecision>(2) * glm::asin(glm::sqrt(haversine(thetaTwo - thetaOne) + glm::sin(thetaTwo) * glm::sin(thetaOne) * haversineDiffSymPhis));
 }
 
 template <typename FloatingPrecision>
@@ -223,6 +226,9 @@ public:
 	}
 
 	/*
+	 * @deprecated Even if works properly and more readable, consider using getDistance directly
+	 *             as it is more optimised.
+	 *
 	 * @details Even if the main part of the cost of computation comes from the execution of the
 	 *          getDistance functions from Topology2D, an important part of the computation time
 	 *          came from the way that path lengths were stored and how the minimum was returned
@@ -231,8 +237,9 @@ public:
 	 *			FloatingPrecision and ternary operators is much faster, and should almost always
 	 *			be preferred.
 	 */
-	FloatingPrecision getDistance(const Coordinate2D<FloatingPrecision>& coordinateOne,
-								  const Coordinate2D<FloatingPrecision>& coordinateTwo) const {
+	[[deprecated("Even if works and is readable, use getDistance which is more optimised.")]]
+	FloatingPrecision getDistance_deprecated(const Coordinate2D<FloatingPrecision>& coordinateOne,
+								             const Coordinate2D<FloatingPrecision>& coordinateTwo) const {
 		FloatingPrecision distanceOne, distanceTwo; // Contains all possible paths
 
 		// Only two possibilities: others are the same by symmetry of the metric
@@ -241,6 +248,12 @@ public:
 
 		// Riemannian distance is the geodesic, i.e. infimum of allpaths
 		return (distanceOne < distanceTwo) ? distanceOne : distanceTwo;
+	}
+
+	FloatingPrecision getDistance(const Coordinate2D<FloatingPrecision>& coordinateOne,
+		                          const Coordinate2D<FloatingPrecision>& coordinateTwo) const {
+		return greatCircleDistanceSymSph(coordinateOne.getTheta(), coordinateOne.getPhi(),
+			                             coordinateTwo.getTheta(), coordinateTwo.getPhi());
 	}
 };
 
@@ -532,6 +545,9 @@ public:
 	}
 
 	/*
+	 * @deprecated Even if works properly and more readable, consider using getDistance directly
+	 *             as it is more optimised.
+	 * 
 	 * @details Even if the main part of the cost of computation comes from the execution of the
 	 *          getDistance functions from Topology3DSph, an important part (> 40%) of this cost
 	 *          came from the way that path lengths were stored and how the minimum was returned
@@ -540,8 +556,9 @@ public:
 	 *			FloatingPrecision and ternary operators is much faster, and should almost always
 	 *			be preferred.
 	 */
-	FORCE_INLINE FloatingPrecision getDistance(const Coordinate3DSpherical<FloatingPrecision>& coordinateOne,
-											   const Coordinate3DSpherical<FloatingPrecision>& coordinateTwo) const {
+	[[deprecated("Even if works and is readable, use getDistance which is more optimised.")]]
+	FORCE_INLINE FloatingPrecision getDistance_deprecated(const Coordinate3DSpherical<FloatingPrecision>& coordinateOne,
+											              const Coordinate3DSpherical<FloatingPrecision>& coordinateTwo) const {
 		FloatingPrecision distanceOneSquared, distanceTwoSquared; // Contains all possible paths
 
 		// In order to optimize the computation, it is useless to call several times the glm::sqrt function.
@@ -552,6 +569,29 @@ public:
 		// Riemannian distance is the geodesic, i.e. infimum of allpaths
 		FloatingPrecision minimumDistanceSquared = (distanceOneSquared < distanceTwoSquared) ? distanceOneSquared : distanceTwoSquared;
 		return glm::sqrt(minimumDistanceSquared);
+	}
+
+	FORCE_INLINE FloatingPrecision getDistanceSquared(const Coordinate3DSpherical<FloatingPrecision>& coordinateOne,
+											          const Coordinate3DSpherical<FloatingPrecision>& coordinateTwo) const {
+		Topology2DSym<FloatingPrecision> topology2DSym;
+		Coordinate2D<FloatingPrecision>  coordinateOneOmegaO = Coordinate2D<FloatingPrecision>(coordinateOne.getThetaO(), coordinateOne.getDeltaPhi());
+		Coordinate2D<FloatingPrecision>  coordinateTwoOmegaO = Coordinate2D<FloatingPrecision>(coordinateTwo.getThetaO(), coordinateTwo.getDeltaPhi());
+
+		// In 3D BRDF, the first hemisphere distance is just  the difference between the two thetaI
+		FloatingPrecision distanceHemisphereOne = coordinateTwo.getThetaI() - coordinateOne.getThetaI();
+		// The second hemisphere distance is the distance between the two coordinates in the 2D topology
+		FloatingPrecision distanceHemisphereTwo = topology2DSym.getDistance(coordinateOneOmegaO, coordinateTwoOmegaO);
+
+		// Since we are using here an Euclidean metric, the distances need to be squared
+		distanceHemisphereOne *= distanceHemisphereOne;
+		distanceHemisphereTwo *= distanceHemisphereTwo;
+
+		return distanceHemisphereOne + distanceHemisphereTwo;
+	}
+
+	FORCE_INLINE FloatingPrecision getDistance(const Coordinate3DSpherical<FloatingPrecision>& coordinateOne,
+											   const Coordinate3DSpherical<FloatingPrecision>& coordinateTwo) const {
+		return glm::sqrt(getDistanceSquared(coordinateOne, coordinateTwo));
 	}
 
 };
@@ -640,6 +680,41 @@ public:
 		// Riemannian distance is the geodesic, i.e. infimum of allpaths
 		FloatingPrecision minimumDistanceSquared = (distanceOneSquared < distanceTwoSquared) ? distanceOneSquared : distanceTwoSquared;
 		return glm::sqrt(minimumDistanceSquared);
+	}
+
+	/*
+	 * @deprecated Even if works properly and more readable, consider using getDistance directly
+	 *             as it is more optimised.
+	 *
+	 * @details Although this distance function was supposed to be way faster, using a efficient
+	 *          way to compute the symmetrical great circle distance, surprisingly the latter is
+	 *          still faster. This function is kept for further investigation for optimisation.
+	 */
+	[[deprecated("Even if works and is readable, use getDistance which is more optimised.")]]
+	FloatingPrecision getDistance_deprecated(const Coordinate3DSpherical<FloatingPrecision>& coordinateOne,
+								             const Coordinate3DSpherical<FloatingPrecision>& coordinateTwo) const {
+		Topology3DSphSym<FloatingPrecision> topology3DSphSym;
+		FloatingPrecision distanceOneSquared, distanceTwoSquared, distanceThreeSquared, distanceFourSquared; // Contains all possible paths
+
+		Coordinate3DSpherical<FloatingPrecision> coordinateOneReciprocal = coordinateOne.getReciprocal();
+		Coordinate3DSpherical<FloatingPrecision> coordinateTwoReciprocal = coordinateTwo.getReciprocal();
+
+		// In order to optimize the computation, it is useless to call several times the glm::sqrt function.
+		// Only once we have obtained the minimum distance length, it makes sense to compute its square root
+		distanceOneSquared   = topology3DSphSym.getDistanceSquared(coordinateOne, coordinateTwo);
+		distanceTwoSquared   = topology3DSphSym.getDistanceSquared(coordinateOne, coordinateTwoReciprocal);
+		distanceThreeSquared = topology3DSphSym.getDistanceSquared(coordinateOneReciprocal, coordinateTwo);
+		distanceFourSquared  = topology3DSphSym.getDistanceSquared(coordinateOneReciprocal, coordinateTwoReciprocal);
+
+		// Riemannian distance is the geodesic, i.e. infimum of all paths
+		// NB : since this function is on the hot path of the program, it should be optimised as
+		// much as possible. Using std::min with four arguments costs too much because lists are
+		// initialised in background. Using std::min in cascade is better, and could achieve the
+		// same result as the following, depending on the compiler optimisations. This solution,
+		// however, is the fastest in any cases.
+		FloatingPrecision minOne = (distanceOneSquared   < distanceTwoSquared)  ? distanceOneSquared   : distanceTwoSquared;
+		FloatingPrecision minTwo = (distanceThreeSquared < distanceFourSquared) ? distanceThreeSquared : distanceFourSquared;
+		return glm::sqrt((minOne < minTwo) ? minOne : minTwo);
 	}
 
 };
