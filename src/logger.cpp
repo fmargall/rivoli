@@ -38,8 +38,7 @@ void Logger::Log(LogLevel messageLevel, const char* message) {
 	if (messageLevel <= level) {
 		switch (messageLevel) {
 		case LogLevel::CRITICAL:
-			std::cout << "[CRITICAL] " << currentTimeChar << elapsedTimeString << message << std::endl;
-			throw std::runtime_error("Program stopped due to critical event: consult latest messages");
+			LogCritical(message);
 		case LogLevel::ERR:
 			std::cout << "[ERROR]    " << currentTimeChar << elapsedTimeString << message << std::endl; break;
 		case LogLevel::WARN:
@@ -58,6 +57,26 @@ void Logger::Log(LogLevel messageLevel, const char* message) {
 
 		lastLogTime = currentTime;
 	}
+}
+
+// Log function to print critical messages. Will never return
+[[noreturn]] void Logger::LogCritical(const char* message) {
+	std::lock_guard<std::mutex> guard(logMutex); // Locks the mutex in the function for thread-safety
+
+	currentTime = std::chrono::system_clock::now(); // Used to compute elapsed time since last log
+	elapsedTime = std::chrono::duration_cast<std::chrono::milliseconds>(currentTime - lastLogTime);
+
+	currentTimeInstanced = std::chrono::system_clock::to_time_t(currentTime); // Printing current time
+	#ifdef _WIN32 // ctime_s is used for Windows compatibility
+		ctime_s(currentTimeChar, sizeof(currentTimeChar), &currentTimeInstanced); currentTimeChar[24] = '\0';
+	#else         // ctime_r is used for Linux compatibility
+		ctime_r(&currentTimeInstanced, currentTimeChar); currentTimeChar[24] = '\0';
+	#endif        // Both are thread-safe while using ctime only is not
+
+	elapsedTimeString = " +" + std::to_string(elapsedTime.count() / 1000.0) + "\b\b\b s "; // \b for 3 digits
+
+	std::cout << "[CRITICAL] " << currentTimeChar << elapsedTimeString << message << std::endl;
+	throw std::runtime_error("Program stopped due to critical event: consult latest messages");
 }
 
 void Logger::displayProgressBar(const size_t currentIteration, const size_t numberIterations) {

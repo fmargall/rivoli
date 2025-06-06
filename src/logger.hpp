@@ -36,10 +36,31 @@ public:
 	}
 
 	template <typename... Args>
-	void Log(LogLevel messagelevel, Args... args) {
+	void Log(LogLevel messageLevel, Args... args) {
 		std::ostringstream streamOutput;
-		(streamOutput << ... << args);
-		Log(messagelevel, streamOutput.str());
+		(streamOutput <<  ... <<  args);
+		Log(messageLevel, streamOutput.str());
+	}
+
+	// Special functions associated to the critical case
+	// The function will never return to the caller when
+	// called.
+	[[noreturn]] void LogCritical(const char* message);
+
+	// Overloading equivalent functions for Log_Critical
+	[[noreturn]] void LogCritical(const std::string& message) {
+		LogCritical(message.c_str());
+	}
+
+	[[noreturn]] void LogCritical(const std::ostringstream& streamOutput) {
+		LogCritical(streamOutput.str());
+	}
+
+	template <typename... Args>
+	[[noreturn]] void LogCritical(Args... args) {
+		std::ostringstream streamOutput;
+		(streamOutput <<  ... <<  args);
+		LogCritical(streamOutput.str());
 	}
 
 	// Used to display the progress of the current status
@@ -74,7 +95,7 @@ private:
 #define LOG_INFO(...)     logger.Log(LogLevel::INFO    , std::string(__FUNCTION__) + ": ", __VA_ARGS__)
 #define LOG_WARN(...)     logger.Log(LogLevel::WARN    , std::string(__FUNCTION__) + ": ", __VA_ARGS__)
 #define LOG_ERR(...)      logger.Log(LogLevel::ERR     , std::string(__FUNCTION__) + ": ", __VA_ARGS__)
-#define LOG_CRITICAL(...) logger.Log(LogLevel::CRITICAL, std::string(__FUNCTION__) + ": ", __VA_ARGS__)
+#define LOG_CRITICAL(...) logger.LogCritical(            std::string(__FUNCTION__) + ": ", __VA_ARGS__)
 
 extern Logger logger;
 
