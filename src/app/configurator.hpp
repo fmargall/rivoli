@@ -39,6 +39,9 @@ protected:
 	std::string m_locationRBFFilePath;
 	std::string m_floatingPointPrecision = "FP32";
 
+	std::string m_locationRBFSampler;
+	size_t      m_numberRBF;
+
 	std::string m_inputParameterisation = "spherical";
 	std::string m_forceGrazingAnglesNullFunctionHemisphereOne = "none";
 	std::string m_forceGrazingAnglesNullFunctionHemisphereTwo = "none";

@@ -114,7 +114,7 @@ MainConfig::MainConfig(const std::string& configFilePath) {
 			else if (key == "outputFilePath")
 				m_outputFilePath = value;
 			else if (key == "outputFormat") {
-				if (value == "MERL")
+				if (value == "MERL" || "RBFCoeffs")
 					m_outputFormat = value;
 				else
 					breaker = true;
@@ -125,6 +125,16 @@ MainConfig::MainConfig(const std::string& configFilePath) {
 				m_nonNegativityCorrectionParameter = std::stof(value);
 			else if (key == "locationRBFFilePath")
 				m_locationRBFFilePath = value;
+			
+			else if (key == "locationRBFSampler") {
+				if (value == "fibonacci")
+					m_locationRBFSampler = value;
+				else
+					breaker = true;
+			}
+			else if (key == "numberRBF")
+				m_numberRBF = std::stoi(value);
+			
 			else {
 				LOG_WARN("Invalid key value: ", key, " in config file ",
 					      configFilePath, ". This line will be ignored");
@@ -181,27 +191,45 @@ RuntimeConfig<FloatingPrecision>::RuntimeConfig(const MainConfig& mainConfig) : 
 		m_topology = initTopology(*this);
 
 		// Initialising RBF coordinates
-		std::ifstream fileRBFLocation(m_locationRBFFilePath);
-		if (fileRBFLocation.is_open())
-			LOG_DEBUG("RBF location file " + m_locationRBFFilePath + " opened successfully.");
-		else
-			LOG_CRITICAL("RBF location file " + m_locationRBFFilePath + " could not be opened.");
+		// If a RBF sampler is given, it will be used to generate RBF positions. If
+		// not, we will search for the RBF location file path and read these values
+		if (m_locationRBFSampler == "fibonacci") {
+			LOG_INFO("Using Fibonacci RBF sampler to generate RBF coordinates.");
+			
+			// We will use the golden ratio to generate the RBF coordinates
+			FloatingPrecision goldenRatio = static_cast<FloatingPrecision>(1.618033988749895); // Golden ratio
+			FloatingPrecision thetaOne    = static_cast<FloatingPrecision>(0.0); // This will be updated later
 
-		std::string line;
-		// Reading all RBF coordinates
-		while (std::getline(fileRBFLocation, line)) {
-			// Avoiding all empty lines
-			if (line.empty()) continue;
+			for (size_t rbfID = 0; rbfID < m_numberRBF; rbfID++) {
+				FloatingPrecision thetaTwo = glm::acos(static_cast<FloatingPrecision>(1.0) - static_cast<FloatingPrecision>(2) * static_cast<FloatingPrecision>(rbfID) / static_cast<FloatingPrecision>(m_numberRBF)) * static_cast<FloatingPrecision>(0.5);
+				FloatingPrecision deltaPhi = glm::two_pi<FloatingPrecision>() * static_cast<FloatingPrecision>(rbfID) / goldenRatio;
+				m_coordinatesRBF.push_back(std::make_unique<Coordinate3DSpherical<FloatingPrecision>>(thetaOne, thetaTwo, deltaPhi));
+			}
 
-			std::istringstream lineStream(line);
-
-			FloatingPrecision thetaOne, thetaTwo, phiTwo;
-			lineStream >> thetaOne >> thetaTwo >> phiTwo;
-			m_coordinatesRBF.push_back(std::make_unique<Coordinate3DSpherical<FloatingPrecision>>(thetaOne, thetaTwo, phiTwo));
 		}
+		else {
+			std::ifstream fileRBFLocation(m_locationRBFFilePath);
+			if (fileRBFLocation.is_open())
+				LOG_INFO("RBF location file " + m_locationRBFFilePath + " opened successfully.");
+			else
+				LOG_CRITICAL("RBF location file " + m_locationRBFFilePath + " could not be opened.");
 
-		LOG_VERBOSE("RBF file ", m_locationRBFFilePath, " is loaded. ",
-				     m_coordinatesRBF.size(), " configurations saved.");
+			std::string line;
+			// Reading all RBF coordinates
+			while (std::getline(fileRBFLocation, line)) {
+				// Avoiding all empty lines
+				if (line.empty()) continue;
+
+				std::istringstream lineStream(line);
+
+				FloatingPrecision thetaOne, thetaTwo, phiTwo;
+				lineStream >> thetaOne >> thetaTwo >> phiTwo;
+				m_coordinatesRBF.push_back(std::make_unique<Coordinate3DSpherical<FloatingPrecision>>(thetaOne, thetaTwo, phiTwo));
+			}
+
+			LOG_VERBOSE("RBF file ", m_locationRBFFilePath, " is loaded. ",
+						 m_coordinatesRBF.size(), " configurations saved.");
+		}
 
 		// Using the chosen topology, we can clean the RBF
 		// coordinates and suppress the useless duplicates
@@ -365,10 +393,24 @@ RuntimeConfig<FloatingPrecision>::RuntimeConfig(const MainConfig& mainConfig) : 
 
 		LOG_INFO("Input file ", m_inputFilePath, " loaded. ", m_values.size(), " configurations saved.");
 
+		// If a RBF sampler is given, it will be used to generate RBF positions. If
+		// not, we will search for the RBF location file path and read these values
+		if (m_locationRBFSampler == "fibonacci") {
+			LOG_INFO("Using Fibonacci RBF sampler to generate RBF coordinates.");
 
+			// We will use the golden ratio to generate the RBF coordinates
+			FloatingPrecision goldenRatio = static_cast<FloatingPrecision>(1.618033988749895); // Golden ratio
+
+			for (size_t rbfID = 0; rbfID < m_numberRBF; rbfID++) {
+				FloatingPrecision theta = glm::acos(static_cast<FloatingPrecision>(1.0) - static_cast<FloatingPrecision>(2) * static_cast<FloatingPrecision>(rbfID) / static_cast<FloatingPrecision>(m_numberRBF)) * static_cast<FloatingPrecision>(0.5);
+				FloatingPrecision phi   = glm::two_pi<FloatingPrecision>() * static_cast<FloatingPrecision>(rbfID) / goldenRatio;
+				m_coordinatesRBF.push_back(std::make_unique<Coordinate2D<FloatingPrecision>>(theta, phi));
+			}
+
+		}
 		// Initialising RBF coordinates. If no RBF location file is
 		// provided, the RBF coordinates are the same as the input.
-		if (m_locationRBFFilePath == "none") {
+		else if (m_locationRBFFilePath == "none") {
 			// Making deep copy of the data
 			m_coordinatesRBF.reserve(m_coordinates.size());
 			for (const auto& coord : m_coordinates)
@@ -417,11 +459,12 @@ RuntimeConfig<FloatingPrecision>::RuntimeConfig(const MainConfig& mainConfig) : 
 			}
 
 			LOG_DEBUG("RBF file ", m_locationRBFFilePath, " is loaded. ",
-				m_coordinatesRBF.size(), " configurations saved.");
+				       m_coordinatesRBF.size(), " configurations saved.");
 		}
 
 		// Initialising the topology
 		m_topology = initTopology(*this);
+		LOG_DEBUG("BRDF topology initialised.");
 
 		// Using the chosen topology, we can clean the RBF
 		// coordinates and suppress the useless duplicates
@@ -439,8 +482,21 @@ RuntimeConfig<FloatingPrecision>::RuntimeConfig(const MainConfig& mainConfig) : 
 		RBFInterpolator<FloatingPrecision> interpolator(*this);
 
 		// Export BRDF
-		if (m_outputFormat == "MERL")
+		if      (m_outputFormat == "MERL")
 			exportToMERL(m_outputFilePath, interpolator, interpolator, interpolator, m_parallelComputing);
+		else if (m_outputFormat == "RBFCoeffs") {
+			// Initialising the .RBFCoeffs file
+			initRBFCoeffsFile(m_outputFilePath, *this, false);
+			// Saving the coefficients
+			std::vector<FloatingPrecision> coefficients;
+			for (size_t coefID = 0; coefID < m_coordinatesRBF.size(); coefID++) {
+				FloatingPrecision coefficient = interpolator.getCoefficients()[coefID];
+				coefficients.push_back(coefficient);
+			}
+			writeToRBFCoeffs(m_outputFilePath, *this, coefficients);
+		}
+		else
+			LOG_CRITICAL("Unknown output format: ", m_outputFormat);
 	}
 	
 }
