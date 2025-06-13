@@ -14,6 +14,7 @@
 #include "coordinate.hpp"
 #include "interpolator.hpp"
 #include "logger.hpp"
+#include "../version.hpp"
 
 // Forward declarations
 template <typename FloatingPrecision>
@@ -40,10 +41,11 @@ void initRBFCoeffsFile(
 		LOG_CRITICAL("Output file ", outputFilePath, " could not be opened.");
 
 	// Writing the version of the software
-	int versionMajor = 0, versionMinor = 1, versionPatch = 0;
+	int versionMajor = RIVOLI_VERSION_MAJOR, versionMinor = RIVOLI_VERSION_MINOR, versionPatch = RIVOLI_VERSION_PATCH;
 	outputDataFile.write(reinterpret_cast<char*>(&versionMajor), sizeof(int));
 	outputDataFile.write(reinterpret_cast<char*>(&versionMinor), sizeof(int));
 	outputDataFile.write(reinterpret_cast<char*>(&versionPatch), sizeof(int));
+	LOG_TRACE("RIVOLI version (", RIVOLI_VERSION, ") added to output file.");
 
 	// Writing data type
 	int dataType;
