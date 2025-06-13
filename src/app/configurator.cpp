@@ -61,7 +61,7 @@ MainConfig::MainConfig(const std::string& configFilePath) {
 				else
 					breaker = true;
 			}
-			else if (key == "floatingPointFormat") {
+			else if (key == "floatingPointPrecision") {
 				if (value == "FP32" || value == "FP64")
 					m_floatingPointPrecision = value;
 				else
