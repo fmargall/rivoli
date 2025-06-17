@@ -40,7 +40,7 @@
     },
 
     {
-      "name": "wsl-gcc-debug",
+      "name": "wsl-ubuntu-22.04-gcc-debug",
       "displayName": "WSL (GCC Debug)",
       "generator": "Ninja",
       "binaryDir": "${sourceDir}/build/wsl-debug",
@@ -50,7 +50,7 @@
         "rhs": "Linux"
       },
       "remote": {
-        "remoteMachine": "WSL"
+        "remoteMachine": "WSL:Ubuntu-22.04"
       },
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Debug",
@@ -59,7 +59,7 @@
     },
 
     {
-      "name": "wsl-gcc-release",
+      "name": "wsl-ubuntu-22.04-gcc-release",
       "displayName": "WSL (GCC Release)",
       "generator": "Ninja",
       "binaryDir": "${sourceDir}/build/wsl-release",
@@ -69,7 +69,7 @@
         "rhs": "Linux"
       },
       "remote": {
-        "remoteMachine": "WSL"
+        "remoteMachine": "WSL:Ubuntu-22.04"
       },
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Release",
@@ -89,11 +89,11 @@
     },
     {
       "name": "build-wsl-debug",
-      "configurePreset": "wsl-gcc-debug"
+      "configurePreset": "wsl-ubuntu-22.04-gcc-debug"
     },
     {
       "name": "build-wsl-release",
-      "configurePreset": "wsl-gcc-release"
+      "configurePreset": "wsl-ubuntu-22.04-gcc-release"
     }
   ],
 
