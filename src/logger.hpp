@@ -5,6 +5,7 @@
 #include <mutex>
 #include <sstream>
 #include <string>
+#include <unordered_map>
 
 enum class LogLevel {
 	OFF      = 0,
@@ -67,6 +68,13 @@ public:
 	void displayProgressBar(const size_t currentIteration,
 						    const size_t totalIterations);
 
+	// Add flag to the logger to track specific time events
+	void SetFlag(const std::string& flagName);
+
+	// Print flag if the log level is high enough and removes it from memory
+	void LogFlagAndRemove(const std::string& flagName, 
+				          LogLevel messagelevel = LogLevel::INFO);
+
 	LogLevel level;
 
 private:
@@ -83,7 +91,12 @@ private:
 	std::atomic<size_t> currentIteration{ 0 };
 	std::atomic<size_t> numberIterations{ 1 };
 
-	std::mutex logMutex; // mutex added for thread-safety
+	// Flags can be added to memory to track specific time events
+	std::unordered_map<std::string, std::chrono::system_clock::time_point> flagTimes;
+
+	// Mutex added for thread-safety
+	std::mutex flagMutex; // For synchronizing access to the flags
+	std::mutex logMutex;  // For synchronizing access to the logger
 
 };
 

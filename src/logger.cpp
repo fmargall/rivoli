@@ -121,6 +121,40 @@ void Logger::displayProgressBar(const size_t currentIteration, const size_t numb
 	}
 }
 
+// Add flag to the logger to track specific time events
+void Logger::SetFlag(const std::string& flagName) {
+	std::lock_guard<std::mutex> guard(flagMutex); // Locks the mutex in the function for thread-safety
+	
+	// Flag may already exist and will be overwritten
+	if (flagTimes.find(flagName) != flagTimes.end())
+		LOG_WARN("Flag '", flagName, "' already exists and will be overwritten.");
+
+	// Saving the current time for the flag in the memory
+	flagTimes[flagName] = std::chrono::system_clock::now();
+}
+
+// Print flag if the log level is high enough and removes it from memory
+void Logger::LogFlagAndRemove(const std::string& flagName,
+							  LogLevel messageLevel      ) {
+	std::lock_guard<std::mutex> guard(flagMutex); // Locks the mutex in the function for thread-safety
+
+	auto iterator = flagTimes.find(flagName);
+	if (iterator == flagTimes.end())
+		LOG_ERR("Flag '", flagName, "' could not be found in memory.");
+	else {
+		// Avoid using directly currentTime and elapsedTime for thread-safety
+		std::chrono::system_clock::time_point currentTimeFlag;
+		std::chrono::milliseconds elapsedTimeFlag;
+
+		currentTimeFlag = std::chrono::system_clock::now();
+		elapsedTimeFlag = std::chrono::duration_cast<std::chrono::milliseconds>(currentTimeFlag - iterator->second);
+
+		std::string elapsedTimeFlagString = std::to_string(elapsedTimeFlag.count() / 1000.0) + "\b\b\b seconds."; // \b for 3 digits
+
+		LOG(messageLevel, flagName, " completed in ", elapsedTimeFlagString);
+	}
+}
+
 // Global logger instance : is always initialized to
 // TRACE (7) and will be modified by the config file
 Logger logger(LogLevel::TRACE);

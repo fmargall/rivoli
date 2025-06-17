@@ -174,6 +174,9 @@ RuntimeConfig<FloatingPrecision>::RuntimeConfig(const MainConfig& mainConfig) : 
 	
 	// The file that is read comes from the Coupole
 	if (inputFilePath.extension() == ".brdfSamples") {
+		// We are adding a flag to check the full time computation
+		logger.SetFlag("RBF coefficients computation");
+
 		// Initialising threads
 		int numberOfThreads = 1;
 		if (m_parallelComputing)
@@ -338,6 +341,10 @@ RuntimeConfig<FloatingPrecision>::RuntimeConfig(const MainConfig& mainConfig) : 
 			logger.displayProgressBar(completedIterations.load(std::memory_order_relaxed), threadConfig.m_nbClusters + 1); // Strangest bug ever: if m_nbClusters is exactly 1041 (as it has already happened once), the progress bar does not appear. It won't happen for 1039, 1040 or 1042.
 			completedIterations.fetch_add(1, std::memory_order_relaxed);
 		}
+
+		// Associated flag is logged to measure time computation
+		logger.LogFlagAndRemove("RBF coefficients computation");
+
 	}
 	
 	else {
