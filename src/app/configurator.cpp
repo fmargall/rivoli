@@ -205,7 +205,16 @@ RuntimeConfig<FloatingPrecision>::RuntimeConfig(const MainConfig& mainConfig) : 
 
 			for (size_t rbfID = 0; rbfID < m_numberRBF; rbfID++) {
 				FloatingPrecision thetaTwo = glm::acos(static_cast<FloatingPrecision>(1.0) - static_cast<FloatingPrecision>(2) * static_cast<FloatingPrecision>(rbfID) / static_cast<FloatingPrecision>(m_numberRBF)) * static_cast<FloatingPrecision>(0.5);
-				FloatingPrecision deltaPhi = glm::two_pi<FloatingPrecision>() * static_cast<FloatingPrecision>(rbfID) / goldenRatio;
+				
+				FloatingPrecision deltaPhi;
+				if (m_forceBilateralSymmetry)
+					// Fibonacci sampling should be made only on half the hemisphere when bilateral symmetry is forced. Since the sampling is gridless,
+					// sampling the whole hemisphere then forcing bilateral symmetry will create bad distribution, putting some bidirections very close
+					// to each other.
+					deltaPhi = glm::mod(glm::pi<FloatingPrecision>() * static_cast<FloatingPrecision>(rbfID) / goldenRatio, glm::pi<FloatingPrecision>());
+				else
+					deltaPhi = glm::two_pi<FloatingPrecision>() * static_cast<FloatingPrecision>(rbfID) / goldenRatio;
+
 				m_coordinatesRBF.push_back(std::make_unique<Coordinate3DSpherical<FloatingPrecision>>(thetaOne, thetaTwo, deltaPhi));
 			}
 

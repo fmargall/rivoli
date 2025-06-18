@@ -517,6 +517,33 @@ public:
 		return result;
 	}
 
+	FloatingPrecision_t<ReturnType> getMeanThetaI(const size_t clusterID) const {
+		FloatingPrecision_t<ReturnType> meanTheta = static_cast<FloatingPrecision_t<ReturnType>>(0.);
+
+		for (size_t i = 0; i < m_nbRBF; i++) {
+			std::unique_ptr<Coordinate> currentCoordinate = m_coordinates[clusterID * (m_nbRBF)+i]->clone();
+
+			if (m_topology->getDimension() == 2) {
+				continue;
+			}
+			else if (m_topology->getDimension() == 3) {
+				if (m_parameterisation == "spherical") {
+					Coordinate3DSpherical<FloatingPrecision_t<ReturnType>>& coord = dynamic_cast<Coordinate3DSpherical<FloatingPrecision_t<ReturnType>>&>(*currentCoordinate);
+					meanTheta += coord.getThetaI();
+				}
+				else if (m_parameterisation == "rusinkiewicz") {
+					continue;
+				}
+				else
+					LOG_CRITICAL("Invalid parameterisation: ", m_parameterisation);
+			}
+			else
+				LOG_CRITICAL("Invalid number of dimensions: ", m_topology->getDimension());
+		}
+
+		return meanTheta / static_cast<FloatingPrecision_t<ReturnType>>(m_nbRBF);
+	}
+
 	FloatingPrecision_t<ReturnType> m_nonNegativityCorrectionParameter;
 	FloatingPrecision_t<ReturnType> m_thresholdCoefficient;
 
