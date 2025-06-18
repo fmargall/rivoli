@@ -406,7 +406,7 @@ public:
 			FloatingPrecision_t<ReturnType> distance = static_cast<FloatingPrecision_t<ReturnType>>(0);
 
 			// Compute the distance between the input bidirection and the stored one for the RBF weight
-			distance = m_topology->getDistance(*inputCoordinate, *m_coordinates[i]);
+			distance = m_topology->getDistance(*inputCoordinate, *m_coordinates[clusterID * (m_nbRBF)+i]);
 
 			FloatingPrecision_t<ReturnType> localRBFResult = static_cast<FloatingPrecision_t<ReturnType>>(0);
 			localRBFResult = m_kernel(distance);
