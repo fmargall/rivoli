@@ -289,6 +289,10 @@ public:
 
 		std::streampos positionEndOfHeader = file.tellg();
 
+		// Loop for executing exactly once if clusterID is greater or equals
+		// 0 with localClusterID being equal to clusterID. When clusterID is
+		// equal to -1 localClusterID will take all the values between 0 and
+		// nbClusters - 1.
 		for (size_t localClusterID = (clusterID >= 0 ? clusterID : 0);
 			 localClusterID < (clusterID >= 0 ? clusterID + 1 : nbClusters);
 			 localClusterID++) {
@@ -476,7 +480,7 @@ public:
 			FloatingPrecision_t<ReturnType> distance = static_cast<FloatingPrecision_t<ReturnType>>(0);
 
 			// Compute the distance between the input bidirection and the stored one for the RBF weight
-			distance = m_topology->getDistance(*inputCoordinate, *m_coordinates[i]);
+			distance = m_topology->getDistance(*inputCoordinate, *m_coordinates[clusterID * (m_nbRBF)+i]);
 
 			FloatingPrecision_t<ReturnType> localRBFResult = static_cast<FloatingPrecision_t<ReturnType>>(0);
 			localRBFResult = m_kernel(distance);

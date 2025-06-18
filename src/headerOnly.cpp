@@ -8,12 +8,12 @@ int main() {
 	std::atomic<size_t> completedIterations{ 0 };
 
 	size_t nbClusters = 1041;
-	size_t nbTheta = 10;
-	size_t nbPhi = 5;
+	size_t nbTheta = 2;
+	size_t nbPhi = 2;
 
-	size_t nbReplications = 50;
+	size_t nbReplications = 1;
 
-	RBFModelvec3 model = RBFModel<glm::vec3>::readFile("../../../brdfManteauAinou.RBFCoeffs", false, -1);
+	RBFModelvec3 model = RBFModel<glm::vec3>::readFile("../../../brdfAlbatre2.RBFCoeffs", true, -1);
 
 	for (size_t replication = 0; replication < nbReplications; replication++) {
 		
