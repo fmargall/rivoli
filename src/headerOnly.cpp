@@ -13,7 +13,7 @@ int main() {
 
 	size_t nbReplications = 1;
 
-	RBFModelvec3 model = RBFModel<glm::vec3>::readFile("../../../brdfAlbatre2.RBFCoeffs", true, -1);
+	RBFModelvec3 model = RBFModel<glm::vec3>::readFile("../../../brdfManteauAinou.RBFCoeffs", true, -1);
 
 	for (size_t replication = 0; replication < nbReplications; replication++) {
 		
