@@ -49,8 +49,11 @@
         "lhs": "${hostSystemName}",
         "rhs": "Linux"
       },
-      "remote": {
-        "remoteMachine": "WSL:Ubuntu-22.04"
+      "vendor": {
+        "microsoft.com/VisualStudio/RemoteSettings": {
+          "source": "WSL",
+          "distribution": "Ubuntu-22.04"
+        }
       },
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Debug",
@@ -68,8 +71,11 @@
         "lhs": "${hostSystemName}",
         "rhs": "Linux"
       },
-      "remote": {
-        "remoteMachine": "WSL:Ubuntu-22.04"
+      "vendor": {
+        "microsoft.com/VisualStudio/RemoteSettings": {
+          "source": "WSL",
+          "distribution": "Ubuntu-22.04"
+        }
       },
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Release",
