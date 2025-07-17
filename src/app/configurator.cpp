@@ -42,21 +42,21 @@ MainConfig::MainConfig(const std::string& configFilePath) {
 			bool warning = false, breaker = false;
 
 			if (key == "logLevel") {
-				if      (value == "OFF"      || value == "0")
+				if (value == "OFF" || value == "0")
 					logger.level = LogLevel::OFF;
 				else if (value == "CRITICAL" || value == "1")
 					logger.level = LogLevel::CRITICAL;
-				else if (value == "ERR"      || value == "2")
+				else if (value == "ERR" || value == "2")
 					logger.level = LogLevel::ERR;
-				else if (value == "WARN"     || value == "3")
+				else if (value == "WARN" || value == "3")
 					logger.level = LogLevel::WARN;
-				else if (value == "INFO"     || value == "4")
+				else if (value == "INFO" || value == "4")
 					logger.level = LogLevel::INFO;
-				else if (value == "VERBOSE"  || value == "5")
+				else if (value == "VERBOSE" || value == "5")
 					logger.level = LogLevel::VERBOSE;
-				else if (value == "DEBUG"    || value == "6")
+				else if (value == "DEBUG" || value == "6")
 					logger.level = LogLevel::DEBUG;
-				else if (value == "TRACE"    || value == "7")
+				else if (value == "TRACE" || value == "7")
 					logger.level = LogLevel::TRACE;
 				else
 					breaker = true;
@@ -73,6 +73,10 @@ MainConfig::MainConfig(const std::string& configFilePath) {
 				else
 					breaker = true;
 			}
+			else if (key == "maximumThetaInputFirstHemisphere")
+				m_maximumThetaInputFirstHemisphere = std::stof(value);
+			else if (key == "maximumThetaInputSecondHemisphere")
+				m_maximumThetaInputSecondHemisphere = std::stof(value);
 			else if (key == "grazingAnglesFctHemisphereOne") {
 				if (value == "none" || value == "cosine" || value == "linear")
 					m_forceGrazingAnglesNullFunctionHemisphereOne = value;

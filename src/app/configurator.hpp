@@ -46,6 +46,9 @@ protected:
 	std::string m_forceGrazingAnglesNullFunctionHemisphereOne = "none";
 	std::string m_forceGrazingAnglesNullFunctionHemisphereTwo = "none";
 
+	float m_maximumThetaInputFirstHemisphere  = glm::half_pi<float>();
+	float m_maximumThetaInputSecondHemisphere = glm::half_pi<float>();
+
 	std::string m_outputFormat;
 	std::string m_outputFilePath;
 
