@@ -1,5 +1,5 @@
 # Adding the executable
-add_executable(${PROJECT_NAME}.app __temp_main.cpp
+add_executable(${PROJECT_NAME}.app main.cpp
                BrdfSamplesCoupole.cpp
                configurator.cpp
                export.cpp
