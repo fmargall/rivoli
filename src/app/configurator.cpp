@@ -74,9 +74,9 @@ MainConfig::MainConfig(const std::string& configFilePath) {
 					breaker = true;
 			}
 			else if (key == "maximumThetaInputFirstHemisphere")
-				m_maximumThetaInputFirstHemisphere = std::stof(value);
+				m_maximumThetaInputFirstHemisphere = glm::radians(std::stof(value));
 			else if (key == "maximumThetaInputSecondHemisphere")
-				m_maximumThetaInputSecondHemisphere = std::stof(value);
+				m_maximumThetaInputSecondHemisphere = glm::radians(std::stof(value));
 			else if (key == "grazingAnglesFctHemisphereOne") {
 				if (value == "none" || value == "cosine" || value == "linear")
 					m_forceGrazingAnglesNullFunctionHemisphereOne = value;
@@ -284,6 +284,11 @@ RuntimeConfig<FloatingPrecision>::RuntimeConfig(const MainConfig& mainConfig) : 
 			std::vector<double> brdfVector;
 			brdfSamples.getData(threadID, 0, woVector, wiVector, brdfVector);
 			for (size_t sampleID = 0; sampleID < woVector.size(); sampleID++) {
+				// Input values can be cut beyond a certain angular value if required
+				if ((woVector[sampleID].x > static_cast<FloatingPrecision>(threadConfig.m_maximumThetaInputFirstHemisphere)) ||
+					(wiVector[sampleID].x > static_cast<FloatingPrecision>(threadConfig.m_maximumThetaInputSecondHemisphere)))
+					continue; // Skip this sample
+
 				threadConfig.m_coordinates.push_back(std::make_unique<Coordinate3DSpherical<FloatingPrecision>>(
 					static_cast<FloatingPrecision>(woVector[sampleID].x),
 					static_cast<FloatingPrecision>(wiVector[sampleID].x),
@@ -304,6 +309,11 @@ RuntimeConfig<FloatingPrecision>::RuntimeConfig(const MainConfig& mainConfig) : 
 			woVector.clear(); wiVector.clear(); brdfVector.clear();
 			brdfSamples.getData(threadID, 1, woVector, wiVector, brdfVector);
 			for (size_t sampleID = 0; sampleID < woVector.size(); sampleID++) {
+				// Input values can be cut beyond a certain angular value if required
+				if ((woVector[sampleID].x > static_cast<FloatingPrecision>(threadConfig.m_maximumThetaInputFirstHemisphere)) ||
+					(wiVector[sampleID].x > static_cast<FloatingPrecision>(threadConfig.m_maximumThetaInputSecondHemisphere)))
+					continue; // Skip this sample
+
 				threadConfig.m_coordinates.push_back(std::make_unique<Coordinate3DSpherical<FloatingPrecision>>(
 					static_cast<FloatingPrecision>(woVector[sampleID].x),
 					static_cast<FloatingPrecision>(wiVector[sampleID].x),
@@ -324,6 +334,11 @@ RuntimeConfig<FloatingPrecision>::RuntimeConfig(const MainConfig& mainConfig) : 
 			woVector.clear(); wiVector.clear(); brdfVector.clear();
 			brdfSamples.getData(threadID, 2, woVector, wiVector, brdfVector);
 			for (size_t sampleID = 0; sampleID < woVector.size(); sampleID++) {
+				// Input values can be cut beyond a certain angular value if required
+				if ((woVector[sampleID].x > static_cast<FloatingPrecision>(threadConfig.m_maximumThetaInputFirstHemisphere)) ||
+					(wiVector[sampleID].x > static_cast<FloatingPrecision>(threadConfig.m_maximumThetaInputSecondHemisphere)))
+					continue; // Skip this sample
+
 				threadConfig.m_coordinates.push_back(std::make_unique<Coordinate3DSpherical<FloatingPrecision>>(
 					static_cast<FloatingPrecision>(woVector[sampleID].x),
 					static_cast<FloatingPrecision>(wiVector[sampleID].x),
