@@ -11,7 +11,7 @@ int main() {
 	size_t nbTheta = 90;
 	size_t nbPhi = 360;
 
-	RBFModelvec3 model = RBFModel<glm::vec3>::readFile("../../../brdfManteauAinou.RBFCoeffs", true, -1);
+	RBFModelvec3 model = RBFModel<glm::vec3>::readFile("../../../brdfAlbatre2_thetaMax60_4.RBFCoeffs", true, -1);
 
 	float thetaI = model.getMeanThetaI(clusterID);
 	float phiI   = glm::radians(60.f);

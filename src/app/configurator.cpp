@@ -285,8 +285,8 @@ RuntimeConfig<FloatingPrecision>::RuntimeConfig(const MainConfig& mainConfig) : 
 			brdfSamples.getData(threadID, 0, woVector, wiVector, brdfVector);
 			for (size_t sampleID = 0; sampleID < woVector.size(); sampleID++) {
 				// Input values can be cut beyond a certain angular value if required
-				if ((woVector[sampleID].x > static_cast<FloatingPrecision>(threadConfig.m_maximumThetaInputFirstHemisphere)) ||
-					(wiVector[sampleID].x > static_cast<FloatingPrecision>(threadConfig.m_maximumThetaInputSecondHemisphere)))
+				if ((wiVector[sampleID].x > static_cast<FloatingPrecision>(threadConfig.m_maximumThetaInputFirstHemisphere)) ||
+					(woVector[sampleID].x > static_cast<FloatingPrecision>(threadConfig.m_maximumThetaInputSecondHemisphere)))
 					continue; // Skip this sample
 
 				threadConfig.m_coordinates.push_back(std::make_unique<Coordinate3DSpherical<FloatingPrecision>>(
@@ -310,8 +310,8 @@ RuntimeConfig<FloatingPrecision>::RuntimeConfig(const MainConfig& mainConfig) : 
 			brdfSamples.getData(threadID, 1, woVector, wiVector, brdfVector);
 			for (size_t sampleID = 0; sampleID < woVector.size(); sampleID++) {
 				// Input values can be cut beyond a certain angular value if required
-				if ((woVector[sampleID].x > static_cast<FloatingPrecision>(threadConfig.m_maximumThetaInputFirstHemisphere)) ||
-					(wiVector[sampleID].x > static_cast<FloatingPrecision>(threadConfig.m_maximumThetaInputSecondHemisphere)))
+				if ((wiVector[sampleID].x > static_cast<FloatingPrecision>(threadConfig.m_maximumThetaInputFirstHemisphere)) ||
+					(woVector[sampleID].x > static_cast<FloatingPrecision>(threadConfig.m_maximumThetaInputSecondHemisphere)))
 					continue; // Skip this sample
 
 				threadConfig.m_coordinates.push_back(std::make_unique<Coordinate3DSpherical<FloatingPrecision>>(
@@ -335,8 +335,8 @@ RuntimeConfig<FloatingPrecision>::RuntimeConfig(const MainConfig& mainConfig) : 
 			brdfSamples.getData(threadID, 2, woVector, wiVector, brdfVector);
 			for (size_t sampleID = 0; sampleID < woVector.size(); sampleID++) {
 				// Input values can be cut beyond a certain angular value if required
-				if ((woVector[sampleID].x > static_cast<FloatingPrecision>(threadConfig.m_maximumThetaInputFirstHemisphere)) ||
-					(wiVector[sampleID].x > static_cast<FloatingPrecision>(threadConfig.m_maximumThetaInputSecondHemisphere)))
+				if ((wiVector[sampleID].x > static_cast<FloatingPrecision>(threadConfig.m_maximumThetaInputFirstHemisphere)) ||
+					(woVector[sampleID].x > static_cast<FloatingPrecision>(threadConfig.m_maximumThetaInputSecondHemisphere)))
 					continue; // Skip this sample
 
 				threadConfig.m_coordinates.push_back(std::make_unique<Coordinate3DSpherical<FloatingPrecision>>(
