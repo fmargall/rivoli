@@ -173,11 +173,11 @@ void writeToRBFCoeffs(
 	// Size of the header can vary depending on
 	// the kernel and its number of parameters.
 	std::streampos kernelNbParamsStreamPosition = 
-		5 *     sizeof(int)   + // 3: v.MAJOR.MINOR.PATCH, 1: dataType, 1: nbDimensions
-		4 * 4 * sizeof(char)  + // 1: parameterisation, 2: smoothingFunctionHemispheres, 1: kernel
-		                        //    /!\ 3 CHAR are encoded using 4 BYTES
-		1 *     sizeof(float) + // 1: regularisationParameter
-		2 *     sizeof(bool);   // 1: forceReciprocity, 1: forceBilateralSymmetry
+		5 *     sizeof(int)   + // 3: v.MAJOR.MINOR.PATCH + 1: dataType + 1: nbDimensions            => 5
+		4 * 4 * sizeof(char)  + // 1: parameterisation + 2: smoothingFunctionHemispheres + 1: kernel => 4
+		                        //    /!\ 3 CHAR are encoded using 4 BYTES                           => 4 * 4
+		1 *     sizeof(float) + // 1: regularisationParameter                                        => 1
+		2 *     sizeof(bool);   // 1: forceReciprocity + 1: forceBilateralSymmetry                   => 2
 	int kernelNbParams = 0;
 
 	std::fstream outputFile(outputFilePath, std::ios::in | std::ios::out | std::ios::binary);
@@ -190,7 +190,7 @@ void writeToRBFCoeffs(
 
 		streamPosition +=
 			    sizeof(float) + // 1: threshold coefficient
-			3 * sizeof(int)   + // 1: number of kernel parameters, 1: number of clusters, 1: number of RBF per cluster
+			3 * sizeof(int)   + // 1: number of kernel parameters + 1: number of clusters + 1: number of RBF per cluster => 3
 			    sizeof(bool);   // 1: unique location RBF
 
 		if (runtimeConfig.m_uniqueLocationRBF)
