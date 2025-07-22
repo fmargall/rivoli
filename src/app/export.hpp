@@ -213,7 +213,7 @@ void writeToRBFCoeffs(
 		outputFile.seekp(streamPosition);
 
 		// Writing the RBF location if needed
-		if (!(runtimeConfig.m_uniqueLocationRBF)) {
+		if (!(runtimeConfig.m_uniqueLocationRBF)) {			
 			for (size_t i = 0; i < runtimeConfig.m_coordinatesRBF.size(); i++) {
 				const auto& coordinate = runtimeConfig.m_coordinatesRBF[i];
 				if      (typeid(*coordinate) == typeid(Coordinate2D<FloatingPrecision>)) {
@@ -248,7 +248,7 @@ void writeToRBFCoeffs(
 
 		// Writing the RBF weights
 		for (size_t i = 0; i < inputData.size(); i++) {
-			if (typeid(DataType) == typeid(FloatingPrecision)) {
+			if      (typeid(DataType) == typeid(FloatingPrecision)) {
 				// We are in scalar mode, only one value is stored
 				const FloatingPrecision& value = reinterpret_cast<const FloatingPrecision&>(inputData[i]);
 				outputFile.write(reinterpret_cast<const char*>(&value), sizeof(FloatingPrecision));
@@ -269,6 +269,158 @@ void writeToRBFCoeffs(
 			}
 			else
 				LOG_CRITICAL("Invalid data type.");
+		}
+
+		outputFile.close();
+	}
+	else
+		LOG_CRITICAL("Output file ", outputFilePath, " could not be opened.");
+}
+
+template <typename FloatingPrecision, typename DataType>
+void writeAllToRBFCoeffs(
+	const std::string& outputFilePath,
+	
+	const RuntimeConfig<FloatingPrecision>& runtimeConfig,
+	const std::vector<DataType>& inputData,
+	const std::vector<std::unique_ptr<Coordinate>>& inputCoordinates)
+{
+	// Security check if input sizes are equal
+	if (inputData.size() != inputCoordinates.size())
+		LOG_CRITICAL("Input data size and input coordinates size do not match."
+		             "inputData: ", inputData.size(), " | vs inputCoordinates:"
+			         " ", inputCoordinates.size());
+
+	// Size of the header can vary depending on
+	// the kernel and its number of parameters.
+	std::streampos kernelNbParamsStreamPosition =
+		5 * sizeof(int)      + // 3: v.MAJOR.MINOR.PATCH + 1: dataType + 1: nbDimensions            => 5
+		4 * 4 * sizeof(char) + // 1: parameterisation + 2: smoothingFunctionHemispheres + 1: kernel => 4
+		                       //    /!\ 3 CHAR are encoded using 4 BYTES                           => 4 * 4
+		1 * sizeof(float)    + // 1: regularisationParameter                                        => 1
+		2 * sizeof(bool);      // 1: forceReciprocity + 1: forceBilateralSymmetry                   => 2
+	int kernelNbParams = 0;
+
+	std::fstream outputFile(outputFilePath, std::ios::in | std::ios::out | std::ios::binary);
+	if (outputFile.is_open()) {
+		outputFile.seekp(kernelNbParamsStreamPosition);
+
+		// Reading the number of kernel parameters and moving after parameters
+		outputFile.read(reinterpret_cast<char*>(&kernelNbParams), sizeof(int));
+		std::streampos streamPosition = kernelNbParamsStreamPosition + static_cast<std::streamoff>(kernelNbParams * sizeof(float));
+
+		streamPosition +=
+			    sizeof(float) + // 1: threshold coefficient
+			3 * sizeof(int)   + // 1: number of kernel parameters + 1: number of clusters + 1: number of RBF per cluster => 3
+			    sizeof(bool);   // 1: unique location RBF
+
+		if (runtimeConfig.m_uniqueLocationRBF)
+			// In unique location RBF mode, RBF coordinates are directly stored right after the header
+			streamPosition += runtimeConfig.m_nbDimensions * inputData.size() * sizeof(FloatingPrecision);
+
+		outputFile.seekp(streamPosition);
+
+		// If we are in unique location RBF mode, the coordinates are already written in the header and we
+		// only have to write the RBF weights. If we are in a non-unique location RBF mode, first, we will
+		// need to write the coordinates, then the RBF weights, for each cluster.
+		size_t numberOfLoops = runtimeConfig.m_uniqueLocationRBF ? inputData.size() : 2 * inputData.size();
+
+		for (size_t i = 0; i < numberOfLoops; i++) {
+			// The two following identifiers may look weird but are quite simple. The first one returns
+			// either 0 or 1, depending on whether we need to read and write the RBF coordinates or its
+			// coefficients.
+			size_t isCoefLoop    = ((i - (i % runtimeConfig.m_numberRBF)) / runtimeConfig.m_numberRBF) % 2;
+			// The coefficientID is the index of the coefficient in the RBF bidirection array or either
+			// in the RBF weights array.
+			size_t coefficientID = ((i - (i % (2 * runtimeConfig.m_numberRBF))) / 2) + (i % runtimeConfig.m_numberRBF);
+
+			if (isCoefLoop > 1)                    LOG_CRITICAL("Invalid coefficient loop index: ", isCoefLoop);
+			if (coefficientID >= inputData.size()) LOG_CRITICAL("Coefficient ID out of bounds: ", coefficientID, " >= ", inputData.size());
+
+			// We are not in unique location RBF mode and we are iterating
+			// over the coordinates, so we need to write the bidirections.
+			if (!(runtimeConfig.m_uniqueLocationRBF) && (isCoefLoop == 0)) {
+				const auto& coordinate = inputCoordinates[coefficientID];
+				if      (typeid(*coordinate) == typeid(Coordinate2D<FloatingPrecision>)) {
+					const auto& coord = static_cast<Coordinate2D<FloatingPrecision>&>(*coordinate);
+					FloatingPrecision theta = coord.getTheta();
+					FloatingPrecision phi   = coord.getPhi();
+					outputFile.write(reinterpret_cast<const char*>(&theta), sizeof(FloatingPrecision));
+					outputFile.write(reinterpret_cast<const char*>(&phi), sizeof(FloatingPrecision));
+				}
+				else if (typeid(*coordinate) == typeid(Coordinate3DSpherical<FloatingPrecision>)) {
+					const auto& coord = static_cast<Coordinate3DSpherical<FloatingPrecision>&>(*coordinate);
+					FloatingPrecision thetaI   = coord.getThetaI();
+					FloatingPrecision thetaO   = coord.getThetaO();
+					FloatingPrecision deltaPhi = coord.getDeltaPhi();
+					outputFile.write(reinterpret_cast<const char*>(&thetaI), sizeof(FloatingPrecision));
+					outputFile.write(reinterpret_cast<const char*>(&thetaO), sizeof(FloatingPrecision));
+					outputFile.write(reinterpret_cast<const char*>(&deltaPhi), sizeof(FloatingPrecision));
+				}
+				else if (typeid(*coordinate) == typeid(Coordinate3DRusinkiewicz<FloatingPrecision>)) {
+					const auto& coord = static_cast<Coordinate3DRusinkiewicz<FloatingPrecision>&>(*coordinate);
+					FloatingPrecision thetaH = coord.getThetaH();
+					FloatingPrecision thetaD = coord.getThetaD();
+					FloatingPrecision phiD   = coord.getPhiD();
+					outputFile.write(reinterpret_cast<const char*>(&thetaH), sizeof(FloatingPrecision));
+					outputFile.write(reinterpret_cast<const char*>(&thetaD), sizeof(FloatingPrecision));
+					outputFile.write(reinterpret_cast<const char*>(&phiD), sizeof(FloatingPrecision));
+				}
+				else
+					LOG_CRITICAL("Invalid coordinate type for coefficientID: ", coefficientID);
+			}
+
+			// We are not in unique location RBF mode and we are iterating over
+			// the coefficients, so we need to write the associated RBF weights
+			else if (!(runtimeConfig.m_uniqueLocationRBF) && (isCoefLoop == 1)) {
+				if      (typeid(DataType) == typeid(FloatingPrecision)) {
+					// We are in scalar mode, only one value is stored
+					const FloatingPrecision& value = reinterpret_cast<const FloatingPrecision&>(inputData[coefficientID]);
+					outputFile.write(reinterpret_cast<const char*>(&value), sizeof(FloatingPrecision));
+				}
+				else if (typeid(DataType) == typeid(glm::vec3)) {
+					// We are in RGB mode, three values are stored
+					const glm::vec3& value = reinterpret_cast<const glm::vec3&>(inputData[coefficientID]);
+					outputFile.write(reinterpret_cast<const char*>(&value.r), sizeof(FloatingPrecision));
+					outputFile.write(reinterpret_cast<const char*>(&value.g), sizeof(FloatingPrecision));
+					outputFile.write(reinterpret_cast<const char*>(&value.b), sizeof(FloatingPrecision));
+				}
+				else if (typeid(DataType) == typeid(glm::dvec3)) {
+					// We are in RGB mode, three values are stored
+					const glm::dvec3& value = reinterpret_cast<const glm::dvec3&>(inputData[coefficientID]);
+					outputFile.write(reinterpret_cast<const char*>(&value.r), sizeof(FloatingPrecision));
+					outputFile.write(reinterpret_cast<const char*>(&value.g), sizeof(FloatingPrecision));
+					outputFile.write(reinterpret_cast<const char*>(&value.b), sizeof(FloatingPrecision));
+				}
+				else
+					LOG_CRITICAL("Invalid data type.");
+			}
+
+			// We are in unique location RBF mode and 
+			// we are iterating over the RBG weights.
+			else {
+				if      (typeid(DataType) == typeid(FloatingPrecision)) {
+					// We are in scalar mode, only one value is stored
+					const FloatingPrecision& value = reinterpret_cast<const FloatingPrecision&>(inputData[i]);
+					outputFile.write(reinterpret_cast<const char*>(&value), sizeof(FloatingPrecision));
+				}
+				else if (typeid(DataType) == typeid(glm::vec3)) {
+					// We are in RGB mode, three values are stored
+					const glm::vec3& value = reinterpret_cast<const glm::vec3&>(inputData[i]);
+					outputFile.write(reinterpret_cast<const char*>(&value.r), sizeof(FloatingPrecision));
+					outputFile.write(reinterpret_cast<const char*>(&value.g), sizeof(FloatingPrecision));
+					outputFile.write(reinterpret_cast<const char*>(&value.b), sizeof(FloatingPrecision));
+				}
+				else if (typeid(DataType) == typeid(glm::dvec3)) {
+					// We are in RGB mode, three values are stored
+					const glm::dvec3& value = reinterpret_cast<const glm::dvec3&>(inputData[i]);
+					outputFile.write(reinterpret_cast<const char*>(&value.r), sizeof(FloatingPrecision));
+					outputFile.write(reinterpret_cast<const char*>(&value.g), sizeof(FloatingPrecision));
+					outputFile.write(reinterpret_cast<const char*>(&value.b), sizeof(FloatingPrecision));
+				}
+				else
+					LOG_CRITICAL("Invalid data type.");
+			}
 		}
 
 		outputFile.close();

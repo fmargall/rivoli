@@ -278,8 +278,13 @@ RuntimeConfig<FloatingPrecision>::RuntimeConfig(const MainConfig& mainConfig) : 
 		// This mode will be used only if the configuration
 		// parameter forceSingleThreadWriting is true.
 		std::vector<glm::vec3> allCoefficients;
+		// Vector storing all coordinates for all clusters.
+		// This mode will be used only if the configuration
+		// parameter forceSingleThreadWriting is true.
+		std::vector<std::unique_ptr<Coordinate>> allCoordinates;
 		if (this->m_forceSingleThreadWriting) {
 			allCoefficients.resize(m_nbClusters * m_coordinatesRBF.size());
+			allCoordinates.resize(m_nbClusters * m_coordinatesRBF.size());
 		}
 
 		std::atomic<size_t> completedIterations{ 0 };
@@ -379,8 +384,10 @@ RuntimeConfig<FloatingPrecision>::RuntimeConfig(const MainConfig& mainConfig) : 
 				// Writing the coefficients
 				glm::vec3 coefficient(coefR, coefG, coefB);
 
-				if (threadConfig.m_forceSingleThreadWriting)
+				if (threadConfig.m_forceSingleThreadWriting) {
 					allCoefficients[clusterID * threadConfig.m_coordinatesRBF.size() + coefID] = coefficient;
+					allCoordinates[clusterID * threadConfig.m_coordinatesRBF.size() + coefID] = threadConfig.m_coordinatesRBF[coefID]->clone();
+				}
 				else
 					coefficients.push_back(coefficient);
 			}
@@ -395,7 +402,7 @@ RuntimeConfig<FloatingPrecision>::RuntimeConfig(const MainConfig& mainConfig) : 
 
 		// Writing in serial the coefficients if required
 		if (this->m_forceSingleThreadWriting)
-			writeToRBFCoeffs(m_outputFilePath, *this, allCoefficients, 0);
+			writeAllToRBFCoeffs(m_outputFilePath, *this, allCoefficients, allCoordinates);
 
 		// Associated flag is logged to measure time computation
 		logger.LogFlagAndRemove("RBF coefficients computation");

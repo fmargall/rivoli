@@ -87,6 +87,12 @@ private:
 							     const std::vector<DataType>& inputData,
 							     const size_t& clusterID);
 
+	template <typename FloatingPrecisionType, typename DataType>
+	friend void writeAllToRBFCoeffs(const std::string& outputFilePath,
+									const RuntimeConfig<FloatingPrecisionType>& runtimeConfig,
+									const std::vector<DataType>& inputData,
+									const std::vector<std::unique_ptr<Coordinate>>& allCoordinates);
+
 	static std::unique_ptr<Topology<FloatingPrecision>> initTopology(RuntimeConfig<FloatingPrecision>& runtimeConfig);
 
 	// Class containing the distance function related to the BRDF topology,
