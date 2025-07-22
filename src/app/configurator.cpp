@@ -46,17 +46,17 @@ MainConfig::MainConfig(const std::string& configFilePath) {
 					logger.level = LogLevel::OFF;
 				else if (value == "CRITICAL" || value == "1")
 					logger.level = LogLevel::CRITICAL;
-				else if (value == "ERR" || value == "2")
+				else if (value == "ERR"      || value == "2")
 					logger.level = LogLevel::ERR;
-				else if (value == "WARN" || value == "3")
+				else if (value == "WARN"     || value == "3")
 					logger.level = LogLevel::WARN;
-				else if (value == "INFO" || value == "4")
+				else if (value == "INFO"     || value == "4")
 					logger.level = LogLevel::INFO;
-				else if (value == "VERBOSE" || value == "5")
+				else if (value == "VERBOSE"  || value == "5")
 					logger.level = LogLevel::VERBOSE;
-				else if (value == "DEBUG" || value == "6")
+				else if (value == "DEBUG"    || value == "6")
 					logger.level = LogLevel::DEBUG;
-				else if (value == "TRACE" || value == "7")
+				else if (value == "TRACE"    || value == "7")
 					logger.level = LogLevel::TRACE;
 				else
 					breaker = true;
@@ -90,7 +90,7 @@ MainConfig::MainConfig(const std::string& configFilePath) {
 					breaker = true;
 			}
 			else if (key == "forceBilateralSymmetry") {
-				if (value == "true")
+				if      (value == "true")
 					m_forceBilateralSymmetry = true;
 				else if (value == "false")
 					m_forceBilateralSymmetry = false;
@@ -98,7 +98,7 @@ MainConfig::MainConfig(const std::string& configFilePath) {
 					breaker = true;
 			}
 			else if (key == "forceReciprocity") {
-				if (value == "true")
+				if      (value == "true")
 					m_forceReciprocity = true;
 				else if (value == "false")
 					m_forceReciprocity = false;
@@ -106,10 +106,18 @@ MainConfig::MainConfig(const std::string& configFilePath) {
 					breaker = true;
 			}
 			else if (key == "parallelComputing") {
-				if (value == "true")
+				if      (value == "true")
 					m_parallelComputing = true;
 				else if (value == "false")
 					m_parallelComputing = false;
+				else
+					breaker = true;
+			}
+			else if (key == "forceSingleThreadWriting") {
+				if      (value == "true")
+					m_forceSingleThreadWriting = true;
+				else if (value == "false")
+					m_forceSingleThreadWriting = false;
 				else
 					breaker = true;
 			}

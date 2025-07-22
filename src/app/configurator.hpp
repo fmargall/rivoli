@@ -58,6 +58,7 @@ protected:
 
 	bool m_parallelComputing = true;
 	bool m_uniqueLocationRBF = true;
+	bool m_forceSingleThreadWriting = false;
 };
 
 template <typename FloatingPrecision>
