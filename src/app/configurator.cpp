@@ -274,6 +274,14 @@ RuntimeConfig<FloatingPrecision>::RuntimeConfig(const MainConfig& mainConfig) : 
 		LOG_INFO("Starting coefficients computation for each cluster...");
 		LOG_VERBOSE("Number of threads used: ", numberOfThreads);
 
+		// Vector storing all coefficients for all clusters 
+		// This mode will be used only if the configuration
+		// parameter forceSingleThreadWriting is true.
+		std::vector<glm::vec3> allCoefficients;
+		if (this->m_forceSingleThreadWriting) {
+			allCoefficients.resize(m_nbClusters * m_coordinatesRBF.size());
+		}
+
 		std::atomic<size_t> completedIterations{ 0 };
 		#pragma omp parallel for num_threads(numberOfThreads)
 		for (int clusterID = 0; clusterID < m_nbClusters; clusterID++) {
@@ -370,13 +378,24 @@ RuntimeConfig<FloatingPrecision>::RuntimeConfig(const MainConfig& mainConfig) : 
 
 				// Writing the coefficients
 				glm::vec3 coefficient(coefR, coefG, coefB);
-				coefficients.push_back(coefficient);
-			}
-			writeToRBFCoeffs(threadConfig.m_outputFilePath, threadConfig, coefficients, clusterID);
 
-			logger.displayProgressBar(completedIterations.load(std::memory_order_relaxed), threadConfig.m_nbClusters + 1); // Strangest bug ever: if m_nbClusters is exactly 1041 (as it has already happened once), the progress bar does not appear. It won't happen for 1039, 1040 or 1042.
+				if (threadConfig.m_forceSingleThreadWriting)
+					allCoefficients[clusterID * threadConfig.m_coordinatesRBF.size() + coefID] = coefficient;
+				else
+					coefficients.push_back(coefficient);
+			}
+			
+			// Writing in parallel the coefficients if required
+			if (!(threadConfig.m_forceSingleThreadWriting))
+				writeToRBFCoeffs(threadConfig.m_outputFilePath, threadConfig, coefficients, clusterID);
+
+			logger.displayProgressBar(completedIterations.load(std::memory_order_relaxed), threadConfig.m_nbClusters + 1);
 			completedIterations.fetch_add(1, std::memory_order_relaxed);
 		}
+
+		// Writing in serial the coefficients if required
+		if (this->m_forceSingleThreadWriting)
+			writeToRBFCoeffs(m_outputFilePath, *this, allCoefficients, 0);
 
 		// Associated flag is logged to measure time computation
 		logger.LogFlagAndRemove("RBF coefficients computation");
