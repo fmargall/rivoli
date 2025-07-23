@@ -154,6 +154,7 @@ void initRBFCoeffsFile(
 		}
 	}
 
+	outputDataFile.flush();
 	outputDataFile.close();
 
 	LOG_DEBUG(outputFilePath, " initialised successfully.");
@@ -271,6 +272,9 @@ void writeToRBFCoeffs(
 				LOG_CRITICAL("Invalid data type.");
 		}
 
+		// Ensures that all buffered data is physically written to the file before the next
+		// loop. This prevents loss of data in case the buffer isn't automatically flushed.
+		outputFile.flush();
 		outputFile.close();
 	}
 	else
@@ -421,6 +425,10 @@ void writeAllToRBFCoeffs(
 				else
 					LOG_CRITICAL("Invalid data type.");
 			}
+
+			// Ensures that all buffered data is physically written to the file before the next
+			// loop. This prevents loss of data in case the buffer isn't automatically flushed.
+			outputFile.flush();
 		}
 
 		outputFile.close();
