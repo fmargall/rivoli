@@ -426,11 +426,11 @@ void writeAllToRBFCoeffs(
 					LOG_CRITICAL("Invalid data type.");
 			}
 
-			// Ensures that all buffered data is physically written to the file before the next
-			// loop. This prevents loss of data in case the buffer isn't automatically flushed.
-			outputFile.flush();
 		}
 
+		// Ensure that all buffered data is physically written to the file before ending the
+		// function, preventing loss of data in case the buffer isn't automatically flushed.
+		outputFile.flush();
 		outputFile.close();
 	}
 	else
