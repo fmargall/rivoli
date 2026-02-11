@@ -6,6 +6,8 @@ get_filename_component(PROJECT_NAME_FROM_DIR
     ${CMAKE_CURRENT_SOURCE_DIR} NAME
 )
 
+# The following part allows us to get the version
+# from git tags, and if none, fallbacks to 0.0.0.
 execute_process(
     COMMAND git describe --tags --dirty --always
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
