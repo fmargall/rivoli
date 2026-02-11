@@ -43,6 +43,12 @@ target_include_directories(${PROJECT_NAME} INTERFACE
     $<INSTALL_INTERFACE:include>
 )
 
+# Link dependencies
+target_link_libraries(${PROJECT_NAME}
+    INTERFACE
+        vectra
+)
+
 configure_file(
     ${CMAKE_CURRENT_SOURCE_DIR}/include/${PROJECT_NAME}/version.hpp.in
     ${CMAKE_CURRENT_BINARY_DIR}/include/${PROJECT_NAME}/version.hpp
