@@ -66,5 +66,11 @@ if(BUILD_TESTS)
     add_subdirectory(tests)
 endif()
 
+# Build benchmarks if requested
+option(BUILD_BENCHMARKS "Build benchmarks" ON)
+if(BUILD_BENCHMARKS)
+    add_subdirectory(benchmark)
+endif()
+
 # Link each dependency
 add_subdirectory(ext)
