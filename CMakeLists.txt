@@ -49,6 +49,11 @@ target_link_libraries(${PROJECT_NAME}
         vectra
 )
 
+target_link_libraries(${PROJECT_NAME}
+    INTERFACE
+        eigen
+)
+
 configure_file(
     ${CMAKE_CURRENT_SOURCE_DIR}/include/${PROJECT_NAME}/version.hpp.in
     ${CMAKE_CURRENT_BINARY_DIR}/include/${PROJECT_NAME}/version.hpp
