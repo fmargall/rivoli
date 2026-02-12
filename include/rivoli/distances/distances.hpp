@@ -27,8 +27,8 @@ FORCE_INLINE vectra::Vectratype<FP, level> distanceGreatCircleBilateral(
 {
     using vct = vectra::Vectratype<FP, level>;
 
-    vct distanceOne = rivoli::greatCircleDistance(thetaOne, phiOne, thetaTwo, phiTwo);
-    vct distanceTwo = rivoli::greatCircleDistance(thetaOne, phiOne, thetaTwo, vct::two_pi() - phiTwo);
+    vct distanceOne = rivoli::distanceGreatCircle(thetaOne, phiOne, thetaTwo, phiTwo);
+    vct distanceTwo = rivoli::distanceGreatCircle(thetaOne, phiOne, thetaTwo, vct::two_pi() - phiTwo);
 
     return vct::min(distanceOne, distanceTwo);
 }
