@@ -4,7 +4,7 @@
 
 TEST(KernerLinear, Nonef)
 {
-	KernelLinear<float, vectra::SIMDLevel::None> kernel;
+	rivoli::KernelLinear<float, vectra::SIMDLevel::None> kernel;
 
 	float r = 3.5f;
 	float result = kernel(r);
