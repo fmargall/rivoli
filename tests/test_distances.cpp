@@ -6,10 +6,10 @@ TEST(VectratypeDistances, GreatCircleNonef)
 {
 	using vct = vectra::Vectratype<float, vectra::SIMDLevel::None>;
 	
-	vct thetaOne{0.0};
-	vct phiOne  {0.0};
-	vct thetaTwo{0.0};
-	vct phiTwo  {0.0};
+	vct thetaOne{ 0.0 };
+	vct phiOne  { 0.0 };
+	vct thetaTwo{ 0.0 };
+	vct phiTwo  { 0.0 };
 	
 	vct result = rivoli::distanceGreatCircle(thetaOne, phiOne, thetaTwo, phiTwo);
 	EXPECT_NEAR(result.value, 0.0, 1e-6);
