@@ -72,5 +72,11 @@ if(BUILD_BENCHMARKS)
     add_subdirectory(benchmark)
 endif()
 
+# Build playgrounds if requested
+option(BUILD_PLAYGROUND "Build playground" ON)
+if(BUILD_PLAYGROUND)
+    add_subdirectory(playground)
+endif()
+
 # Link each dependency
 add_subdirectory(ext)
