@@ -19,6 +19,21 @@ FORCE_INLINE vectra::Vectratype<FP, level> distanceGreatCircle(
 }
 
 template <typename FP, vectra::SIMDLevel level>
+FORCE_INLINE vectra::Vectratype<FP, level> distanceGreatCircleBilateral(
+    vectra::Vectratype<FP, level> thetaOne,
+    vectra::Vectratype<FP, level> phiOne  ,
+    vectra::Vectratype<FP, level> thetaTwo,
+    vectra::Vectratype<FP, level> phiTwo)
+{
+    using vct = vectra::Vectratype<FP, level>;
+
+    vct distanceOne = rivoli::greatCircleDistance(thetaOne, phiOne, thetaTwo, phiTwo);
+    vct distanceTwo = rivoli::greatCircleDistance(thetaOne, phiOne, thetaTwo, vct::two_pi() - phiTwo);
+
+    return vct::min(distanceOne, distanceTwo);
+}
+
+template <typename FP, vectra::SIMDLevel level>
 FORCE_INLINE vectra::Vectratype<FP, level> distance1Rx2SEuclidean(
     vectra::Vectratype<FP, level> thetaAOne,
     vectra::Vectratype<FP, level> thetaBOne,
@@ -29,10 +44,10 @@ FORCE_INLINE vectra::Vectratype<FP, level> distance1Rx2SEuclidean(
 {
     using vct = vectra::Vectratype<FP, level>;
 
-    vct distR1 = thetaAOne - thetaATwo;
-    vct distS2 = rivoli::distanceGreatCircle(thetaBOne, phiBOne, thetaBTwo, phiBTwo);
+    vct distanceR1 = thetaAOne - thetaATwo;
+    vct distanceS2 = rivoli::distanceGreatCircle(thetaBOne, phiBOne, thetaBTwo, phiBTwo);
 
-    return vct::sqrt(distR1 * distR1 + distS2 * distS2);
+    return vct::sqrt(distanceR1 * distanceR1 + distanceS2 * distanceS2);
 }
 
 template <typename FP, vectra::SIMDLevel level>
