@@ -1,0 +1,28 @@
+# --- Python detection ---
+if (CMAKE_VERSION VERSION_LESS 3.18)
+  set(DEV_MODULE Development)
+else()
+  set(DEV_MODULE Development.Module)
+endif()
+
+find_package(Python 3.9 COMPONENTS Interpreter ${DEV_MODULE} REQUIRED)
+
+# --- nanobind ---
+add_subdirectory(${PROJECT_SOURCE_DIR}/ext/nanobind)
+
+# --- Create Python module ---
+nanobind_add_module(_binding binding.cpp)
+
+# Link against INTERFACE rivoli library
+target_link_libraries(_binding PRIVATE ${PROJECT_NAME})
+
+# Make sure public headers are seen
+target_include_directories(_binding PRIVATE
+    ${PROJECT_SOURCE_DIR}/include
+)
+
+# Copy pure Python files next to compiled module
+file(GLOB PYTHON_FILES "${CMAKE_CURRENT_SOURCE_DIR}/rivoli/*.py")
+
+file(COPY ${PYTHON_FILES}
+     DESTINATION ${CMAKE_BINARY_DIR}/python/rivoli)

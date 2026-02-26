@@ -71,6 +71,9 @@ if(BUILD_TESTS)
     add_subdirectory(tests)
 endif()
 
+# Link each dependency
+add_subdirectory(ext)
+
 # Build benchmarks if requested
 option(BUILD_BENCHMARKS "Build benchmarks" ON)
 if(BUILD_BENCHMARKS)
@@ -83,5 +86,8 @@ if(BUILD_PLAYGROUND)
     add_subdirectory(playground)
 endif()
 
-# Link each dependency
-add_subdirectory(ext)
+# Build Python binding if requested
+option(BUILD_BINDING "Build binding" ON)
+if(BUILD_BINDING)
+    add_subdirectory(python)
+endif()
