@@ -4,6 +4,7 @@
 
 #include <vectra/vectra.hpp>
 
+
 namespace rivoli {
 
 template <typename _FP, vectra::SIMDLevel _level, typename DerivedKernel>
