@@ -6,5 +6,6 @@
 #include <rivoli/kernels/kernels_selector.hpp>
 
 #include <rivoli/topologies/topologies.hpp>
+#include <rivoli/topologies/topologies_selector.hpp>
 
 #include <rivoli/interpolator/interpolator.hpp>

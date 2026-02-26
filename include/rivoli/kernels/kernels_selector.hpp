@@ -18,6 +18,7 @@ struct KernelTraits;
 template <KernelType kernelType, typename FP, vectra::SIMDLevel level>
 using KernelSelector = typename KernelTraits<kernelType, FP, level>::type;
 
+
 template <typename FP, vectra::SIMDLevel level>
 struct KernelTraits<KernelType::Linear, FP, level> {
 	using type = KernelLinear<FP, level>;
