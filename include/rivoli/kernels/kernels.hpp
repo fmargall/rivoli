@@ -37,6 +37,7 @@ class KernelLinear : public Kernel<_FP, _level, KernelLinear<_FP, _level>> {
 	friend class Kernel;
 
 public:
+	static constexpr std::string_view name = "Linear";
 
 protected:
 	using FP = _FP;

@@ -32,7 +32,8 @@ class Topology2S : public Topology<_FP, _level, Topology2S<_FP, _level>> {
 public:
 	using FP = _FP;
 	static constexpr vectra::SIMDLevel level = _level;
-	static constexpr std::size_t dimension   = 2;
+	static constexpr std::size_t dimension = 2;
+	static constexpr std::string_view name = "2S";
 
 protected:
 	using vct = vectra::Vectratype<FP, level>;
@@ -53,7 +54,8 @@ class Topology2SBilateral : public Topology<_FP, _level, Topology2SBilateral<_FP
 public:
 	using FP = _FP;
 	static constexpr vectra::SIMDLevel level = _level;
-	static constexpr std::size_t dimension   = 2;
+	static constexpr std::size_t dimension = 2;
+	static constexpr std::string_view name = "2SBilateral";
 
 protected:
 	using vct = vectra::Vectratype<FP, level>;
