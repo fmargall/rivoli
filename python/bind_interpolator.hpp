@@ -67,19 +67,71 @@ void bindInterpolator(nb::module_& m) {
 
 	// interpolate function instantiation
 	if      constexpr (dim == 2) {
+		// Call to the interpolate function in scalar mode
 		cls.def("interpolate", [](const InterpolatorClass& self, FP theta, FP phi) {
 			return self.interpolate(theta, phi);
 		});
+
+		// Call to the interpolate function in numpy-ndarray mode
+		cls.def("interpolate", [](const InterpolatorClass& self,
+			const nb::ndarray<FP>& theta, const nb::ndarray<FP>& phi) {
+				nb::ndarray<FP> result(theta);
+
+				FP* thetaData  =  theta.data();
+				FP* phiData    =    phi.data();
+				FP* resultData = result.data();
+
+				for (size_t i = 0; i < theta.size(); i++)
+					resultData[i] = self.interpolate(thetaData[i], phiData[i]);
+
+				return result;
+			});
 	}
 	else if constexpr (dim == 3) {
+		// Call to the interpolate function in scalar mode
 		cls.def("interpolate", [](const InterpolatorClass& self, FP thetaI, FP thetaO, FP deltaPhi) {
 			return self.interpolate(thetaI, thetaO, deltaPhi);
 		});
+
+		// Call to the interpolate function in numpy-ndarray mode
+		cls.def("interpolate", [](const InterpolatorClass& self,
+            const nb::ndarray<FP>& thetaI, const nb::ndarray<FP>& thetaO, const nb::ndarray<FP>& deltaPhi) {
+                nb::ndarray<FP> result(thetaI);
+
+                FP* thetaIData   =   thetaI.data();
+                FP* thetaOData   =   thetaO.data();
+                FP* deltaPhiData = deltaPhi.data();
+                FP* resultData   =   result.data();
+
+                for (size_t i = 0; i < thetaI.size(); i++)
+                    resultData[i] = self.interpolate(thetaIData[i], thetaOData[i], deltaPhiData[i]);
+
+                return result;
+        });
 	}
 	else if constexpr (dim == 4) {
+		// Call to the interpolate function in scalar mode
 		cls.def("interpolate", [](const InterpolatorClass& self, FP thetaI, FP phiI, FP thetaO, FP phiO) {
 			return self.interpolate(thetaI, phiI, thetaO, phiO);
 		});
+
+		// Call to the interpolate function in numpy-ndarray mode
+		cls.def("interpolate", [](const InterpolatorClass& self,
+            const nb::ndarray<FP>& thetaI, const nb::ndarray<FP>& phiI, 
+            const nb::ndarray<FP>& thetaO, const nb::ndarray<FP>& phiO) {
+                nb::ndarray<FP> result(thetaI);
+
+                FP* thetaIData = thetaI.data();
+                FP* phiIData   =   phiI.data();
+                FP* thetaOData = thetaO.data();
+                FP* phiOData   =   phiO.data();
+                FP* resultData = result.data();
+
+                for (size_t i = 0; i < thetaI.size(); i++)
+                    resultData[i] = self.interpolate(thetaIData[i], phiIData[i], thetaOData[i], phiOData[i]);
+
+                return result;
+        });
 	}
 }
 
