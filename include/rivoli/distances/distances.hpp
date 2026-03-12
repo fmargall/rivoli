@@ -104,7 +104,7 @@ FORCE_INLINE vectra::Vectratype<FP, level> distance1Rx2SBilateralReciprocalEucli
     using vct = vectra::Vectratype<FP, level>;
 
     vct distanceOne = rivoli::distance1Rx2SReciprocalEuclidean(thetaAOne, thetaBOne, phiBOne,
-                                                     thetaATwo, thetaBTwo, phiBTwo);
+                                                               thetaATwo, thetaBTwo, phiBTwo);
     vct distanceTwo = rivoli::distance1Rx2SReciprocalEuclidean(thetaAOne, thetaBOne, phiBOne,
                                                                thetaATwo, thetaBTwo, vct::two_pi() - phiBTwo);
 
@@ -131,7 +131,7 @@ FORCE_INLINE vectra::Vectratype<FP, level> distance2Sx2SEuclidean(
 }
 
 template <typename FP, vectra::SIMDLevel level>
-FORCE_INLINE vectra::Vectratype<FP, level> distance2Sx2BilateralSEuclidean(
+FORCE_INLINE vectra::Vectratype<FP, level> distance2Sx2SBilateralEuclidean(
     vectra::Vectratype<FP, level> thetaAOne,
     vectra::Vectratype<FP, level> phiAOne  ,
     vectra::Vectratype<FP, level> thetaBOne,
@@ -155,7 +155,7 @@ FORCE_INLINE vectra::Vectratype<FP, level> distance2Sx2BilateralSEuclidean(
 }
 
 template <typename FP, vectra::SIMDLevel level>
-FORCE_INLINE vectra::Vectratype<FP, level> distance2Sx2ReciprocalSEuclidean(
+FORCE_INLINE vectra::Vectratype<FP, level> distance2Sx2SReciprocalEuclidean(
     vectra::Vectratype<FP, level> thetaAOne,
     vectra::Vectratype<FP, level> phiAOne  ,
     vectra::Vectratype<FP, level> thetaBOne,
@@ -175,12 +175,36 @@ FORCE_INLINE vectra::Vectratype<FP, level> distance2Sx2ReciprocalSEuclidean(
     vct distanceS2Two = rivoli::distanceGreatCircle(thetaAOne, phiAOne, thetaBTwo, phiBTwo);
     vct distanceTwo   = vct::sqrt(distanceS1Two * distanceS1Two + distanceS2Two * distanceS2Two);
 
-    vct distanceS1Three = rivoli::distanceGreatCircle(thetaAOne, phiAOne, thetaBTwo, phiBTwo);
-    vct distanceS2Three = rivoli::distanceGreatCircle(thetaBOne, phiBOne, thetaATwo, phiATwo);
-    vct distanceThree   = vct::sqrt(distanceS1Three * distanceS1Three + distanceS2Three * distanceS2Three);
-
-    return vct::min(vct::min(distanceOne, distanceTwo), vct::min(distanceTwo, distanceThree));
+    return vct::min(distanceOne, distanceTwo);
 }
+
+template <typename FP, vectra::SIMDLevel level>
+FORCE_INLINE vectra::Vectratype<FP, level> distance2Sx2SBilateralReciprocalEuclidean(
+    vectra::Vectratype<FP, level> thetaAOne,
+    vectra::Vectratype<FP, level> phiAOne  ,
+    vectra::Vectratype<FP, level> thetaBOne,
+    vectra::Vectratype<FP, level> phiBOne  ,
+    vectra::Vectratype<FP, level> thetaATwo,
+    vectra::Vectratype<FP, level> phiATwo  ,
+    vectra::Vectratype<FP, level> thetaBTwo,
+    vectra::Vectratype<FP, level> phiBTwo)
+{
+    using vct = vectra::Vectratype<FP, level>;
+
+    vct distanceOne   = rivoli::distance2Sx2SReciprocalEuclidean(thetaAOne, phiAOne, thetaBOne, phiBOne, 
+                                                                 thetaATwo, phiATwo, thetaBTwo, phiBTwo);
+    vct distanceTwo   = rivoli::distance2Sx2SReciprocalEuclidean(thetaAOne, vct::two_pi() - phiAOne, thetaBOne, phiBOne,
+                                                                 thetaATwo, phiATwo, thetaBTwo, phiBTwo);
+    vct distanceThree = rivoli::distance2Sx2SReciprocalEuclidean(thetaAOne, phiAOne, thetaBOne, vct::two_pi() - phiBOne,
+                                                                 thetaATwo, phiATwo, thetaBTwo, phiBTwo);
+    vct distanceFour  = rivoli::distance2Sx2SReciprocalEuclidean(thetaAOne, phiAOne, thetaBOne, phiBOne,
+                                                                 thetaATwo, vct::two_pi() - phiATwo, thetaBTwo, phiBTwo);
+    vct distanceFive  = rivoli::distance2Sx2SReciprocalEuclidean(thetaAOne, phiAOne, thetaBOne, phiBOne,
+                                                                 thetaATwo, phiATwo, thetaBTwo, vct::two_pi() - phiBTwo);
+
+    return vct::min(vct::min(vct::min(distanceOne, distanceTwo), vct::min(distanceThree, distanceFour)), distanceFive);
+}
+
 
 namespace experimental
 {
