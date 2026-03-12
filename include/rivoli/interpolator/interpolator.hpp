@@ -19,7 +19,9 @@ class Interpolator {
 	using FP  = typename TopologyType::FP;
 	using vct = vectra::Vectratype<FP, level>;
 
-	using vctVector = std::vector<vct, vectra::aligned_allocator<vct, vct::alignment()>>;
+	//static constexpr std::size_t alignment = vct::alignment();
+
+	using vctVector = std::vector<vct, vectra::aligned_allocator<vct, alignof(vct)>>;
 
 private:
 	// Forward declaration of the variable member _dimension used

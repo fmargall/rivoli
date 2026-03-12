@@ -1,5 +1,8 @@
 include(FetchContent)
 
+# nanobind Python binding library
+add_subdirectory(nanobind)
+
 # vectra SIMD library
 FetchContent_Declare(
     vectra

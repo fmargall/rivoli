@@ -81,7 +81,7 @@ if(BUILD_BENCHMARKS)
 endif()
 
 # Build playgrounds if requested
-option(BUILD_PLAYGROUND "Build playground" ON)
+option(BUILD_PLAYGROUND "Build playground" OFF)
 if(BUILD_PLAYGROUND)
     add_subdirectory(playground)
 endif()

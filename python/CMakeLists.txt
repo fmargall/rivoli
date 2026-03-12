@@ -8,7 +8,7 @@ endif()
 find_package(Python 3.9 COMPONENTS Interpreter ${DEV_MODULE} REQUIRED)
 
 # --- nanobind ---
-add_subdirectory(${PROJECT_SOURCE_DIR}/ext/nanobind)
+# Has already been added with the 'ext' folder
 
 # --- Create Python module ---
 nanobind_add_module(_binding binding.cpp)

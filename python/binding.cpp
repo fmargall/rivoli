@@ -2,6 +2,9 @@
 
 #include <rivoli/rivoli.hpp>
 
+#include "bind_interpolator.hpp"
+
+
 namespace nb = nanobind;
 
 template <typename... Ts>
@@ -12,15 +15,15 @@ struct value_list {};
 
 using SIMDLevels = value_list<
     vectra::SIMDLevel        , // Mandatory to expose type of enum before the values
-    vectra::SIMDLevel::None  ,
-    vectra::SIMDLevel::SSE   ,
-    vectra::SIMDLevel::SSE2  ,
-    vectra::SIMDLevel::SSE3  ,
-    vectra::SIMDLevel::SSE41 ,
-    vectra::SIMDLevel::SSE42 ,
-    vectra::SIMDLevel::AVX   ,
-    vectra::SIMDLevel::AVX2  ,
-    vectra::SIMDLevel::AVX512
+    vectra::SIMDLevel::None    // All of the following backends are not implemented.
+    //vectra::SIMDLevel::SSE   ,
+    //vectra::SIMDLevel::SSE2  ,
+    //vectra::SIMDLevel::SSE3  ,
+    //vectra::SIMDLevel::SSE41 ,
+    //vectra::SIMDLevel::SSE42 ,
+    //vectra::SIMDLevel::AVX   ,
+    //vectra::SIMDLevel::AVX2  ,
+    //vectra::SIMDLevel::AVX512
 >;
 
 using KernelTypes = value_list<
@@ -66,7 +69,7 @@ NB_MODULE(_binding, m) {
                                     constexpr bool bilateral  = Topology::bilateral;
                                     constexpr bool reciprocal = Topology::reciprocal;
 
-                                    bindInterpolator<FP, level, dim, bilateral, reciprocal, kernelType>(m);
+                                    rivoli::bindInterpolator<FP, level, dim, bilateral, reciprocal, kernelType>(m);
 
                                 }(), ...);
                             }(TopologyTypes{});
