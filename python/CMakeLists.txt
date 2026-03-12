@@ -24,5 +24,10 @@ target_include_directories(_binding PRIVATE
 # Copy pure Python files next to compiled module
 file(GLOB PYTHON_FILES "${CMAKE_CURRENT_SOURCE_DIR}/rivoli/*.py")
 
+# Also add to the compiled module the bindings
+set_target_properties(_binding PROPERTIES
+    LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/python/rivoli
+)
+
 file(COPY ${PYTHON_FILES}
      DESTINATION ${CMAKE_BINARY_DIR}/python/rivoli)
