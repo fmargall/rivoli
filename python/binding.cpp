@@ -11,20 +11,20 @@ template<typename Enum, Enum... Values>
 struct value_list {};
 
 using SIMDLevels = value_list<
-    vectra::SIMDLevel, // Mandatory to expose type of enum before the values
-    vectra::SIMDLevel::None,
-    vectra::SIMDLevel::SSE,
-    vectra::SIMDLevel::SSE2,
-    vectra::SIMDLevel::SSE3,
-    vectra::SIMDLevel::SSE41,
-    vectra::SIMDLevel::SSE42,
-    vectra::SIMDLevel::AVX,
-    vectra::SIMDLevel::AVX2,
+    vectra::SIMDLevel        , // Mandatory to expose type of enum before the values
+    vectra::SIMDLevel::None  ,
+    vectra::SIMDLevel::SSE   ,
+    vectra::SIMDLevel::SSE2  ,
+    vectra::SIMDLevel::SSE3  ,
+    vectra::SIMDLevel::SSE41 ,
+    vectra::SIMDLevel::SSE42 ,
+    vectra::SIMDLevel::AVX   ,
+    vectra::SIMDLevel::AVX2  ,
     vectra::SIMDLevel::AVX512
 >;
 
 using KernelTypes = value_list<
-    rivoli::KernelType, // Mandatory to expose type of enum before the values
+    rivoli::KernelType        , // Mandatory to expose type of enum before the values
     rivoli::KernelType::Linear
 >;
 
@@ -44,26 +44,40 @@ NB_MODULE(_binding, m) {
 
 	// Compile-time, for-loop over FP types
 	[&] <typename... FPs>(type_list<FPs...>) {
+        ([&] {
+            using FP = FPs;
+            
+            // Compile-time for-loop over SIMD levels
+            [&] <vectra::SIMDLevel... Levels>(value_list<vectra::SIMDLevel, Levels...>) {
+                ([&] {
+                    constexpr auto level = Levels;
 
-        // Compile-time for-loop over SIMD levels
-        [&] <vectra::SIMDLevel... Levels>(value_list<vectra::SIMDLevel, Levels...>) {
+                    // Compile-time for-loop over kernels
+                    [&] <rivoli::KernelType... Ks>(value_list<rivoli::KernelType, Ks...>) {
+                        ([&] {
+                            constexpr auto kernelType = Ks;
 
-            // Compile-time for-loop over kernels
-            [&] <rivoli::KernelType... Ks>(value_list<rivoli::KernelType, Ks...>) {
-                
-                // 
-                [&] <typename... Topologies>(type_list<Topologies...>) {
-                    // Do something here
-                }(TopologyTags{});
+                            // Compile-time for-loop over topologies
+                            [&] <typename... Topologies>(type_list<Topologies...>) {
+                                ([&] {
+                                    using Topology = Topologies;
 
+                                    constexpr size_t dim      = Topology::dimension;
+                                    constexpr bool bilateral  = Topology::bilateral;
+                                    constexpr bool reciprocal = Topology::reciprocal;
 
-            }(KernelTypes{});
+                                    bindInterpolator<FP, level, dim, bilateral, reciprocal, kernelType>(m);
 
-        }(SIMDLevels{});
+                                }(), ...);
+                            }(TopologyTypes{});
 
-		
+                        }(), ...);
+                    }(KernelTypes{});
+
+                }(), ...);
+            }(SIMDLevels{});
+
+        }(), ...);
 	}(type_list<float, double>{});
-
-
 
 }
