@@ -197,12 +197,10 @@ FORCE_INLINE vectra::Vectratype<FP, level> distance2Sx2SBilateralReciprocalEucli
                                                                  thetaATwo, phiATwo, thetaBTwo, phiBTwo);
     vct distanceThree = rivoli::distance2Sx2SReciprocalEuclidean(thetaAOne, phiAOne, thetaBOne, vct::two_pi() - phiBOne,
                                                                  thetaATwo, phiATwo, thetaBTwo, phiBTwo);
-    vct distanceFour  = rivoli::distance2Sx2SReciprocalEuclidean(thetaAOne, phiAOne, thetaBOne, phiBOne,
-                                                                 thetaATwo, vct::two_pi() - phiATwo, thetaBTwo, phiBTwo);
-    vct distanceFive  = rivoli::distance2Sx2SReciprocalEuclidean(thetaAOne, phiAOne, thetaBOne, phiBOne,
-                                                                 thetaATwo, phiATwo, thetaBTwo, vct::two_pi() - phiBTwo);
+    vct distanceFour  = rivoli::distance2Sx2SReciprocalEuclidean(thetaAOne, vct::two_pi() - phiAOne, thetaBOne, vct::two_pi() - phiBOne,
+                                                                 thetaATwo, phiATwo, thetaBTwo, phiBTwo);
 
-    return vct::min(vct::min(vct::min(distanceOne, distanceTwo), vct::min(distanceThree, distanceFour)), distanceFive);
+    return vct::min(vct::min(distanceOne, distanceTwo), vct::min(distanceThree, distanceFour));
 }
 
 
