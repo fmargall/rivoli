@@ -91,7 +91,7 @@ protected:
 };
 
 template <typename _FP, vectra::SIMDLevel _level>
-class Topology2Sx2SBilateralEuclidean : public Topology<_FP, _level, Topology2Sx2SBilateralEuclidean<_FP, level>> {
+class Topology2Sx2SBilateralEuclidean : public Topology<_FP, _level, Topology2Sx2SBilateralEuclidean<_FP, _level>> {
 
 	template <typename _FPAlias, vectra::SIMDLevel _levelAlias, typename DerivedTopology>
 	friend class Topology;
@@ -114,7 +114,7 @@ protected:
 };
 
 template <typename _FP, vectra::SIMDLevel _level>
-class Topology2Sx2SReciprocalEuclidean : public Topology<_FP, _level, Topology2Sx2SReciprocalEuclidean<_FP, level>> {
+class Topology2Sx2SReciprocalEuclidean : public Topology<_FP, _level, Topology2Sx2SReciprocalEuclidean<_FP, _level>> {
 
 	template <typename _FPAlias, vectra::SIMDLevel _levelAlias, typename DerivedTopology>
 	friend class Topology;
@@ -137,7 +137,7 @@ protected:
 };
 
 template <typename _FP, vectra::SIMDLevel _level>
-class Topology2Sx2SBilateralReciprocalEuclidean : public Topology<_FP, _level, Topology2Sx2SBilateralReciprocalEuclidean<_FP, level>> {
+class Topology2Sx2SBilateralReciprocalEuclidean : public Topology<_FP, _level, Topology2Sx2SBilateralReciprocalEuclidean<_FP, _level>> {
 
 	template <typename _FPAlias, vectra::SIMDLevel _levelAlias, typename DerivedTopology>
 	friend class Topology;
