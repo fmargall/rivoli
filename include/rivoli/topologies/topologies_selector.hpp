@@ -35,4 +35,14 @@ struct TopologyTraits<4, true, false, FP, level> {
 	using type = Topology2Sx2SBilateralEuclidean<FP, level>;
 };
 
+template <typename FP, vectra::SIMDLevel level>
+struct TopologyTraits<4, false, true, FP, level> {
+	using type = Topology2Sx2SReciprocalEuclidean<FP, level>;
+};
+
+template <typename FP, vectra::SIMDLevel level>
+struct TopologyTraits<4, true, true, FP, level> {
+	using type = Topology2Sx2SBilateralReciprocalEuclidean<FP, level>;
+};
+
 }

@@ -42,7 +42,9 @@ using TopologyTypes = type_list<
     TopologyTags<2, false, false>, // 2S
     TopologyTags<2, true , false>, // 2S      bilateral
     TopologyTags<4, false, false>, // 2S x 2S euclidean
-    TopologyTags<4, true , false>  // 2S x 2S bilateral euclidean
+    TopologyTags<4, true , false>, // 2S x 2S bilateral  euclidean
+    TopologyTags<4, false, true >, // 2S x 2S reciprocal euclidean
+    TopologyTags<4, true , true >  // 2S x 2S bilateral  reciprocal euclidean
 >;
 
 NB_MODULE(_binding, m) {
