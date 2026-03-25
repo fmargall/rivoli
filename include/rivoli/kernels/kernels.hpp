@@ -50,4 +50,24 @@ protected:
 	}
 };
 
+template <typename _FP, vectra::SIMDLevel _level>
+class KernelCubic : public Kernel<_FP, _level, KernelCubic<_FP, _level>> {
+
+	template <typename _FPAlias, vectra::SIMDLevel _levelAlias, typename DerivedKernel>
+	friend class Kernel;
+
+public:
+	static constexpr std::string_view name = "Cubic";
+
+protected:
+	using FP = _FP;
+	static constexpr vectra::SIMDLevel level = _level;
+
+	using vct = vectra::Vectratype<FP, level>;
+
+	static vct _runKernel(const vct& r) {
+		return r * r * r;
+	}
+};
+
 }
