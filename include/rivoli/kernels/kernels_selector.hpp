@@ -10,7 +10,8 @@ namespace rivoli {
 
 enum class KernelType {
 	Linear,
-	Cubic
+	Cubic,
+	Gaussian
 };
 
 template <KernelType kernelType, typename FP, vectra::SIMDLevel level>
@@ -28,6 +29,11 @@ struct KernelTraits<KernelType::Linear, FP, level> {
 template <typename FP, vectra::SIMDLevel level>
 struct KernelTraits<KernelType::Cubic, FP, level> {
 	using type = KernelCubic<FP, level>;
+};
+
+template <typename FP, vectra::SIMDLevel level>
+struct KernelTraits<KernelType::Gaussian, FP, level> {
+	using type = KernelGaussian<FP, level>;
 };
 
 
