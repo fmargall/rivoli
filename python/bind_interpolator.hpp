@@ -39,31 +39,67 @@ void bindInterpolator(nb::module_& m) {
 	nb::class_<InterpolatorClass> cls(m, name.c_str());
 
 	// Class constructor instantiation
-	cls.def("__init__", [](InterpolatorClass* self,
-		const nb::ndarray<FP, nb::shape<-1, dim>, nb::c_contig>& coordinatesFromPython,
-		const nb::ndarray<FP, nb::shape<-1>,      nb::c_contig>& coefficientsFromPython
-		) {
-			size_t n = coordinatesFromPython.shape(0);
 
-			std::array<std::vector<FP>, dim> coordinates;
-			std::vector<FP> coefficients(n);
+	// Some of the kernels do not take any parameter as input
+	if constexpr (!std::is_constructible_v<KernelClass, FP>) {
+		cls.def("__init__", [](InterpolatorClass* self,
+			const nb::ndarray<FP, nb::shape<-1, dim>, nb::c_contig>& coordinatesFromPython,
+			const nb::ndarray<FP, nb::shape<-1>,      nb::c_contig>& coefficientsFromPython
+			) {
+				size_t n = coordinatesFromPython.shape(0);
 
-			for (size_t d = 0; d < dim; ++d)
-				coordinates[d].resize(n);
+				std::array<std::vector<FP>, dim> coordinates;
+				std::vector<FP> coefficients(n);
 
-			for (size_t i = 0; i < n; ++i) {
 				for (size_t d = 0; d < dim; ++d)
-					coordinates[d][i] = coordinatesFromPython(i, d);
+					coordinates[d].resize(n);
 
-				coefficients[i] = coefficientsFromPython(i);
+				for (size_t i = 0; i < n; ++i) {
+					for (size_t d = 0; d < dim; ++d)
+						coordinates[d][i] = coordinatesFromPython(i, d);
+
+					coefficients[i] = coefficientsFromPython(i);
+				}
+
+				KernelClass   kernel{};
+				TopologyClass topology{};
+
+				new (self) InterpolatorClass(coordinates, coefficients, kernel, topology);
+
 			}
+		);
+	}
 
-			KernelClass   kernel{};
-			TopologyClass topology{};
+	// Other kernels may need one parameter for instanciation
+	if constexpr (std::is_constructible_v<KernelClass, FP>) {
+		cls.def("__init__", [](InterpolatorClass* self,
+			const nb::ndarray<FP, nb::shape<-1, dim>, nb::c_contig>& coordinatesFromPython ,
+			const nb::ndarray<FP, nb::shape<-1>,      nb::c_contig>& coefficientsFromPython,
+			      FP parameter
+			) {
+				size_t n = coordinatesFromPython.shape(0);
 
-			new (self) InterpolatorClass(coordinates, coefficients, kernel, topology);
+				std::array<std::vector<FP>, dim> coordinates;
+				std::vector<FP> coefficients(n);
 
-		});
+				for (size_t d = 0; d < dim; ++d)
+					coordinates[d].resize(n);
+
+				for (size_t i = 0; i < n; ++i) {
+					for (size_t d = 0; d < dim; ++d)
+						coordinates[d][i] = coordinatesFromPython(i, d);
+
+					coefficients[i] = coefficientsFromPython(i);
+				}
+
+				KernelClass   kernel{parameter};
+				TopologyClass topology{};
+
+				new (self) InterpolatorClass(coordinates, coefficients, kernel, topology);
+
+			}
+		);
+	}
 
 	// interpolate function instantiation
 	if      constexpr (dim == 2) {
