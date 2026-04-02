@@ -182,4 +182,27 @@ protected:
 	}
 };
 
+template <typename _FP, vectra::SIMDLevel _level>
+class Topology2Sx2SBilateralReciprocalRusinkiewiczEuclidean : public Topology<_FP, _level, Topology2Sx2SBilateralReciprocalRusinkiewiczEuclidean<_FP, _level>> {
+
+	template <typename _FPAlias, vectra::SIMDLevel _levelAlias, typename DerivedTopology>
+	friend class Topology;
+
+public:
+	using FP = _FP;
+	static constexpr vectra::SIMDLevel level = _level;
+	static constexpr std::size_t dimension = 4;
+	static constexpr std::string_view name = "2Sx2SBilateralReciprocalRusinkiewiczEuclidean";
+
+protected:
+	using vct = vectra::Vectratype<FP, level>;
+
+	FORCE_INLINE static vct _getDistance(vct thetaHOne, vct phiHOne, vct thetaDOne, vct phiDOne,
+										 vct thetaHTwo, vct phiHTwo, vct thetaDTwo, vct phiDTwo)
+	{
+		return rivoli::distance2Sx2SBilateralReciprocalRusinkiewiczEuclidean(thetaHOne, phiHOne, thetaDOne, phiDOne,
+																			 thetaHTwo, phiHTwo, thetaDTwo, phiDTwo);
+	}
+};
+
 }
