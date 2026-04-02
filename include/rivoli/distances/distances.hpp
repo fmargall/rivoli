@@ -14,8 +14,8 @@ FORCE_INLINE vectra::Vectratype<FP, level> distanceGreatCircle(
 {
     using vct = vectra::Vectratype<FP, level>;
 
-    return vct::acos(vct::sin(thetaOne) * vct::sin(thetaTwo) + 
-                     vct::cos(thetaOne) * vct::cos(thetaTwo) * vct::cos(phiOne - phiTwo));
+    return vct::acos(vct::cos(thetaOne) * vct::cos(thetaTwo) +
+                     vct::sin(thetaOne) * vct::sin(thetaTwo) * vct::cos(phiOne - phiTwo));
 }
 
 template <typename FP, vectra::SIMDLevel level>
