@@ -7,7 +7,11 @@
 
 namespace rivoli {
 
-template <size_t dimension, bool bilateral, bool reciprocal, typename FP, vectra::SIMDLevel level>
+enum class CoordinateSystem {
+	Spherical,
+	Rusinkiewicz
+};
+
 struct TopologyTraits;
 
 template <size_t dimension, bool bilateral, bool reciprocal, typename FP, vectra::SIMDLevel level>
