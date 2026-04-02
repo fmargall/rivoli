@@ -33,20 +33,21 @@ using KernelTypes = value_list<
     rivoli::KernelType::Gaussian
 >;
 
-template <size_t Dimension, bool Bilateral, bool Reciprocal>
+template <size_t Dimension, bool Bilateral, bool Reciprocal, rivoli::CoordinateSystem coordSystem>
 struct TopologyTags {
     static constexpr size_t dimension = Dimension;
     static constexpr bool bilateral   = Bilateral;
     static constexpr bool reciprocal  = Reciprocal;
+	static constexpr rivoli::CoordinateSystem coordSystem = coordSystem;
 };
 
 using TopologyTypes = type_list<
-    TopologyTags<2, false, false>, // 2S
-    TopologyTags<2, true , false>, // 2S      bilateral
-    TopologyTags<4, false, false>, // 2S x 2S euclidean
-    TopologyTags<4, true , false>, // 2S x 2S bilateral  euclidean
-    TopologyTags<4, false, true >, // 2S x 2S reciprocal euclidean
-    TopologyTags<4, true , true >  // 2S x 2S bilateral  reciprocal euclidean
+    TopologyTags<2, false, false, rivoli::CoordinateSystem::Spherical>, // 2S
+    TopologyTags<2, true , false, rivoli::CoordinateSystem::Spherical>, // 2S      bilateral
+    TopologyTags<4, false, false, rivoli::CoordinateSystem::Spherical>, // 2S x 2S euclidean
+    TopologyTags<4, true , false, rivoli::CoordinateSystem::Spherical>, // 2S x 2S bilateral  euclidean
+    TopologyTags<4, false, true , rivoli::CoordinateSystem::Spherical>, // 2S x 2S reciprocal euclidean
+    TopologyTags<4, true , true , rivoli::CoordinateSystem::Spherical>  // 2S x 2S bilateral  reciprocal euclidean
 >;
 
 NB_MODULE(_binding, m) {
@@ -74,8 +75,9 @@ NB_MODULE(_binding, m) {
                                     constexpr size_t dim      = Topology::dimension;
                                     constexpr bool bilateral  = Topology::bilateral;
                                     constexpr bool reciprocal = Topology::reciprocal;
+                                    constexpr rivoli::CoordinateSystem coordSystem = Topology::coordSystem;
 
-                                    rivoli::bindInterpolator<FP, level, dim, bilateral, reciprocal, kernelType>(m);
+                                    rivoli::bindInterpolator<FP, level, dim, bilateral, reciprocal, coordSystem, kernelType>(m);
 
                                 }(), ...);
                             }(TopologyTypes{});
