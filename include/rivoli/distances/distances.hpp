@@ -206,11 +206,11 @@ FORCE_INLINE vectra::Vectratype<FP, level> distance2Sx2SBilateralReciprocalEucli
 template <typename FP, vectra::SIMDLevel level>
 FORCE_INLINE vectra::Vectratype<FP, level> distance2Sx2SReciprocalRusinkiewiczEuclidean(
     vectra::Vectratype<FP, level> thetaHOne,
-    vectra::Vectratype<FP, level> phiHOne,
+    vectra::Vectratype<FP, level> phiHOne  ,
     vectra::Vectratype<FP, level> thetaDOne,
-    vectra::Vectratype<FP, level> phiDOne,
+    vectra::Vectratype<FP, level> phiDOne  ,
     vectra::Vectratype<FP, level> thetaHTwo,
-    vectra::Vectratype<FP, level> phiHTwo,
+    vectra::Vectratype<FP, level> phiHTwo  ,
     vectra::Vectratype<FP, level> thetaDTwo,
     vectra::Vectratype<FP, level> phiDTwo)
 {
