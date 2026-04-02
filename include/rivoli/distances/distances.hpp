@@ -225,6 +225,29 @@ FORCE_INLINE vectra::Vectratype<FP, level> distance2Sx2SReciprocalRusinkiewiczEu
     return vct::sqrt(distanceH * distanceH + distanceD * distanceD);
 }
 
+template <typename FP, vectra::SIMDLevel level>
+FORCE_INLINE vectra::Vectratype<FP, level> distance2Sx2SBilateralReciprocalRusinkiewiczEuclidean(
+    vectra::Vectratype<FP, level> thetaHOne,
+    vectra::Vectratype<FP, level> phiHOne  ,
+    vectra::Vectratype<FP, level> thetaDOne,
+    vectra::Vectratype<FP, level> phiDOne  ,
+    vectra::Vectratype<FP, level> thetaHTwo,
+    vectra::Vectratype<FP, level> phiHTwo  ,
+    vectra::Vectratype<FP, level> thetaDTwo,
+    vectra::Vectratype<FP, level> phiDTwo)
+{
+    using vct = vectra::Vectratype<FP, level>;
+
+    vct distanceOne = rivoli::distance2Sx2SReciprocalRusinkiewiczEuclidean(
+        thetaHOne, phiHOne, thetaDOne, phiDOne,
+		thetaHTwo, phiHTwo, thetaDTwo, phiDTwo);
+
+    vct distanceTwo = rivoli::distance2Sx2SReciprocalRusinkiewiczEuclidean(
+        thetaHOne, phiHOne, thetaDOne, phiDOne,
+        thetaHTwo, phiHTwo, thetaDTwo, phiDTwo + vct::half_pi());
+
+	return vct::min(distanceOne, distanceTwo);
+}
 
 namespace experimental
 {
