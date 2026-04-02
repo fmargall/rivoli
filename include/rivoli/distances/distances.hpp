@@ -203,6 +203,28 @@ FORCE_INLINE vectra::Vectratype<FP, level> distance2Sx2SBilateralReciprocalEucli
     return vct::min(vct::min(distanceOne, distanceTwo), vct::min(distanceThree, distanceFour));
 }
 
+template <typename FP, vectra::SIMDLevel level>
+FORCE_INLINE vectra::Vectratype<FP, level> distance2Sx2SReciprocalRusinkiewiczEuclidean(
+    vectra::Vectratype<FP, level> thetaHOne,
+    vectra::Vectratype<FP, level> phiHOne,
+    vectra::Vectratype<FP, level> thetaDOne,
+    vectra::Vectratype<FP, level> phiDOne,
+    vectra::Vectratype<FP, level> thetaHTwo,
+    vectra::Vectratype<FP, level> phiHTwo,
+    vectra::Vectratype<FP, level> thetaDTwo,
+    vectra::Vectratype<FP, level> phiDTwo)
+{
+    using vct = vectra::Vectratype<FP, level>;
+
+    vct distanceH = rivoli::distanceGreatCircle(thetaHOne, phiHOne, thetaHTwo, phiHTwo);
+
+    vct distanceDOne = rivoli::distanceGreatCircle(thetaDOne, phiDOne, thetaDTwo, phiDTwo);
+    vct distanceDTwo = rivoli::distanceGreatCircle(thetaDOne, phiDOne, thetaDTwo, phiDTwo + vct::pi());
+    vct distanceD    = vct::min(distanceDOne, distanceDTwo);
+
+    return vct::sqrt(distanceH * distanceH + distanceD * distanceD);
+}
+
 
 namespace experimental
 {
