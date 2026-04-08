@@ -21,6 +21,11 @@ public:
 		return static_cast<const DerivedTopology*>(this)->_getDistance(std::forward<Args>(args)...);
 	}
 
+	template <typename... ScalarArgs>
+	FORCE_INLINE FP getDistanceScalar(ScalarArgs&&... args) const {
+		return getDistance(vct(std::forward<ScalarArgs>(args))...).hsum() / static_cast<FP>(vct::width());
+	}
+
 };
 
 template <typename _FP, vectra::SIMDLevel _level>
