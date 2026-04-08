@@ -5,6 +5,9 @@
 
 #include <Eigen/Dense>
 
+#include <vectra/vectra.hpp>
+#include <tinylogger/tinylogger.hpp>
+
 #include <rivoli/kernels/kernels.hpp>
 #include <rivoli/topologies/topologies.hpp>
 
@@ -45,6 +48,70 @@ public:
 	{
 		_setCoordinates (coordinates);
 		_setCoefficients(coefficients);
+	}
+
+	Interpolator(
+		const std::array<std::vector<FP>, _dimension>& inputCoordinates,
+		const std::array<std::vector<FP>, _dimension>& outputCoordinates,
+		const            std::vector<FP>&              inputValues,
+
+		const KernelType& kernel,
+		const TopologyType& topology
+	)
+		: _kernel(std::move(kernel)), _topology(std::move(topology))
+	{
+		for (size_t dimOne = 0; dimOne < _dimension; dimOne++) {
+			if (inputCoordinates[dimOne].size() != inputValues.size())
+				LOG_CRITICAL("Array sizes do not match. Input coordinates: ", inputCoordinates[dimOne].size(),
+							 " | output coordinates: ", outputCoordinates[dimOne].size(), " | input values: ",
+							 inputValues.size());
+
+			if (inputCoordinates[dimOne].size() < outputCoordinates[dimOne].size())
+				LOG_WARNING("Underdetermined problem: ", inputCoordinates[dimOne].size(), " data ",
+							"points for ", outputCoordinates[dimOne].size(), " output RBF kernels.");
+
+			for (size_t dimTwo = dimOne + 1; dimTwo < _dimension; dimTwo++) {
+				if (inputCoordinates[dimOne].size() != inputCoordinates[dimTwo].size())
+					LOG_CRITICAL("Input coordinates sizes do not match. Dimension ", dimOne, ": ",
+								 inputCoordinates[dimOne].size(), "  |  Dimension ", dimTwo, ": ",
+								 inputCoordinates[dimTwo].size());
+				if (outputCoordinates[dimOne].size() != outputCoordinates[dimTwo].size())
+					LOG_CRITICAL("Output coordinates sizes do not match. Dimension ", dimOne, ": ",
+								 outputCoordinates[dimOne].size(), "  |  Dimension ", dimTwo, ": ",
+								 outputCoordinates[dimTwo].size());
+			}
+		}
+
+		// Eigen check for current SIMD instruction set version used, for debugging
+		LOG_DEBUG("Current Eigen SIMD support: ", Eigen::SimdInstructionSetsInUse());
+
+		// RBF interpolator is made by computing its coefficients, starting by
+		// the computation of its kernel-distance matrix, using Eigen library.
+		Eigen::Matrix<FP, Eigen::Dynamic, Eigen::Dynamic> kernelDistanceMatrix
+			= _computeKernelDistanceMatrix(inputCoordinates, outputCoordinates);
+
+		// Initialisation of result vector containing BRDF values
+		Eigen::Vector<FP, Eigen::Dynamic> resultVector =
+			Eigen::Map<const Eigen::Vector<FP, Eigen::Dynamic>>(
+				inputValues.data(), inputValues.size());
+
+		// Coefficients are computed using Eigen library
+		Eigen::Vector<FP, Eigen::Dynamic> coefficients;
+
+		// The system can be solved directly if we have a square matrix
+		if (kernelDistanceMatrix.rows() == kernelDistanceMatrix.cols()) {
+			// FullPivLU decomposition is used for a better stability, even if it is one of the worst for performance
+			Eigen::FullPivLU<Eigen::Matrix<FP, Eigen::Dynamic, Eigen::Dynamic>> luDecomposition(kernelDistanceMatrix);
+			coefficients = luDecomposition.solve(resultVector);
+		}
+		else
+			LOG_CRITICAL("For now, only square kernel distance matrix is supported. Kernel distance matrix"
+						 " rows: ", kernelDistanceMatrix.rows(), " | cols: ", kernelDistanceMatrix.cols());
+
+		_setCoordinates(inputCoordinates);
+		_setCoefficients(coefficients);
+
+		LOG_INFO(topology.name, " interpolator initialised successfully.");
 	}
 
 	template <typename... CoordinatesType>
@@ -164,6 +231,35 @@ private:
 			// Storing final backend block for the coefficients
 			_coefficients[sizeOfSIMDData - 1] = vct::loadu(tmp);
 		}
+	}
+
+	Eigen::Matrix<FP, Eigen::Dynamic, Eigen::Dynamic> _computeKernelDistanceMatrix(
+		const std::array<std::vector<FP>, _dimension>& coordinates) const 
+	{
+		const size_t N = coordinates[0].size();
+
+		Eigen::Matrix<FP, Eigen::Dynamic, Eigen::Dynamic> kernelDistanceMatrix(N, N);
+
+		// Since the kernel distance is symmetric, we either need to
+		// computer the upper or lower triangular par of the matrix.
+		for (size_t i = 0; i < N; i++) {
+			// Values on the diagonal always take the value of the kernel, with a distance of zero
+			kernelDistanceMatrix(i, i) = _kernel(vct::zero()).hsum() / static_cast<FP>(vct::width());
+
+			for (size_t j = i + 1; j < N; j++) {
+
+				FP distance = [&]<std::size_t... I>(std::index_sequence<I...>) {
+					return _topology.getDistanceScalar(coordinates[I][i]..., coordinates[I][j]...);
+				}(std::make_index_sequence<_dimension>{});
+
+				FP kernelDistanceValue = _kernel(vct(distance)).hsum() / static_cast<FP>(vct::width());
+
+				kernelDistanceMatrix(i, j) = kernelDistanceValue;
+				kernelDistanceMatrix(j, i) = kernelDistanceValue; // Equal by symmetry
+			}
+		}
+
+		return kernelDistanceMatrix;
 	}
 
 	const KernelType   _kernel;
