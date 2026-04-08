@@ -1,6 +1,6 @@
 import numpy as np
 
-import _binding
+from . import _binding
 
 def _build_interpolator(coordinates, values, **kwargs):
     kernel     = kwargs.get("kernel", "linear")
