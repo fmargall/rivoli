@@ -5,4 +5,4 @@ class Interpolator:
         self._implementation = _build_interpolator(coordinates, values, **kwargs)
 
         # Direct binding for better performance
-        self.interpolatoe = self._implementation.interpolate
+        self.interpolate = self._implementation.interpolate
