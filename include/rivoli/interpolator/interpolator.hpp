@@ -52,33 +52,26 @@ public:
 
 	Interpolator(
 		const std::array<std::vector<FP>, _dimension>& inputCoordinates,
-		const std::array<std::vector<FP>, _dimension>& outputCoordinates,
 		const            std::vector<FP>&              inputValues,
 
 		const KernelType& kernel,
-		const TopologyType& topology
+		const TopologyType& topology,
+
+		// Optional additional parameters
+		const FP tikhonovRegularizationFactor
 	)
 		: _kernel(std::move(kernel)), _topology(std::move(topology))
 	{
 		for (size_t dimOne = 0; dimOne < _dimension; dimOne++) {
 			if (inputCoordinates[dimOne].size() != inputValues.size())
 				LOG_CRITICAL("Array sizes do not match. Input coordinates: ", inputCoordinates[dimOne].size(),
-							 " | output coordinates: ", outputCoordinates[dimOne].size(), " | input values: ",
-							 inputValues.size());
-
-			if (inputCoordinates[dimOne].size() < outputCoordinates[dimOne].size())
-				LOG_WARNING("Underdetermined problem: ", inputCoordinates[dimOne].size(), " data ",
-							"points for ", outputCoordinates[dimOne].size(), " output RBF kernels.");
+							 " | input values: ", inputValues.size());
 
 			for (size_t dimTwo = dimOne + 1; dimTwo < _dimension; dimTwo++) {
 				if (inputCoordinates[dimOne].size() != inputCoordinates[dimTwo].size())
 					LOG_CRITICAL("Input coordinates sizes do not match. Dimension ", dimOne, ": ",
 								 inputCoordinates[dimOne].size(), "  |  Dimension ", dimTwo, ": ",
 								 inputCoordinates[dimTwo].size());
-				if (outputCoordinates[dimOne].size() != outputCoordinates[dimTwo].size())
-					LOG_CRITICAL("Output coordinates sizes do not match. Dimension ", dimOne, ": ",
-								 outputCoordinates[dimOne].size(), "  |  Dimension ", dimTwo, ": ",
-								 outputCoordinates[dimTwo].size());
 			}
 		}
 
@@ -88,7 +81,12 @@ public:
 		// RBF interpolator is made by computing its coefficients, starting by
 		// the computation of its kernel-distance matrix, using Eigen library.
 		Eigen::Matrix<FP, Eigen::Dynamic, Eigen::Dynamic> kernelDistanceMatrix
-			= _computeKernelDistanceMatrix(inputCoordinates, outputCoordinates);
+			= _computeKernelDistanceMatrix(inputCoordinates);
+
+		// Tikhonov regularization is added to the diagonal of the kernel distance matrix
+		if (tikhonovRegularizationFactor > static_cast<FP>(0.)) {
+			kernelDistanceMatrix.diagonal().array() += tikhonovRegularizationFactor;
+		}
 
 		// Initialisation of result vector containing BRDF values
 		Eigen::Vector<FP, Eigen::Dynamic> resultVector =
@@ -189,7 +187,8 @@ private:
 		}
 	}
 
-	void _setCoefficients(const std::vector<FP>& coefficients) noexcept {
+	template <typename CoefsVectorType>
+	void _setCoefficients(const CoefsVectorType& coefficients) noexcept {
 
 		// Coefficients will be stored directly in the SIMD backend type
 		// Since the backend works by packets on a certain size, one may

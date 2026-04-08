@@ -43,8 +43,9 @@ void bindInterpolator(nb::module_& m) {
 	// Some of the kernels do not take any parameter as input
 	if constexpr (!std::is_constructible_v<KernelClass, FP>) {
 		cls.def("__init__", [](InterpolatorClass* self,
-			const nb::ndarray<FP, nb::shape<-1, dim>, nb::c_contig>& coordinatesFromPython,
-			const nb::ndarray<FP, nb::shape<-1>,      nb::c_contig>& coefficientsFromPython
+			const nb::ndarray<FP, nb::shape<-1, dim>, nb::c_contig>& coordinatesFromPython ,
+			const nb::ndarray<FP, nb::shape<-1>,      nb::c_contig>& coefficientsFromPython,
+			FP tikhonovRegularizationFactor
 			) {
 				size_t n = coordinatesFromPython.shape(0);
 
@@ -64,7 +65,7 @@ void bindInterpolator(nb::module_& m) {
 				KernelClass   kernel{};
 				TopologyClass topology{};
 
-				new (self) InterpolatorClass(coordinates, coefficients, kernel, topology);
+				new (self) InterpolatorClass(coordinates, coefficients, kernel, topology, tikhonovRegularizationFactor);
 
 			}
 		);
@@ -75,7 +76,7 @@ void bindInterpolator(nb::module_& m) {
 		cls.def("__init__", [](InterpolatorClass* self,
 			const nb::ndarray<FP, nb::shape<-1, dim>, nb::c_contig>& coordinatesFromPython ,
 			const nb::ndarray<FP, nb::shape<-1>,      nb::c_contig>& coefficientsFromPython,
-			      FP parameter
+			FP parameter, FP tikhonovRegularizationFactor
 			) {
 				size_t n = coordinatesFromPython.shape(0);
 
@@ -95,7 +96,7 @@ void bindInterpolator(nb::module_& m) {
 				KernelClass   kernel{parameter};
 				TopologyClass topology{};
 
-				new (self) InterpolatorClass(coordinates, coefficients, kernel, topology);
+				new (self) InterpolatorClass(coordinates, coefficients, kernel, topology, tikhonovRegularizationFactor);
 
 			}
 		);
