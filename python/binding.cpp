@@ -38,24 +38,32 @@ struct TopologyTags {
     static constexpr size_t dimension = Dimension;
     static constexpr bool bilateral   = Bilateral;
     static constexpr bool reciprocal  = Reciprocal;
-	static constexpr rivoli::CoordinateSystem coordSystem = coordSystem;
+    static constexpr rivoli::CoordinateSystem coordSystem = coordSystem;
 };
 
 using TopologyTypes = type_list<
     TopologyTags<2, false, false, rivoli::CoordinateSystem::Spherical>   , // 2S
     TopologyTags<2, true , false, rivoli::CoordinateSystem::Spherical>   , // 2S      bilateral
+
+	TopologyTags<3, false, false, rivoli::CoordinateSystem::Spherical>   , // 1R x 2S euclidean
+	TopologyTags<3, true , false, rivoli::CoordinateSystem::Spherical>   , // 1R x 2S bilateral  euclidean
+    TopologyTags<3, false, true , rivoli::CoordinateSystem::Spherical>   , // 1R x 2S reciprocal euclidean
+    TopologyTags<3, true , true , rivoli::CoordinateSystem::Spherical>   , // 1R x 2S bilateral  reciprocal euclidean
+    TopologyTags<3, false, true , rivoli::CoordinateSystem::Rusinkiewicz>, // 1R x 2S reciprocal Rusinkiewicz euclidean
+    TopologyTags<3, true , true , rivoli::CoordinateSystem::Rusinkiewicz>, // 1R x 2S bilateral  reciprocal Rusinkiewicz euclidean
+
     TopologyTags<4, false, false, rivoli::CoordinateSystem::Spherical>   , // 2S x 2S euclidean
     TopologyTags<4, true , false, rivoli::CoordinateSystem::Spherical>   , // 2S x 2S bilateral  euclidean
     TopologyTags<4, false, true , rivoli::CoordinateSystem::Spherical>   , // 2S x 2S reciprocal euclidean
     TopologyTags<4, true , true , rivoli::CoordinateSystem::Spherical>   , // 2S x 2S bilateral  reciprocal euclidean
-	TopologyTags<4, false, true , rivoli::CoordinateSystem::Rusinkiewicz>, // 2S x 2S reciprocal Rusinkiewicz euclidean
+    TopologyTags<4, false, true , rivoli::CoordinateSystem::Rusinkiewicz>, // 2S x 2S reciprocal Rusinkiewicz euclidean
     TopologyTags<4, true , true , rivoli::CoordinateSystem::Rusinkiewicz>  // 2S x 2S bilateral  reciprocal Rusinkiewicz euclidean
 >;
 
 NB_MODULE(_binding, m) {
 
-	// Compile-time, for-loop over FP types
-	[&] <typename... FPs>(type_list<FPs...>) {
+    // Compile-time, for-loop over FP types
+    [&] <typename... FPs>(type_list<FPs...>) {
         ([&] {
             using FP = FPs;
             
@@ -91,6 +99,6 @@ NB_MODULE(_binding, m) {
             }(SIMDLevels{});
 
         }(), ...);
-	}(type_list<float, double>{});
+    }(type_list<float, double>{});
 
 }
