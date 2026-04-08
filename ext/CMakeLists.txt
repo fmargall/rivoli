@@ -20,3 +20,12 @@ FetchContent_Declare(
 )
 
 FetchContent_MakeAvailable(eigen)
+
+# TinyLogger library
+FetchContent_Declare(
+    tinylogger
+    GIT_REPOSITORY https://github.com/fmargall/tinylogger.git
+    GIT_TAG main
+)
+
+FetchContent_MakeAvailable(tinylogger)
