@@ -1,3 +1,1 @@
-from .interpolator import Interpolator
-
-__all__ = ["Interpolator"]
+from ._binding import *
