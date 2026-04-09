@@ -70,7 +70,7 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 
 # Build tests if requested
-option(BUILD_TESTS "Build tests" ON)
+option(BUILD_TESTS "Build tests" OFF)
 if(BUILD_TESTS)
     enable_testing()
     add_subdirectory(tests)
@@ -80,7 +80,7 @@ endif()
 add_subdirectory(ext)
 
 # Build benchmarks if requested
-option(BUILD_BENCHMARKS "Build benchmarks" ON)
+option(BUILD_BENCHMARKS "Build benchmarks" OFF)
 if(BUILD_BENCHMARKS)
     add_subdirectory(benchmark)
 endif()
