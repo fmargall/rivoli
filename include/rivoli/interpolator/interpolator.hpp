@@ -58,9 +58,10 @@ public:
 		const TopologyType& topology,
 
 		// Optional additional parameters
-		const FP tikhonovRegularizationFactor
+		const FP   tikhonovRegularizationFactor,
+		const bool nonNegativity
 	)
-		: _kernel(std::move(kernel)), _topology(std::move(topology))
+		: _kernel(std::move(kernel)), _topology(std::move(topology)), _forceNonNegativity(nonNegativity)
 	{
 		for (size_t dimOne = 0; dimOne < _dimension; dimOne++) {
 			if (inputCoordinates[dimOne].size() != inputValues.size())
@@ -94,6 +95,13 @@ public:
 		Eigen::Vector<FP, Eigen::Dynamic> resultVector =
 			Eigen::Map<const Eigen::Vector<FP, Eigen::Dynamic>>(
 				inputValues.data(), inputValues.size());
+
+		FP minimumValue = resultVector.minCoeff();
+		if (minimumValue < FP(0))
+			LOG_WARNING("Negative value(s) found in input data. Minimum value: ", minimumValue);
+
+		// Enforcing non-negativity on the result vector if required
+		if (nonNegativity) resultVector = resultVector.array().sqrt();
 
 		// Coefficients are computed using Eigen library
 		Eigen::Vector<FP, Eigen::Dynamic> coefficients;
@@ -146,7 +154,11 @@ public:
 			results = results + _coefficients[i] * _kernel(distances);
 		}
 
-		return results.hsum();
+		FP result = results.hsum();
+		if (_forceNonNegativity)
+			return result * result;
+		else
+			return result;
 	}
 
 private:
@@ -282,6 +294,9 @@ private:
 
 	const KernelType   _kernel;
 	const TopologyType _topology;
+
+	// Additional parameters
+	bool _forceNonNegativity;
 
 	std::array<vctVector, _dimension> _coordinates;
 	vctVector						  _coefficients;

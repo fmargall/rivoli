@@ -3,12 +3,13 @@ import numpy as np
 from . import _binding
 
 def _build_interpolator(coordinates, values, **kwargs):
-    kernel     = kwargs.get("kernel", "linear")
-    bilateral  = kwargs.get("bilateral", False)
-    reciprocal = kwargs.get("reciprocal", False)
-    backend    = kwargs.get("backend", "None")
-    dtype      = kwargs.get("dtype", "float32")
-    tikhonov   = kwargs.get("tikhonov", 0.0)
+    kernel        = kwargs.get("kernel", "linear")
+    bilateral     = kwargs.get("bilateral", False)
+    reciprocal    = kwargs.get("reciprocal", False)
+    nonNegativity = kwargs.get("nonNegativity", False)
+    backend       = kwargs.get("backend", "None")
+    dtype         = kwargs.get("dtype", "float32")
+    tikhonov      = kwargs.get("tikhonov", 0.0)
 
     parameterisation = kwargs.get("parameterisation", "spherical")
 
@@ -77,4 +78,4 @@ def _build_interpolator(coordinates, values, **kwargs):
     except AttributeError:
         raise ValueError(f"Unsupported configuration: {className}")
 
-    return cls(coordinates, values, tikhonov, *kernelParams)
+    return cls(coordinates, values, tikhonov, nonNegativity, *kernelParams)
