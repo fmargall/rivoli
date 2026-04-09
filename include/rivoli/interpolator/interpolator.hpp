@@ -80,8 +80,10 @@ public:
 
 		// RBF interpolator is made by computing its coefficients, starting by
 		// the computation of its kernel-distance matrix, using Eigen library.
+		LOG_TRACE("Computing kernel distance matrix...");
 		Eigen::Matrix<FP, Eigen::Dynamic, Eigen::Dynamic> kernelDistanceMatrix
 			= _computeKernelDistanceMatrix(inputCoordinates);
+		LOG_TRACE("Kernel distance matrix computed.");
 
 		// Tikhonov regularization is added to the diagonal of the kernel distance matrix
 		if (tikhonovRegularizationFactor > static_cast<FP>(0.)) {
@@ -97,6 +99,7 @@ public:
 		Eigen::Vector<FP, Eigen::Dynamic> coefficients;
 
 		// The system can be solved directly if we have a square matrix
+		LOG_TRACE("Computing the coefficients...");
 		if (kernelDistanceMatrix.rows() == kernelDistanceMatrix.cols()) {
 			// FullPivLU decomposition is used for a better stability, even if it is one of the worst for performance
 			Eigen::FullPivLU<Eigen::Matrix<FP, Eigen::Dynamic, Eigen::Dynamic>> luDecomposition(kernelDistanceMatrix);
@@ -105,6 +108,7 @@ public:
 		else
 			LOG_CRITICAL("For now, only square kernel distance matrix is supported. Kernel distance matrix"
 						 " rows: ", kernelDistanceMatrix.rows(), " | cols: ", kernelDistanceMatrix.cols());
+		LOG_TRACE("Coefficients computed.");
 
 		_setCoordinates(inputCoordinates);
 		_setCoefficients(coefficients);
