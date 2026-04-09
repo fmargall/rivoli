@@ -8,6 +8,7 @@ def _build_interpolator(coordinates, values, **kwargs):
     reciprocal = kwargs.get("reciprocal", False)
     backend    = kwargs.get("backend", "None")
     dtype      = kwargs.get("dtype", "float32")
+    tikhonov   = kwargs.get("tikhonov", 0.0)
 
     parameterisation = kwargs.get("parameterisation", "spherical")
 
@@ -76,4 +77,4 @@ def _build_interpolator(coordinates, values, **kwargs):
     except AttributeError:
         raise ValueError(f"Unsupported configuration: {className}")
 
-    return cls(coordinates, values, *kernelParams)
+    return cls(coordinates, values, tikhonov, *kernelParams)

@@ -66,7 +66,6 @@ void bindInterpolator(nb::module_& m) {
 				TopologyClass topology{};
 
 				new (self) InterpolatorClass(coordinates, coefficients, kernel, topology, tikhonovRegularizationFactor);
-
 			}
 		);
 	}
@@ -76,7 +75,7 @@ void bindInterpolator(nb::module_& m) {
 		cls.def("__init__", [](InterpolatorClass* self,
 			const nb::ndarray<FP, nb::shape<-1, dim>, nb::c_contig>& coordinatesFromPython ,
 			const nb::ndarray<FP, nb::shape<-1>,      nb::c_contig>& coefficientsFromPython,
-			FP parameter, FP tikhonovRegularizationFactor
+			FP tikhonovRegularizationFactor, FP parameter
 			) {
 				size_t n = coordinatesFromPython.shape(0);
 
@@ -97,7 +96,6 @@ void bindInterpolator(nb::module_& m) {
 				TopologyClass topology{};
 
 				new (self) InterpolatorClass(coordinates, coefficients, kernel, topology, tikhonovRegularizationFactor);
-
 			}
 		);
 	}
