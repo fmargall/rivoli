@@ -96,6 +96,29 @@ protected:
 };
 
 template <typename _FP, vectra::SIMDLevel _level>
+class Topology1Rx2SIsotropicEuclidean : public Topology<_FP, _level, Topology1Rx2SIsotropicEuclidean<_FP, _level>> {
+
+	template <typename _FPAlias, vectra::SIMDLevel _levelAlias, typename DerivedTopology>
+	friend class Topology;
+
+public:
+	using FP = _FP;
+	static constexpr vectra::SIMDLevel level = _level;
+	static constexpr std::size_t dimension = 3;
+	static constexpr std::string_view name = "1Rx2SIsotropicEuclidean";
+
+protected:
+	using vct = vectra::Vectratype<FP, level>;
+
+	FORCE_INLINE static vct _getDistance(vct thetaAOne, vct thetaBOne, vct phiBOne,
+										 vct thetaATwo, vct thetaBTwo, vct phiBTwo)
+	{
+		return rivoli::distance1Rx2SIsotropicEuclidean(thetaAOne, thetaBOne, phiBOne,
+											           thetaATwo, thetaBTwo, phiBTwo);
+	}
+};
+
+template <typename _FP, vectra::SIMDLevel _level>
 class Topology1Rx2SBilateralEuclidean : public Topology<_FP, _level, Topology1Rx2SBilateralEuclidean<_FP, _level>> {
 
 	template <typename _FPAlias, vectra::SIMDLevel _levelAlias, typename DerivedTopology>
@@ -115,6 +138,29 @@ protected:
 	{
 		return rivoli::distance1Rx2SBilateralEuclidean(thetaAOne, thetaBOne, phiBOne,
 											           thetaATwo, thetaBTwo, phiBTwo);
+	}
+};
+
+template <typename _FP, vectra::SIMDLevel _level>
+class Topology1Rx2SBilateralIsotropicEuclidean : public Topology<_FP, _level, Topology1Rx2SBilateralIsotropicEuclidean<_FP, _level>> {
+
+	template <typename _FPAlias, vectra::SIMDLevel _levelAlias, typename DerivedTopology>
+	friend class Topology;
+
+public:
+	using FP = _FP;
+	static constexpr vectra::SIMDLevel level = _level;
+	static constexpr std::size_t dimension = 3;
+	static constexpr std::string_view name = "1Rx2SBilateralIsotropicEuclidean";
+
+protected:
+	using vct = vectra::Vectratype<FP, level>;
+
+	FORCE_INLINE static vct _getDistance(vct thetaAOne, vct thetaBOne, vct phiBOne,
+										 vct thetaATwo, vct thetaBTwo, vct phiBTwo)
+	{
+		return rivoli::distance1Rx2SBilateralIsotropicEuclidean(thetaAOne, thetaBOne, phiBOne,
+											                    thetaATwo, thetaBTwo, phiBTwo);
 	}
 };
 
@@ -142,6 +188,29 @@ protected:
 };
 
 template <typename _FP, vectra::SIMDLevel _level>
+class Topology1Rx2SReciprocalIsotropicEuclidean : public Topology<_FP, _level, Topology1Rx2SReciprocalIsotropicEuclidean<_FP, _level>> {
+
+	template <typename _FPAlias, vectra::SIMDLevel _levelAlias, typename DerivedTopology>
+	friend class Topology;
+
+public:
+	using FP = _FP;
+	static constexpr vectra::SIMDLevel level = _level;
+	static constexpr std::size_t dimension = 3;
+	static constexpr std::string_view name = "1Rx2SReciprocalIsotropicEuclidean";
+
+protected:
+	using vct = vectra::Vectratype<FP, level>;
+
+	FORCE_INLINE static vct _getDistance(vct thetaAOne, vct thetaBOne, vct phiBOne,
+										 vct thetaATwo, vct thetaBTwo, vct phiBTwo)
+	{
+		return rivoli::distance1Rx2SReciprocalIsotropicEuclidean(thetaAOne, thetaBOne, phiBOne,
+											                     thetaATwo, thetaBTwo, phiBTwo);
+	}
+};
+
+template <typename _FP, vectra::SIMDLevel _level>
 class Topology1Rx2SBilateralReciprocalEuclidean : public Topology<_FP, _level, Topology1Rx2SBilateralReciprocalEuclidean<_FP, _level>> {
 
 	template <typename _FPAlias, vectra::SIMDLevel _levelAlias, typename DerivedTopology>
@@ -161,6 +230,29 @@ protected:
 	{
 		return rivoli::distance1Rx2SBilateralReciprocalEuclidean(thetaAOne, thetaBOne, phiBOne,
 											                     thetaATwo, thetaBTwo, phiBTwo);
+	}
+};
+
+template <typename _FP, vectra::SIMDLevel _level>
+class Topology1Rx2SBilateralReciprocalIsotropicEuclidean : public Topology<_FP, _level, Topology1Rx2SBilateralReciprocalIsotropicEuclidean<_FP, _level>> {
+
+	template <typename _FPAlias, vectra::SIMDLevel _levelAlias, typename DerivedTopology>
+	friend class Topology;
+
+public:
+	using FP = _FP;
+	static constexpr vectra::SIMDLevel level = _level;
+	static constexpr std::size_t dimension = 3;
+	static constexpr std::string_view name = "1Rx2SBilateralReciprocalIsotropicEuclidean";
+
+protected:
+	using vct = vectra::Vectratype<FP, level>;
+
+	FORCE_INLINE static vct _getDistance(vct thetaAOne, vct thetaBOne, vct phiBOne,
+										 vct thetaATwo, vct thetaBTwo, vct phiBTwo)
+	{
+		return rivoli::distance1Rx2SBilateralReciprocalIsotropicEuclidean(thetaAOne, thetaBOne, phiBOne,
+											                              thetaATwo, thetaBTwo, phiBTwo);
 	}
 };
 
@@ -188,6 +280,29 @@ protected:
 };
 
 template <typename _FP, vectra::SIMDLevel _level>
+class Topology1Rx2SReciprocalRusinkiewiczIsotropicEuclidean : public Topology<_FP, _level, Topology1Rx2SReciprocalRusinkiewiczIsotropicEuclidean<_FP, _level>> {
+
+	template <typename _FPAlias, vectra::SIMDLevel _levelAlias, typename DerivedTopology>
+	friend class Topology;
+
+public:
+	using FP = _FP;
+	static constexpr vectra::SIMDLevel level = _level;
+	static constexpr std::size_t dimension = 3;
+	static constexpr std::string_view name = "1Rx2SReciprocalRusinkiewiczIsotropicEuclidean";
+
+protected:
+	using vct = vectra::Vectratype<FP, level>;
+
+	FORCE_INLINE static vct _getDistance(vct thetaAOne, vct thetaBOne, vct phiBOne,
+										 vct thetaATwo, vct thetaBTwo, vct phiBTwo)
+	{
+		return rivoli::distance1Rx2SReciprocalRusinkiewiczIsotropicEuclidean(thetaAOne, thetaBOne, phiBOne,
+											                                 thetaATwo, thetaBTwo, phiBTwo);
+	}
+};
+
+template <typename _FP, vectra::SIMDLevel _level>
 class Topology1Rx2SBilateralReciprocalRusinkiewiczEuclidean : public Topology<_FP, _level, Topology1Rx2SBilateralReciprocalRusinkiewiczEuclidean<_FP, _level>> {
 
 	template <typename _FPAlias, vectra::SIMDLevel _levelAlias, typename DerivedTopology>
@@ -207,6 +322,29 @@ protected:
 	{
 		return rivoli::distance1Rx2SBilateralReciprocalRusinkiewiczEuclidean(thetaAOne, thetaBOne, phiBOne,
 											                                 thetaATwo, thetaBTwo, phiBTwo);
+	}
+};
+
+template <typename _FP, vectra::SIMDLevel _level>
+class Topology1Rx2SBilateralReciprocalRusinkiewiczIsotropicEuclidean : public Topology<_FP, _level, Topology1Rx2SBilateralReciprocalRusinkiewiczIsotropicEuclidean<_FP, _level>> {
+
+	template <typename _FPAlias, vectra::SIMDLevel _levelAlias, typename DerivedTopology>
+	friend class Topology;
+
+public:
+	using FP = _FP;
+	static constexpr vectra::SIMDLevel level = _level;
+	static constexpr std::size_t dimension = 3;
+	static constexpr std::string_view name = "1Rx2SBilateralReciprocalRusinkiewiczIsotropicEuclidean";
+
+protected:
+	using vct = vectra::Vectratype<FP, level>;
+
+	FORCE_INLINE static vct _getDistance(vct thetaAOne, vct thetaBOne, vct phiBOne,
+										 vct thetaATwo, vct thetaBTwo, vct phiBTwo)
+	{
+		return rivoli::distance1Rx2SBilateralReciprocalRusinkiewiczIsotropicEuclidean(thetaAOne, thetaBOne, phiBOne,
+											                                          thetaATwo, thetaBTwo, phiBTwo);
 	}
 };
 
