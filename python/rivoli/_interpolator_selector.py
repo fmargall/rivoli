@@ -7,6 +7,7 @@ def _build_interpolator(coordinates, values, **kwargs):
     bilateral     = kwargs.get("bilateral", False)
     reciprocal    = kwargs.get("reciprocal", False)
     nonNegativity = kwargs.get("nonNegativity", False)
+    isotropy      = kwargs.get("isotropy", False)
     backend       = kwargs.get("backend", "None")
     dtype         = kwargs.get("dtype", "float32")
     tikhonov      = kwargs.get("tikhonov", 0.0)
@@ -54,6 +55,9 @@ def _build_interpolator(coordinates, values, **kwargs):
 
         if parameterisation == "rusinkiewicz":
             topologyStr += "Rusinkiewicz"
+
+        if isotropy:
+            topologyStr += "Isotropic"
 
         # Currently only Euclidean distance is supported
         topologyStr += "Euclidean"
