@@ -6,6 +6,18 @@ namespace rivoli
 {
 
 template <typename FP, vectra::SIMDLevel level>
+FORCE_INLINE vectra::Vectratype<FP, level> isotropicDistance(
+    vectra::Vectratype<FP, level> thetaAOne,
+    vectra::Vectratype<FP, level> thetaBOne,
+    vectra::Vectratype<FP, level> thetaATwo,
+    vectra::Vectratype<FP, level> thetaBTwo)
+{
+    using vct = vectra::Vectratype<FP, level>;
+
+    return thetaAOne - vct::abs(thetaBOne - thetaBTwo) + thetaATwo;
+}
+
+template <typename FP, vectra::SIMDLevel level>
 FORCE_INLINE vectra::Vectratype<FP, level> distanceGreatCircle(
     vectra::Vectratype<FP, level> thetaOne,
     vectra::Vectratype<FP, level> phiOne  ,
@@ -51,6 +63,24 @@ FORCE_INLINE vectra::Vectratype<FP, level> distance1Rx2SEuclidean(
 }
 
 template <typename FP, vectra::SIMDLevel level>
+FORCE_INLINE vectra::Vectratype<FP, level> distance1Rx2SIsotropicEuclidean(
+    vectra::Vectratype<FP, level> thetaAOne,
+    vectra::Vectratype<FP, level> thetaBOne,
+    vectra::Vectratype<FP, level> phiBOne  ,
+    vectra::Vectratype<FP, level> thetaATwo,
+    vectra::Vectratype<FP, level> thetaBTwo,
+    vectra::Vectratype<FP, level> phiBTwo)
+{
+    using vct = vectra::Vectratype<FP, level>;
+
+    vct distanceOne = rivoli::distance1Rx2SEuclidean(thetaAOne, thetaBOne, phiBOne,
+                                                     thetaATwo, thetaBTwo, phiBTwo);
+    vct distanceIso = rivoli::isotropicDistance(thetaAOne, thetaBOne, thetaATwo, thetaBTwo);
+
+    return vct::min(distanceOne, distanceIso);
+}
+
+template <typename FP, vectra::SIMDLevel level>
 FORCE_INLINE vectra::Vectratype<FP, level> distance1Rx2SBilateralEuclidean(
     vectra::Vectratype<FP, level> thetaAOne,
     vectra::Vectratype<FP, level> thetaBOne,
@@ -67,6 +97,24 @@ FORCE_INLINE vectra::Vectratype<FP, level> distance1Rx2SBilateralEuclidean(
                                      thetaATwo, thetaBTwo, vct::two_pi() - phiBTwo);
 
     return vct::min(distanceOne, distanceTwo);
+}
+
+template <typename FP, vectra::SIMDLevel level>
+FORCE_INLINE vectra::Vectratype<FP, level> distance1Rx2SBilateralIsotropicEuclidean(
+    vectra::Vectratype<FP, level> thetaAOne,
+    vectra::Vectratype<FP, level> thetaBOne,
+    vectra::Vectratype<FP, level> phiBOne  ,
+    vectra::Vectratype<FP, level> thetaATwo,
+    vectra::Vectratype<FP, level> thetaBTwo,
+    vectra::Vectratype<FP, level> phiBTwo)
+{
+    using vct = vectra::Vectratype<FP, level>;
+
+    vct distanceOne = rivoli::distance1Rx2SBilateralIsotropicEuclidean(thetaAOne, thetaBOne, phiBOne,
+                                                                       thetaATwo, thetaBTwo, phiBTwo);
+    vct distanceIso = rivoli::isotropicDistance(thetaAOne, thetaBOne, thetaATwo, thetaBTwo);
+
+    return vct::min(distanceOne, distanceIso);
 }
 
 template <typename FP, vectra::SIMDLevel level>
@@ -93,6 +141,24 @@ FORCE_INLINE vectra::Vectratype<FP, level> distance1Rx2SReciprocalEuclidean(
 }
 
 template <typename FP, vectra::SIMDLevel level>
+FORCE_INLINE vectra::Vectratype<FP, level> distance1Rx2SReciprocalIsotropicEuclidean(
+    vectra::Vectratype<FP, level> thetaAOne,
+    vectra::Vectratype<FP, level> thetaBOne,
+    vectra::Vectratype<FP, level> phiBOne  ,
+    vectra::Vectratype<FP, level> thetaATwo,
+    vectra::Vectratype<FP, level> thetaBTwo,
+    vectra::Vectratype<FP, level> phiBTwo)
+{
+    using vct = vectra::Vectratype<FP, level>;
+
+    vct distanceOne = rivoli::distance1Rx2SReciprocalIsotropicEuclidean(thetaAOne, thetaBOne, phiBOne,
+                                                                        thetaATwo, thetaBTwo, phiBTwo);
+    vct distanceIso = rivoli::isotropicDistance(thetaAOne, thetaBOne, thetaATwo, thetaBTwo);
+
+    return vct::min(distanceOne, distanceIso);
+}
+
+template <typename FP, vectra::SIMDLevel level>
 FORCE_INLINE vectra::Vectratype<FP, level> distance1Rx2SBilateralReciprocalEuclidean(
     vectra::Vectratype<FP, level> thetaAOne,
     vectra::Vectratype<FP, level> thetaBOne,
@@ -112,6 +178,24 @@ FORCE_INLINE vectra::Vectratype<FP, level> distance1Rx2SBilateralReciprocalEucli
 }
 
 template <typename FP, vectra::SIMDLevel level>
+FORCE_INLINE vectra::Vectratype<FP, level> distance1Rx2SBilateralReciprocalIsotropicEuclidean(
+    vectra::Vectratype<FP, level> thetaAOne,
+    vectra::Vectratype<FP, level> thetaBOne,
+    vectra::Vectratype<FP, level> phiBOne  ,
+    vectra::Vectratype<FP, level> thetaATwo,
+    vectra::Vectratype<FP, level> thetaBTwo,
+    vectra::Vectratype<FP, level> phiBTwo)
+{
+    using vct = vectra::Vectratype<FP, level>;
+
+    vct distanceOne = rivoli::distance1Rx2SBilateralReciprocalEuclidean(thetaAOne, thetaBOne, phiBOne,
+                                                                        thetaATwo, thetaBTwo, phiBTwo);
+    vct distanceIso = rivoli::isotropicDistance(thetaAOne, thetaBOne, thetaATwo, thetaBTwo);
+
+    return vct::min(distanceOne, distanceIso);
+}
+
+template <typename FP, vectra::SIMDLevel level>
 FORCE_INLINE vectra::Vectratype<FP, level> distance1Rx2SReciprocalRusinkiewiczEuclidean(
     vectra::Vectratype<FP, level> thetaHOne,
     vectra::Vectratype<FP, level> thetaDOne,
@@ -122,12 +206,30 @@ FORCE_INLINE vectra::Vectratype<FP, level> distance1Rx2SReciprocalRusinkiewiczEu
 {
     using vct = vectra::Vectratype<FP, level>;
 
-    vct distanceOne   = rivoli::distance1Rx2SEuclidean(thetaHOne, thetaDOne, phiDOne,
-                                                       thetaHTwo, thetaDTwo, phiDTwo);
-    vct distanceTwo   = rivoli::distance1Rx2SEuclidean(thetaHOne, thetaDOne, phiDOne + vct::pi(),
-                                                       thetaHTwo, thetaDTwo, phiDTwo);
+    vct distanceOne = rivoli::distance1Rx2SEuclidean(thetaHOne, thetaDOne, phiDOne,
+                                                     thetaHTwo, thetaDTwo, phiDTwo);
+    vct distanceTwo = rivoli::distance1Rx2SEuclidean(thetaHOne, thetaDOne, phiDOne + vct::pi(),
+                                                     thetaHTwo, thetaDTwo, phiDTwo);
 
     return vct::min(distanceOne, distanceTwo);
+}
+
+template <typename FP, vectra::SIMDLevel level>
+FORCE_INLINE vectra::Vectratype<FP, level> distance1Rx2SReciprocalRusinkiewiczIsotropicEuclidean(
+    vectra::Vectratype<FP, level> thetaHOne,
+    vectra::Vectratype<FP, level> thetaDOne,
+    vectra::Vectratype<FP, level> phiDOne  ,
+    vectra::Vectratype<FP, level> thetaHTwo,
+    vectra::Vectratype<FP, level> thetaDTwo,
+    vectra::Vectratype<FP, level> phiDTwo)
+{
+    using vct = vectra::Vectratype<FP, level>;
+
+    vct distanceOne = rivoli::distance1Rx2SReciprocalRusinkiewiczEuclidean(thetaHOne, thetaDOne, phiDOne,
+                                                                           thetaHTwo, thetaDTwo, phiDTwo);
+    vct distanceIso = rivoli::isotropicDistance(thetaHOne, thetaDOne, thetaHTwo, thetaDTwo);
+
+    return vct::min(distanceOne, distanceIso);
 }
 
 template <typename FP, vectra::SIMDLevel level>
@@ -147,6 +249,24 @@ FORCE_INLINE vectra::Vectratype<FP, level> distance1Rx2SBilateralReciprocalRusin
                                                                            thetaHTwo, thetaDTwo, phiDTwo);
 
     return vct::min(distanceOne, distanceTwo);
+}
+
+template <typename FP, vectra::SIMDLevel level>
+FORCE_INLINE vectra::Vectratype<FP, level> distance1Rx2SBilateralReciprocalRusinkiewiczIsotropicEuclidean(
+    vectra::Vectratype<FP, level> thetaHOne,
+    vectra::Vectratype<FP, level> thetaDOne,
+    vectra::Vectratype<FP, level> phiDOne  ,
+    vectra::Vectratype<FP, level> thetaHTwo,
+    vectra::Vectratype<FP, level> thetaDTwo,
+    vectra::Vectratype<FP, level> phiDTwo)
+{
+    using vct = vectra::Vectratype<FP, level>;
+
+    vct distanceOne = rivoli::distance1Rx2SBilateralReciprocalRusinkiewiczEuclidean(thetaHOne, thetaDOne, phiDOne,
+                                                                                    thetaHTwo, thetaDTwo, phiDTwo);
+    vct distanceIso = rivoli::isotropicDistance(thetaHOne, thetaDOne, thetaHTwo, thetaDTwo);
+
+    return vct::min(distanceOne, distanceIso);
 }
 
 template <typename FP, vectra::SIMDLevel level>
