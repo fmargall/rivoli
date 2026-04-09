@@ -102,8 +102,23 @@ public:
 		LOG_TRACE("Computing the coefficients...");
 		if (kernelDistanceMatrix.rows() == kernelDistanceMatrix.cols()) {
 			// FullPivLU decomposition is used for a better stability, even if it is one of the worst for performance
-			Eigen::FullPivLU<Eigen::Matrix<FP, Eigen::Dynamic, Eigen::Dynamic>> luDecomposition(kernelDistanceMatrix);
-			coefficients = luDecomposition.solve(resultVector);
+			//Eigen::FullPivLU<Eigen::Matrix<FP, Eigen::Dynamic, Eigen::Dynamic>> luDecomposition(kernelDistanceMatrix);
+			//coefficients = luDecomposition.solve(resultVector);
+
+			// LDLT decomposition is used for better performance, but less stable than LU decomposition
+			Eigen::LDLT<Eigen::Matrix<FP, Eigen::Dynamic, Eigen::Dynamic>> ldlt(kernelDistanceMatrix);
+
+			if (ldlt.info() != Eigen::Success)
+				LOG_CRITICAL("LDLT decomposition failed. The kernel distance matrix might not be positive definite. "
+					         "Consider using a more stable decomposition method, such as LU decomposition, or adding"
+					         " a stronger Tikhonov regularization.");
+			coefficients = ldlt.solve(resultVector);
+
+			// Checking residuals for debugging
+			Eigen::Vector<FP, Eigen::Dynamic> residuals = (kernelDistanceMatrix * coefficients - resultVector);
+			FP relativeError = residuals.norm() / resultVector.norm();
+			LOG_DEBUG("Relative error of residuals: ", relativeError);
+
 		}
 		else
 			LOG_CRITICAL("For now, only square kernel distance matrix is supported. Kernel distance matrix"
