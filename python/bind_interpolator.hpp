@@ -18,7 +18,7 @@ template <typename FP, vectra::SIMDLevel level, size_t dim, bool bilateral, bool
 void bindInterpolator(nb::module_& m) {
 
 	using KernelClass   = rivoli::KernelSelector<kernelType, FP, level>;
-	using TopologyClass = rivoli::TopologySelector<dim, bilateral, reciprocal, coordSystem, FP, level>;
+	using TopologyClass = rivoli::TopologySelector<dim, bilateral, reciprocal, false, coordSystem, FP, level>;
 
 	using InterpolatorClass = Interpolator<KernelClass, TopologyClass>;
 
