@@ -100,10 +100,6 @@ public:
             Eigen::Map<const Eigen::Vector<FP, Eigen::Dynamic>>(
                 inputValues.data(), inputValues.size());
 
-        FP minimumValue = resultVector.minCoeff();
-        if (minimumValue < FP(0))
-            LOG_WARNING("Negative value(s) found in input data. Minimum value: ", minimumValue);
-
         // Enforcing non-negativity on the result vector if required
         if (nonNegativity) resultVector = resultVector.array().sqrt();
 
@@ -272,6 +268,33 @@ private:
     {
         const size_t N = inputValues.size();
 
+		// Removing negative BRDF values
+		size_t negativeValuesCounter = 0;
+        std::array<std::vector<FP>, _dimension> nonNegativeCoordinates;
+        std::vector<FP> nonNegativeValues;
+
+        for (size_t d = 0; d < _dimension; d++)
+            nonNegativeCoordinates[d].reserve(N);
+        nonNegativeValues.reserve(N);
+
+        for (size_t i = 0; i < N; i++) {
+            if (inputValues[i] < static_cast<FP>(0.)) {
+                negativeValuesCounter++;
+                continue;
+            }
+
+            for (size_t d = 0; d < _dimension; d++)
+                nonNegativeCoordinates[d].push_back(inputCoordinates[d][i]);
+
+            nonNegativeValues.push_back(inputValues[i]);
+		}
+
+		if (negativeValuesCounter > 0)
+            LOG_WARNING("Negative values found during preprocess. Number"
+                        " of values removed: ", negativeValuesCounter);
+
+		const size_t nonNegativeN = nonNegativeValues.size();
+
 		// Duplicates can be found using union-find data structure,
         // by uniting the indices of the coordinates that are equal
         // then by computing the mean value for each group.
@@ -299,17 +322,17 @@ private:
 			}
         };
 
-		UnionFind unionFind(N);
+		UnionFind unionFind(nonNegativeN);
 
 		// Research of duplicates : two coordinates will be considered as
         // duplicates if their distance is smaller than a certain epsilon
         const FP epsilon = std::numeric_limits<FP>::epsilon() * FP(10);
 
-        for (size_t i = 0; i < N; i++) {
-            for (size_t j = i + 1; j < N; j++) {
+        for (size_t i = 0; i < nonNegativeN; i++) {
+            for (size_t j = i + 1; j < nonNegativeN; j++) {
 
                 FP distance = [&]<std::size_t... I>(std::index_sequence<I...>) {
-                    return _topology.getDistanceScalar(inputCoordinates[I][i]..., inputCoordinates[I][j]...);
+                    return _topology.getDistanceScalar(nonNegativeCoordinates[I][i]..., nonNegativeCoordinates[I][j]...);
                 }(std::make_index_sequence<_dimension>{});
 
                 if (distance < epsilon) unionFind.unite(i, j);
@@ -319,9 +342,9 @@ private:
 		// Packing duplicates by groups of indices, and
         // then computing the mean value for each group
         std::unordered_map<size_t, std::vector<size_t>> groups;
-        groups.reserve(N);
+        groups.reserve(nonNegativeN);
 
-        for (size_t i = 0; i < N; i++)
+        for (size_t i = 0; i < nonNegativeN; i++)
             groups[unionFind.find(i)].push_back(i);
 
         std::array<std::vector<FP>, _dimension> preprocessedCoordinates;
@@ -339,12 +362,12 @@ private:
 			// kept, since they are all considered equivalent
             for (size_t d = 0; d < _dimension; d++)
                 // indices[0] will be used as the reference cooordinate for the group
-                preprocessedCoordinates[d].push_back(inputCoordinates[d][indices[0]]);
+                preprocessedCoordinates[d].push_back(nonNegativeCoordinates[d][indices[0]]);
 
             // Computing mean value
             FP meanValue = FP(0.);
             for (size_t idx : indices)
-                meanValue += inputValues[idx];
+                meanValue += nonNegativeValues[idx];
 
             meanValue /= static_cast<FP>(indices.size());
 
@@ -352,10 +375,9 @@ private:
         }
 
 		LOG_DEBUG("Preprocessing complete. Initial number of coordinates: "
-                  , newN, " | vs number of duplicates removed: ", N - newN);
+                  , N, " | vs number of duplicates removed: ", N - newN);
 
         return { std::move(preprocessedCoordinates), std::move(preprocessedValues) };
-
     }
 
     Eigen::Matrix<FP, Eigen::Dynamic, Eigen::Dynamic> _computeKernelDistanceMatrix(
