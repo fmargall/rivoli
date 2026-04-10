@@ -131,7 +131,7 @@ public:
         else
             LOG_CRITICAL("For now, only square kernel distance matrix is supported. Kernel distance matrix"
                          " rows: ", kernelDistanceMatrix.rows(), " | cols: ", kernelDistanceMatrix.cols());
-        LOG_TRACE("Coefficients computed.");
+        LOG_TRACE(coefficients.size(), " coefficients computed.");
 
         _setCoordinates(inputCoordinates);
         _setCoefficients(coefficients);
@@ -266,6 +266,8 @@ private:
     std::pair<std::array<std::vector<FP>, _dimension>, std::vector<FP>> _preprocessInputData(
         const std::array<std::vector<FP>, _dimension>& inputCoordinates, const std::vector<FP>& inputValues) const
     {
+        LOG_TRACE("Preprocessing started...");
+
         const size_t N = inputValues.size();
 
 		// Removing negative BRDF values
@@ -326,7 +328,7 @@ private:
 
 		// Research of duplicates : two coordinates will be considered as
         // duplicates if their distance is smaller than a certain epsilon
-        const FP epsilon = std::numeric_limits<FP>::epsilon() * FP(10);
+        const FP epsilon = std::numeric_limits<FP>::epsilon() * FP(100);
 
         for (size_t i = 0; i < nonNegativeN; i++) {
             for (size_t j = i + 1; j < nonNegativeN; j++) {
