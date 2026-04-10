@@ -328,7 +328,7 @@ private:
 
 		// Research of duplicates : two coordinates will be considered as
         // duplicates if their distance is smaller than a certain epsilon
-        const FP epsilon = std::numeric_limits<FP>::epsilon() * FP(100);
+        const FP epsilon = std::numeric_limits<FP>::epsilon() * FP(10);
 
         for (size_t i = 0; i < nonNegativeN; i++) {
             for (size_t j = i + 1; j < nonNegativeN; j++) {
