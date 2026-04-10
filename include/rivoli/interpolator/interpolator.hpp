@@ -133,6 +133,11 @@ public:
                          " rows: ", kernelDistanceMatrix.rows(), " | cols: ", kernelDistanceMatrix.cols());
         LOG_TRACE(coefficients.size(), " coefficients computed.");
 
+		FP epsilon = std::numeric_limits<FP>::epsilon();
+		Eigen::Index numZeroCoefs = (coefficients.array().abs() < epsilon).count();
+		if (numZeroCoefs > 0)
+            LOG_WARNING(numZeroCoefs, " coefficients with value equal to 0 detected.");
+
         _setCoordinates(preprocessedCoordinates);
         _setCoefficients(coefficients);
 
