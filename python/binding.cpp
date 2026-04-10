@@ -17,9 +17,9 @@ using SIMDLevels = value_list<
 	//vectra::SIMDLevel::SSE   ,
 	//vectra::SIMDLevel::SSE2  ,
 	//vectra::SIMDLevel::SSE3  ,
-	vectra::SIMDLevel::SSE41
+	vectra::SIMDLevel::SSE41 ,
 	//vectra::SIMDLevel::SSE42 ,
-	//vectra::SIMDLevel::AVX   ,
+	vectra::SIMDLevel::AVX
 	//vectra::SIMDLevel::AVX2  ,
 	//vectra::SIMDLevel::AVX512
 >;

@@ -64,8 +64,9 @@ def _build_interpolator(coordinates, values, **kwargs):
 
     # -------- Backend selection --------
     backendStr = {
-        "None" : "None",
-        "SSE41": "SSE41"
+        "None" : "None" ,
+        "SSE41": "SSE41",
+        "AVX"  : "AVX"
     }[backend]
 
     # -------- Dtype selection --------
