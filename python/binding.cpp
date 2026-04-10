@@ -1,5 +1,3 @@
-#include <nanobind/nanobind.h>
-
 #include <rivoli/rivoli.hpp>
 
 #include "bind_interpolator.hpp"
