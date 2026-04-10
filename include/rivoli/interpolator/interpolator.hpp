@@ -87,7 +87,7 @@ public:
         // the computation of its kernel-distance matrix, using Eigen library.
         LOG_TRACE("Computing kernel distance matrix...");
         Eigen::Matrix<FP, Eigen::Dynamic, Eigen::Dynamic> kernelDistanceMatrix
-            = _computeKernelDistanceMatrix(inputCoordinates);
+            = _computeKernelDistanceMatrix(preprocessedCoordinates);
         LOG_TRACE("Kernel distance matrix computed.");
 
         // Tikhonov regularization is added to the diagonal of the kernel distance matrix
@@ -98,7 +98,7 @@ public:
         // Initialisation of result vector containing BRDF values
         Eigen::Vector<FP, Eigen::Dynamic> resultVector =
             Eigen::Map<const Eigen::Vector<FP, Eigen::Dynamic>>(
-                inputValues.data(), inputValues.size());
+                preprocessedValues.data(), preprocessedValues.size());
 
         // Enforcing non-negativity on the result vector if required
         if (nonNegativity) resultVector = resultVector.array().sqrt();
@@ -133,7 +133,7 @@ public:
                          " rows: ", kernelDistanceMatrix.rows(), " | cols: ", kernelDistanceMatrix.cols());
         LOG_TRACE(coefficients.size(), " coefficients computed.");
 
-        _setCoordinates(inputCoordinates);
+        _setCoordinates(preprocessedCoordinates);
         _setCoefficients(coefficients);
 
         LOG_INFO(topology.name, " interpolator initialised successfully.");
