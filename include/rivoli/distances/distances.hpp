@@ -14,7 +14,10 @@ FORCE_INLINE vectra::Vectratype<FP, level> isotropicDistance(
 {
     using vct = vectra::Vectratype<FP, level>;
 
-    return thetaAOne - vct::abs(thetaBOne - thetaBTwo) + thetaATwo;
+	vct thetaASum  = thetaAOne + thetaATwo;
+	vct thetaBDiff = thetaBOne - thetaBTwo;
+
+    return vct::sqrt(thetaASum * thetaASum + thetaBDiff * thetaBDiff);
 }
 
 template <typename FP, vectra::SIMDLevel level>
