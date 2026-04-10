@@ -21,6 +21,11 @@ target_include_directories(_binding PRIVATE
     ${PROJECT_SOURCE_DIR}/include
 )
 
+# OpenMP is required in parallel mode when lots
+# of interpolations are requested by the user.
+find_package(OpenMP REQUIRED)
+target_link_libraries(_binding PRIVATE OpenMP::OpenMP_CXX)
+
 # Copy pure Python files next to compiled module
 file(GLOB PYTHON_FILES "${CMAKE_CURRENT_SOURCE_DIR}/rivoli/*.py")
 

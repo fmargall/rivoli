@@ -1,5 +1,7 @@
 #pragma once
 
+#include <omp.h>
+
 #include <nanobind/nanobind.h>
 #include <nanobind/ndarray.h>
 #include <nanobind/stl/array.h>
@@ -109,18 +111,30 @@ void bindInterpolator(nb::module_& m) {
 
 		// Call to the interpolate function in numpy-ndarray mode
 		cls.def("interpolate", [](const InterpolatorClass& self,
-			const nb::ndarray<FP>& theta, const nb::ndarray<FP>& phi) {
+			const nb::ndarray<FP>& theta, const nb::ndarray<FP>& phi,
+			int numberThreads) {
 				nb::ndarray<FP> result(theta);
 
 				FP* thetaData  =  theta.data();
 				FP* phiData    =    phi.data();
 				FP* resultData = result.data();
 
-				for (size_t i = 0; i < theta.size(); i++)
-					resultData[i] = self.interpolate(thetaData[i], phiData[i]);
+				// Compute number of parallel threads
+				int maxThreads = omp_get_max_threads();
+				numberThreads = (numberThreads <= 0) ? maxThreads : std::min(numberThreads, maxThreads);
+
+				{
+					nb::gil_scoped_release release;
+
+					#pragma omp parallel for num_threads(numberThreads)
+					for (int index = 0; index < theta.size(); index++)
+						resultData[index] = self.interpolate(thetaData[index], phiData[index]);
+				}
 
 				return result;
-			});
+			},
+			nb::arg("theta"), nb::arg("phi"), nb::arg("numThreads") = 0
+		);
 	}
 	else if constexpr (dim == 3) {
 		// Call to the interpolate function in scalar mode
@@ -130,7 +144,8 @@ void bindInterpolator(nb::module_& m) {
 
 		// Call to the interpolate function in numpy-ndarray mode
 		cls.def("interpolate", [](const InterpolatorClass& self,
-            const nb::ndarray<FP>& thetaI, const nb::ndarray<FP>& thetaO, const nb::ndarray<FP>& deltaPhi) {
+            const nb::ndarray<FP>& thetaI, const nb::ndarray<FP>& thetaO, const nb::ndarray<FP>& deltaPhi,
+			int numberThreads) {
                 nb::ndarray<FP> result(thetaI);
 
                 FP* thetaIData   =   thetaI.data();
@@ -138,11 +153,21 @@ void bindInterpolator(nb::module_& m) {
                 FP* deltaPhiData = deltaPhi.data();
                 FP* resultData   =   result.data();
 
-                for (size_t i = 0; i < thetaI.size(); i++)
-                    resultData[i] = self.interpolate(thetaIData[i], thetaOData[i], deltaPhiData[i]);
+				// Compute number of parallel threads
+				int maxThreads = omp_get_max_threads();
+				numberThreads = (numberThreads <= 0) ? maxThreads : std::min(numberThreads, maxThreads);
+
+				{
+					nb::gil_scoped_release release;
+
+					#pragma omp parallel for num_threads(numberThreads)
+					for (int index = 0; index < thetaI.size(); index++)
+						resultData[index] = self.interpolate(thetaIData[index], thetaOData[index], deltaPhiData[index]);
+				}
 
                 return result;
-        });
+			}, nb::arg("thetaA"), nb::arg("thetaB"), nb::arg("phiB"), nb::arg("numThreads") = 0
+		);
 	}
 	else if constexpr (dim == 4) {
 		// Call to the interpolate function in scalar mode
@@ -153,7 +178,8 @@ void bindInterpolator(nb::module_& m) {
 		// Call to the interpolate function in numpy-ndarray mode
 		cls.def("interpolate", [](const InterpolatorClass& self,
             const nb::ndarray<FP>& thetaI, const nb::ndarray<FP>& phiI, 
-            const nb::ndarray<FP>& thetaO, const nb::ndarray<FP>& phiO) {
+            const nb::ndarray<FP>& thetaO, const nb::ndarray<FP>& phiO,
+			int numberThreads) {
                 nb::ndarray<FP> result(thetaI);
 
                 FP* thetaIData = thetaI.data();
@@ -162,11 +188,21 @@ void bindInterpolator(nb::module_& m) {
                 FP* phiOData   =   phiO.data();
                 FP* resultData = result.data();
 
-                for (size_t i = 0; i < thetaI.size(); i++)
-                    resultData[i] = self.interpolate(thetaIData[i], phiIData[i], thetaOData[i], phiOData[i]);
+				// Compute number of parallel threads
+				int maxThreads = omp_get_max_threads();
+				numberThreads = (numberThreads <= 0) ? maxThreads : std::min(numberThreads, maxThreads);
+
+				{
+					nb::gil_scoped_release release;
+
+					#pragma omp parallel for num_threads(numberThreads)
+					for (int index = 0; index < thetaI.size(); index++)
+						resultData[index] = self.interpolate(thetaIData[index], phiIData[index], thetaOData[index], phiOData[index]);
+				}
 
                 return result;
-        });
+			}, nb::arg("thetaA"), nb::arg("phiA"), nb::arg("thetaB"), nb::arg("phiB"), nb::arg("numThreads") = 0
+		);
 	}
 }
 
