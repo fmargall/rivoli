@@ -25,9 +25,10 @@ using SIMDLevels = value_list<
 >;
 
 using KernelTypes = value_list<
-	rivoli::KernelType        , // Mandatory to expose type of enum before the values
-	rivoli::KernelType::Linear,
-	rivoli::KernelType::Cubic ,
+	rivoli::KernelType              , // Mandatory to expose type of enum before the values
+	rivoli::KernelType::Linear      ,
+	rivoli::KernelType::Cubic       ,
+	rivoli::KernelType::Epanechnikov,
 	rivoli::KernelType::Gaussian
 >;
 

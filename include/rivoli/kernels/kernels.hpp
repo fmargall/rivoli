@@ -71,6 +71,35 @@ protected:
 };
 
 template <typename _FP, vectra::SIMDLevel _level>
+class KernelEpanechnikov : public Kernel<_FP, _level, KernelEpanechnikov<_FP, _level>> {
+
+	template <typename _FPAlias, vectra::SIMDLevel _levelAlias, typename DerivedKernel>
+	friend class Kernel;
+
+protected:
+	using FP = _FP;
+	static constexpr vectra::SIMDLevel level = _level;
+
+	using vct = vectra::Vectratype<FP, level>;
+
+public:
+	static constexpr std::string_view name = "Epanechnikov";
+
+	// Since this kernel works with a parameter, an explicit constructor is required
+	explicit KernelEpanechnikov(FP sigma) : _invSigmaSquared(vct(1. / (sigma * sigma))) {}
+
+protected:
+	// This is a non-static method, since this kernel needs a parameter to be computed
+	// In this case, it is also required to add an explicit constructor to initialize.
+	vct _runKernel(const vct& r) const {
+		return vct::max(vct::zero(), vct(1) - (r * r) * _invSigmaSquared);
+	}
+
+private:
+	vct _invSigmaSquared;
+};
+
+template <typename _FP, vectra::SIMDLevel _level>
 class KernelGaussian : public Kernel<_FP, _level, KernelGaussian<_FP, _level>> {
 
 	template <typename _FPAlias, vectra::SIMDLevel _levelAlias, typename DerivedKernel>
