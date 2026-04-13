@@ -2,6 +2,8 @@
 
 #include <vectra/vectra.hpp>
 
+#include <rivoli/distances/hemispheric_distances.hpp>
+
 namespace rivoli
 {
 
@@ -114,7 +116,7 @@ FORCE_INLINE vectra::Vectratype<FP, level> distance1Rx2SBilateralIsotropicEuclid
     using vct = vectra::Vectratype<FP, level>;
 
     vct distanceOne = rivoli::distance1Rx2SBilateralEuclidean(thetaAOne, thetaBOne, phiBOne,
-                                                                       thetaATwo, thetaBTwo, phiBTwo);
+                                                              thetaATwo, thetaBTwo, phiBTwo);
     vct distanceIso = rivoli::isotropicDistance(thetaAOne, thetaBOne, thetaATwo, thetaBTwo);
 
     return vct::min(distanceOne, distanceIso);
@@ -155,7 +157,7 @@ FORCE_INLINE vectra::Vectratype<FP, level> distance1Rx2SReciprocalIsotropicEucli
     using vct = vectra::Vectratype<FP, level>;
 
     vct distanceOne = rivoli::distance1Rx2SReciprocalEuclidean(thetaAOne, thetaBOne, phiBOne,
-                                                                        thetaATwo, thetaBTwo, phiBTwo);
+                                                               thetaATwo, thetaBTwo, phiBTwo);
     vct distanceIso = rivoli::isotropicDistance(thetaAOne, thetaBOne, thetaATwo, thetaBTwo);
 
     return vct::min(distanceOne, distanceIso);
@@ -409,6 +411,107 @@ FORCE_INLINE vectra::Vectratype<FP, level> distance2Sx2SBilateralReciprocalRusin
 
     return vct::min(distanceOne, distanceTwo);
 }
+
+
+// Some of the distances can be computed with their components solved
+// separately. This is particularly useful for the use of anisotropic
+// kernels.
+
+template <typename FP, vectra::SIMDLevel level>
+FORCE_INLINE HemisphericDistances<FP, level> hemisphericDistanceGreatCircle(
+    vectra::Vectratype<FP, level> thetaOne,
+    vectra::Vectratype<FP, level> phiOne  ,
+    vectra::Vectratype<FP, level> thetaTwo,
+    vectra::Vectratype<FP, level> phiTwo)
+{
+    using vct = vectra::Vectratype<FP, level>;
+
+    vct distanceTheta  = vct::abs(thetaOne - thetaTwo);
+	vct absDistancePhi = vct::abs(phiOne - phiTwo);
+	vct distancePhi    = vct::min(absDistancePhi, vct::two_pi() - absDistancePhi);
+
+    return HemisphericDistances<FP, level>{distanceTheta, distancePhi};
+}
+
+template <typename FP, vectra::SIMDLevel level>
+FORCE_INLINE HemisphericDistances<FP, level> hemisphericDistanceGreatCircleBilateral(
+    vectra::Vectratype<FP, level> thetaOne,
+    vectra::Vectratype<FP, level> phiOne  ,
+    vectra::Vectratype<FP, level> thetaTwo,
+    vectra::Vectratype<FP, level> phiTwo)
+{
+    using vct = vectra::Vectratype<FP, level>;
+
+    vct distanceTheta  = vct::abs(thetaOne - thetaTwo);
+
+	vct absDistancePhi = vct::abs(phiOne - phiTwo);
+	vct distancePhi    = vct::min(absDistancePhi, vct::two_pi() - absDistancePhi);
+
+    vct absDistancePhiBilateral = vct::abs(vct::two_pi() - phiOne - phiTwo);
+    vct distancePhiBilateral    = vct::min(absDistancePhiBilateral, vct::two_pi() - absDistancePhiBilateral);
+
+    return HemisphericDistances<FP, level>{distanceTheta, vct::min(distancePhi, distancePhiBilateral)};
+}
+
+template <typename FP, vectra::SIMDLevel level>
+FORCE_INLINE HemisphericDistances<FP, level> hemisphericDistance1Rx2S(
+    vectra::Vectratype<FP, level> thetaAOne,
+    vectra::Vectratype<FP, level> thetaBOne,
+    vectra::Vectratype<FP, level> phiBOne  ,
+    vectra::Vectratype<FP, level> thetaATwo,
+    vectra::Vectratype<FP, level> thetaBTwo,
+    vectra::Vectratype<FP, level> phiBTwo)
+{
+    using vct = vectra::Vectratype<FP, level>;
+
+    vct distanceR1 = thetaAOne - thetaATwo;
+    vct distanceS2 = rivoli::distanceGreatCircle(thetaBOne, phiBOne, thetaBTwo, phiBTwo);
+
+    return HemisphericDistances<FP, level>{distanceR1, distanceS2};
+}
+
+template <typename FP, vectra::SIMDLevel level>
+FORCE_INLINE HemisphericDistances<FP, level> hemisphericDistance1Rx2SReciprocalRusinkiewicz(
+    vectra::Vectratype<FP, level> thetaHOne,
+    vectra::Vectratype<FP, level> thetaDOne,
+    vectra::Vectratype<FP, level> phiDOne  ,
+    vectra::Vectratype<FP, level> thetaHTwo,
+    vectra::Vectratype<FP, level> thetaDTwo,
+	vectra::Vectratype<FP, level> phiDTwo)
+{
+    using vct = vectra::Vectratype<FP, level>;
+
+    vct distanceH = thetaHOne - thetaHTwo;
+
+    vct distanceDOne = rivoli::distanceGreatCircle(thetaDOne, phiDOne, thetaDTwo, phiDTwo);
+    vct distanceDTwo = rivoli::distanceGreatCircle(thetaDOne, phiDOne, thetaDTwo, phiDTwo + vct::pi());
+    vct distanceD    = vct::min(distanceDOne, distanceDTwo);
+
+    return HemisphericDistances<FP, level>{distanceH, distanceD};
+}
+
+template <typename FP, vectra::SIMDLevel level>
+FORCE_INLINE HemisphericDistances<FP, level> hemisphericDistance1Rx2SBilateralReciprocalRusinkiewicz(
+    vectra::Vectratype<FP, level> thetaHOne,
+    vectra::Vectratype<FP, level> thetaDOne,
+    vectra::Vectratype<FP, level> phiDOne  ,
+    vectra::Vectratype<FP, level> thetaHTwo,
+    vectra::Vectratype<FP, level> thetaDTwo,
+    vectra::Vectratype<FP, level> phiDTwo)
+{
+    using vct = vectra::Vectratype<FP, level>;
+
+	vct distanceH = thetaHOne - thetaHTwo;
+
+    vct distanceDOne   = rivoli::distanceGreatCircle(thetaDOne, phiDOne, thetaDTwo, phiDTwo);
+    vct distanceDTwo   = rivoli::distanceGreatCircle(thetaDOne, phiDOne, thetaDTwo, phiDTwo + vct::half_pi());
+	vct distanceDThree = rivoli::distanceGreatCircle(thetaDOne, phiDOne, thetaDTwo, phiDTwo + vct::pi());
+	vct distanceDFour  = rivoli::distanceGreatCircle(thetaDOne, phiDOne, thetaDTwo, phiDTwo + vct::half_pi() + vct::pi());
+    vct distanceD      = vct::min(vct::min(distanceDOne, distanceDTwo), vct::min(distanceDThree, distanceDFour));
+
+	return HemisphericDistances<FP, level>{distanceH, distanceD};
+}
+
 
 namespace experimental
 {
