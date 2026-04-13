@@ -185,4 +185,78 @@ private:
 
 };
 
+
+// Some kernels may be defined as anisotropic. In this case these ones work
+// with a particular decomposed distance function, that will be expected to
+// return the distance components separately.
+template <typename _FP, vectra::SIMDLevel _level>
+class KernelAnisotropicGaussian : public Kernel<_FP, _level, KernelAnisotropicGaussian<_FP, _level>> {
+
+	template <typename _FPAlias, vectra::SIMDLevel _levelAlias, typename DerivedKernel>
+	friend class Kernel;
+
+protected:
+	using FP = _FP;
+	static constexpr vectra::SIMDLevel level = _level;
+
+	using vct = vectra::Vectratype<FP, level>;
+
+public:
+	static constexpr std::string_view name = "AnisotropicGaussian";
+
+	static constexpr bool isAnisotropic = true;
+
+	// Since this kernel works with parameters, an explicit constructor is required
+	explicit KernelAnisotropicGaussian(FP sigmaOne, FP sigmaTwo) : _invTwoSigmaOneSq(vct(1. / (2. * sigmaOne * sigmaOne))),
+													               _invTwoSigmaTwoSq(vct(1. / (2. * sigmaTwo * sigmaTwo))) {}
+
+protected:
+	// This is a non-static method, since this kernel needs parameters to be computed
+	// In this case, it is also required to add an explicit constructor to initialize
+	vct _runKernel(const rivoli::HemisphericDistances<FP, level>& distances) const {
+		return vct::exp(-(distances.hemisphericDistanceOne * distances.hemisphericDistanceOne) * _invTwoSigmaOneSq -
+		                 (distances.hemisphericDistanceTwo * distances.hemisphericDistanceTwo) * _invTwoSigmaTwoSq);
+	}
+
+private:
+	vct _invTwoSigmaOneSq;
+	vct _invTwoSigmaTwoSq;
+
+};
+
+template <typename _FP, vectra::SIMDLevel _level>
+class KernelAnisotropicLaplacian : public Kernel<_FP, _level, KernelAnisotropicLaplacian<_FP, _level>> {
+
+	template <typename _FPAlias, vectra::SIMDLevel _levelAlias, typename DerivedKernel>
+	friend class Kernel;
+
+protected:
+	using FP = _FP;
+	static constexpr vectra::SIMDLevel level = _level;
+
+	using vct = vectra::Vectratype<FP, level>;
+
+public:
+	static constexpr std::string_view name = "AnisotropicLaplacian";
+
+	static constexpr bool isAnisotropic = true;
+
+	// Since this kernel works with parameters, an explicit constructor is required
+	explicit KernelAnisotropicLaplacian(FP sigmaOne, FP sigmaTwo) : _invSigmaOne(vct(1. / sigmaOne)),
+													                _invSigmaTwo(vct(1. / sigmaTwo)) {}
+
+protected:
+	// This is a non-static method, since this kernel needs parameters to be computed
+	// In this case, it is also required to add an explicit constructor to initialize
+	vct _runKernel(const rivoli::HemisphericDistances<FP, level>& distances) const {
+		return vct::exp(-vct::abs(distances.hemisphericDistanceOne) * _invSigmaOne -
+		                 vct::abs(distances.hemisphericDistanceTwo) * _invSigmaTwo);
+	}
+
+private:
+	vct _invSigmaOne;
+	vct _invSigmaTwo;
+
+};
+
 }
