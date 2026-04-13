@@ -47,9 +47,11 @@ using TopologyTypes = type_list<
 	TopologyTags<2, true , false, false, rivoli::CoordinateSystem::Spherical>   , // 2S      bilateral
 
 	TopologyTags<3, false, false, false, rivoli::CoordinateSystem::Spherical>   , // 1R x 2S euclidean
+	/*
 	TopologyTags<3, true , false, false, rivoli::CoordinateSystem::Spherical>   , // 1R x 2S bilateral  euclidean
 	TopologyTags<3, false, true , false, rivoli::CoordinateSystem::Spherical>   , // 1R x 2S reciprocal euclidean
 	TopologyTags<3, true , true , false, rivoli::CoordinateSystem::Spherical>   , // 1R x 2S bilateral  reciprocal euclidean
+	*/
 	TopologyTags<3, false, true , false, rivoli::CoordinateSystem::Rusinkiewicz>, // 1R x 2S reciprocal Rusinkiewicz euclidean
 	TopologyTags<3, true , true , false, rivoli::CoordinateSystem::Rusinkiewicz>, // 1R x 2S bilateral  reciprocal Rusinkiewicz euclidean
 
@@ -58,14 +60,15 @@ using TopologyTypes = type_list<
 	TopologyTags<3, false, true , true , rivoli::CoordinateSystem::Spherical>   , // 1R x 2S reciprocal isotropic  euclidean
 	TopologyTags<3, true , true , true , rivoli::CoordinateSystem::Spherical>   , // 1R x 2S bilateral  reciprocal isotropic    euclidean
 	TopologyTags<3, false, true , true , rivoli::CoordinateSystem::Rusinkiewicz>, // 1R x 2S reciprocal isotropic  Rusinkiewicz euclidean
-	TopologyTags<3, true , true , true , rivoli::CoordinateSystem::Rusinkiewicz>, // 1R x 2S bilateral  reciprocal isotropic    Rusinkiewicz euclidean
-
+	TopologyTags<3, true , true , true , rivoli::CoordinateSystem::Rusinkiewicz>//, // 1R x 2S bilateral  reciprocal isotropic    Rusinkiewicz euclidean
+	/*
 	TopologyTags<4, false, false, false, rivoli::CoordinateSystem::Spherical>   , // 2S x 2S euclidean
 	TopologyTags<4, true , false, false, rivoli::CoordinateSystem::Spherical>   , // 2S x 2S bilateral  euclidean
 	TopologyTags<4, false, true , false, rivoli::CoordinateSystem::Spherical>   , // 2S x 2S reciprocal euclidean
 	TopologyTags<4, true , true , false, rivoli::CoordinateSystem::Spherical>   , // 2S x 2S bilateral  reciprocal euclidean
 	TopologyTags<4, false, true , false, rivoli::CoordinateSystem::Rusinkiewicz>, // 2S x 2S reciprocal Rusinkiewicz euclidean
 	TopologyTags<4, true , true , false, rivoli::CoordinateSystem::Rusinkiewicz>  // 2S x 2S bilateral  reciprocal Rusinkiewicz euclidean
+	*/
 >;
 
 NB_MODULE(_binding, m) {
