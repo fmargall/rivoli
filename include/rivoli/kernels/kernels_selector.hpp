@@ -12,7 +12,8 @@ enum class KernelType {
 	Linear,
 	Cubic,
 	Epanechnikov,
-	Gaussian
+	Gaussian,
+	Laplacian
 };
 
 template <KernelType kernelType, typename FP, vectra::SIMDLevel level>
@@ -40,6 +41,11 @@ struct KernelTraits<KernelType::Epanechnikov, FP, level> {
 template <typename FP, vectra::SIMDLevel level>
 struct KernelTraits<KernelType::Gaussian, FP, level> {
 	using type = KernelGaussian<FP, level>;
+};
+
+template <typename FP, vectra::SIMDLevel level>
+struct KernelTraits<KernelType::Laplacian, FP, level> {
+	using type = KernelLaplacian<FP, level>;
 };
 
 

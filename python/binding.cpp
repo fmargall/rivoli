@@ -29,7 +29,8 @@ using KernelTypes = value_list<
 	rivoli::KernelType::Linear      ,
 	rivoli::KernelType::Cubic       ,
 	rivoli::KernelType::Epanechnikov,
-	rivoli::KernelType::Gaussian
+	rivoli::KernelType::Gaussian    ,
+	rivoli::KernelType::Laplacian
 >;
 
 template <size_t Dimension, bool Bilateral, bool Reciprocal, bool Isotropy, rivoli::CoordinateSystem coordSystem>

@@ -22,6 +22,7 @@ def _build_interpolator(coordinates, values, **kwargs):
         "cubic":        {"name": "Cubic",        "params": []},
         "epanechnikov": {"name": "Epanechnikov", "params": ["sigma"]},
         "gaussian":     {"name": "Gaussian",     "params": ["sigma"]},
+        "laplacian":    {"name": "Laplacian",    "params": ["sigma"]},
     }
     try:
         spec = kernelSpecs[kernel.lower()]

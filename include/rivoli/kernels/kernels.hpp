@@ -128,4 +128,36 @@ private:
 	vct _invTwoSigmaSq;
 };
 
+template <typename _FP, vectra::SIMDLevel _level>
+class KernelLaplacian : public Kernel<_FP, _level, KernelLaplacian<_FP, _level>> {
+
+	template <typename _FPAlias, vectra::SIMDLevel _levelAlias, typename DerivedKernel>
+	friend class Kernel;
+
+protected:
+	using FP = _FP;
+	static constexpr vectra::SIMDLevel level = _level;
+
+	using vct = vectra::Vectratype<FP, level>;
+
+public:
+	static constexpr std::string_view name = "Laplacian";
+
+	// Since this kernel works with a parameter, an explicit constructor is required
+	explicit KernelLaplacian(FP sigma) : _invSigma(vct(1. / sigma)) {}
+
+protected:
+	// This is a non-static method, since this kernel needs a parameter to be computed
+	// In this case, it is also required to add an explicit constructor to initialize.
+	vct _runKernel(const vct& r) const {
+		// The Laplacian kernel is normally defined as exp(-|r| / sigma), but since we
+		// know that r is always positive (since it is a distance), we can simplify it
+		return vct::exp(- r * _invSigma);
+	}
+
+private:
+	vct _invSigma;
+
+};
+
 }
