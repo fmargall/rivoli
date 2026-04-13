@@ -43,7 +43,7 @@ void bindInterpolator(nb::module_& m) {
 	// Class constructor instantiation
 
 	// Some of the kernels do not take any parameter as input
-	if constexpr (!std::is_constructible_v<KernelClass, FP>) {
+	if constexpr (std::is_constructible_v<KernelClass>) {
 		cls.def("__init__", [](InterpolatorClass* self,
 			const nb::ndarray<FP, nb::shape<-1, dim>, nb::c_contig>& coordinatesFromPython ,
 			const nb::ndarray<FP, nb::shape<-1>,      nb::c_contig>& coefficientsFromPython,
@@ -95,6 +95,36 @@ void bindInterpolator(nb::module_& m) {
 				}
 
 				KernelClass   kernel{parameter};
+				TopologyClass topology{};
+
+				new (self) InterpolatorClass(coordinates, coefficients, kernel, topology, tikhonovRegularizationFactor, nonNegativity);
+			}
+		);
+	}
+
+	// Some kernels, ie. anisotropic ones, need two parameters
+	if constexpr (std::is_constructible_v<KernelClass, FP, FP>) {
+		cls.def("__init__", [](InterpolatorClass* self,
+			const nb::ndarray<FP, nb::shape<-1, dim>, nb::c_contig>& coordinatesFromPython ,
+			const nb::ndarray<FP, nb::shape<-1>,      nb::c_contig>& coefficientsFromPython,
+			FP tikhonovRegularizationFactor, bool nonNegativity, FP paramOne, FP paramTwo
+			) {
+				size_t n = coordinatesFromPython.shape(0);
+
+				std::array<std::vector<FP>, dim> coordinates;
+				std::vector<FP> coefficients(n);
+
+				for (size_t d = 0; d < dim; ++d)
+					coordinates[d].resize(n);
+
+				for (size_t i = 0; i < n; ++i) {
+					for (size_t d = 0; d < dim; ++d)
+						coordinates[d][i] = coordinatesFromPython(i, d);
+
+					coefficients[i] = coefficientsFromPython(i);
+				}
+
+				KernelClass   kernel{paramOne, paramTwo};
 				TopologyClass topology{};
 
 				new (self) InterpolatorClass(coordinates, coefficients, kernel, topology, tikhonovRegularizationFactor, nonNegativity);
