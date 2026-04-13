@@ -4,6 +4,8 @@
 
 #include <vectra/vectra.hpp>
 
+#include <rivoli/distances/hemispheric_distances.hpp>
+
 
 namespace rivoli {
 
@@ -15,13 +17,36 @@ public:
 
 	using vct = vectra::Vectratype<FP, level>;
 
-	vct operator()(const vct& r) const {
+	// Default, can be overridden by derived kernel
+	static constexpr bool isAnisotropic = false;
+
+	vct operator()(const vct& r) const
+		// Requirements for the activation of the generic overload
+		requires requires (const DerivedKernel& k, const vct& x) {
+			{ k._runKernel(x) } -> std::same_as<vct>;
+		}
+	{
 		return static_cast<const DerivedKernel*>(this)->_runKernel(r);
+	}
+
+	// HemisphericDistance overload: enabled when backend::type != FP
+	template <typename T>
+		// Requirements for the activation of this overload
+		requires (!std::same_as<std::decay_t<T>, FP>&&
+			requires (const DerivedKernel& k, const T& x) {
+		k._runKernel(x);})
+	auto operator()(const T& x) const {
+		return static_cast<const DerivedKernel*>(this)->_runKernel(x);
 	}
 
 	// Scalar overload: only enabled when backend::type != FP (i.e. when we have a true SIMD type)
 	//                  This will prevent ambiguity when backend::type == FP  (for scalar backend)
-	FP operator()(FP r) const {
+	FP operator()(FP r) const
+		// Requirements for the activation of the scalar overload
+		requires requires (const DerivedKernel& k, const vct& x) {
+			{ k._runKernel(x) } -> std::same_as<vct>;
+		}
+	{
 		vct result = (*this)(vct(r));
 		if constexpr (vct::width() == 1)
 			return result.value;
