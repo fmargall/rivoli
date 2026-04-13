@@ -23,6 +23,10 @@ def _build_interpolator(coordinates, values, **kwargs):
         "epanechnikov": {"name": "Epanechnikov", "params": ["sigma"]},
         "gaussian":     {"name": "Gaussian",     "params": ["sigma"]},
         "laplacian":    {"name": "Laplacian",    "params": ["sigma"]},
+
+        # Anisotropic kernels
+        "anisotropicgaussian":  {"name": "AnisotropicGaussian",  "params": ["sigmaOne", "sigmaTwo"]},
+        "anisotropiclaplacian": {"name": "AnisotropicLaplacian", "params": ["sigmaOne", "sigmaTwo"]},
     }
     try:
         spec = kernelSpecs[kernel.lower()]

@@ -30,7 +30,11 @@ using KernelTypes = value_list<
 	rivoli::KernelType::Cubic       ,
 	rivoli::KernelType::Epanechnikov,
 	rivoli::KernelType::Gaussian    ,
-	rivoli::KernelType::Laplacian
+	rivoli::KernelType::Laplacian   ,
+
+	// Some kernels are defined as anisotropic
+	rivoli::KernelType::AnisotropicGaussian,
+	rivoli::KernelType::AnisotropicLaplacian
 >;
 
 template <size_t Dimension, bool Bilateral, bool Reciprocal, bool Isotropy, rivoli::CoordinateSystem coordSystem>
@@ -54,7 +58,7 @@ using TopologyTypes = type_list<
 	*/
 	TopologyTags<3, false, true , false, rivoli::CoordinateSystem::Rusinkiewicz>, // 1R x 2S reciprocal Rusinkiewicz euclidean
 	TopologyTags<3, true , true , false, rivoli::CoordinateSystem::Rusinkiewicz>, // 1R x 2S bilateral  reciprocal Rusinkiewicz euclidean
-
+	
 	TopologyTags<3, false, false, true , rivoli::CoordinateSystem::Spherical>   , // 1R x 2S isotropic  euclidean
 	TopologyTags<3, true , false, true , rivoli::CoordinateSystem::Spherical>   , // 1R x 2S bilateral  isotropic  euclidean
 	TopologyTags<3, false, true , true , rivoli::CoordinateSystem::Spherical>   , // 1R x 2S reciprocal isotropic  euclidean
@@ -101,7 +105,7 @@ NB_MODULE(_binding, m) {
 
 									// Never bind interpolators with anisotropic kernels for topologies that force isotropy
 									if constexpr (!(isotropy && rivoli::KernelSelector<kernelType, FP, level>::isAnisotropic))
-									rivoli::bindInterpolator<FP, level, dim, bilateral, reciprocal, isotropy, coordSystem, kernelType>(m);
+										rivoli::bindInterpolator<FP, level, dim, bilateral, reciprocal, isotropy, coordSystem, kernelType>(m);
 
 								}(), ...);
 							}(TopologyTypes{});
