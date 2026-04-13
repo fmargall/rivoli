@@ -152,11 +152,20 @@ public:
         vct results = vct::zero();
 
         for (size_t i = 0; i < _coefficients.size(); i++) {
-            vct distances = [&]<std::size_t... I>(std::index_sequence<I...>) {
-                return _topology.getDistance(_coordinates[I][i]..., coordinatesSIMD[I]...);
-            }(std::make_index_sequence<_dimension>{});
+            if constexpr (KernelType::isAnisotropic) {
+                auto distances = [&]<std::size_t... I>(std::index_sequence<I...>) {
+                    return _topology.getDistances(_coordinates[I][i]..., coordinatesSIMD[I]...);
+                }(std::make_index_sequence<_dimension>{});
 
-            results = results + _coefficients[i] * _kernel(distances);
+                results = results + _coefficients[i] * _kernel(distances);
+            }
+            else {
+                vct distance = [&]<std::size_t... I>(std::index_sequence<I...>) {
+                    return _topology.getDistance(_coordinates[I][i]..., coordinatesSIMD[I]...);
+                }(std::make_index_sequence<_dimension>{});
+
+                results = results + _coefficients[i] * _kernel(distance);
+            }
         }
 
         FP result = results.hsum();
@@ -397,16 +406,43 @@ private:
         // Since the kernel distance is symmetric, we either need to
         // computer the upper or lower triangular par of the matrix.
         for (size_t i = 0; i < N; i++) {
-            // Values on the diagonal always take the value of the kernel, with a distance of zero
-            kernelDistanceMatrix(i, i) = _kernel(vct::zero()).hsum() / static_cast<FP>(vct::width());
+            if constexpr (KernelType::isAnisotropic) {
+				// Anisotropic kernels use different distance structure
+                rivoli::HemisphericDistances<FP, level> zeroDistances{};
+                zeroDistances.hemisphericDistanceOne = vct::zero();
+                zeroDistances.hemisphericDistanceTwo = vct::zero();
+
+                // Values on the diagonal always take the value of the kernel, with a distance of zero
+                kernelDistanceMatrix(i, i) = _kernel(zeroDistances).hsum() / static_cast<FP>(vct::width());
+            }
+            else {
+                // Values on the diagonal always take the value of the kernel, with a distance of zero
+                kernelDistanceMatrix(i, i) = _kernel(vct::zero()).hsum() / static_cast<FP>(vct::width());
+            }
 
             for (size_t j = i + 1; j < N; j++) {
+                FP kernelDistanceValue;
 
-                FP distance = [&]<std::size_t... I>(std::index_sequence<I...>) {
-                    return _topology.getDistanceScalar(coordinates[I][i]..., coordinates[I][j]...);
-                }(std::make_index_sequence<_dimension>{});
+                if constexpr (KernelType::isAnisotropic) {
+                    // Anisotropic kernels use different distance structure
+                    auto distancesScalar = [&]<std::size_t... I>(std::index_sequence<I...>) {
+                        return _topology.getDistancesScalar(coordinates[I][i]..., coordinates[I][j]...);
+                    }(std::make_index_sequence<_dimension>{});
 
-                FP kernelDistanceValue = _kernel(vct(distance)).hsum() / static_cast<FP>(vct::width());
+                    rivoli::HemisphericDistances<FP, level> distances{
+                        vct(distancesScalar.hemisphericDistanceOne),
+                        vct(distancesScalar.hemisphericDistanceTwo)
+                    };
+
+                    kernelDistanceValue = _kernel(distances).hsum() / static_cast<FP>(vct::width());
+                }
+                else {
+                    FP distance = [&]<std::size_t... I>(std::index_sequence<I...>) {
+                        return _topology.getDistanceScalar(coordinates[I][i]..., coordinates[I][j]...);
+                    }(std::make_index_sequence<_dimension>{});
+
+                    kernelDistanceValue = _kernel(vct(distance)).hsum() / static_cast<FP>(vct::width());
+                }
 
                 kernelDistanceMatrix(i, j) = kernelDistanceValue;
                 kernelDistanceMatrix(j, i) = kernelDistanceValue; // Equal by symmetry
