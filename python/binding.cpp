@@ -96,6 +96,8 @@ NB_MODULE(_binding, m) {
 									constexpr bool isotropy   = Topology::isotropy;
 									constexpr rivoli::CoordinateSystem coordSystem = Topology::coordSystem;
 
+									// Never bind interpolators with anisotropic kernels for topologies that force isotropy
+									if constexpr (!(isotropy && rivoli::KernelSelector<kernelType, FP, level>::isAnisotropic))
 									rivoli::bindInterpolator<FP, level, dim, bilateral, reciprocal, isotropy, coordSystem, kernelType>(m);
 
 								}(), ...);
