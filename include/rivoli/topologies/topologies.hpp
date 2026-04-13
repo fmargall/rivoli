@@ -26,6 +26,29 @@ public:
 		return getDistance(vct(std::forward<ScalarArgs>(args))...).hsum() / static_cast<FP>(vct::width());
 	}
 
+
+	// Some topologies can be computed with their components solved separately
+	// This may be particularly useful for the use of some anisotropic kernels
+	template <typename... Args>
+	FORCE_INLINE auto getDistances(Args&&... args) const
+		// Requirements for the activation of this getDistances overload
+		requires requires (const DerivedTopology& topology, Args&&... xs) {
+			topology._getDistances(std::forward<Args>(xs)...);
+		}
+	{
+		return static_cast<const DerivedTopology*>(this)->_getDistances(std::forward<Args>(args)...);
+	}
+
+	template <typename... ScalarArgs>
+	FORCE_INLINE auto getDistancesScalar(ScalarArgs&&... args) const {
+		auto distances = getDistances(vct(std::forward<ScalarArgs>(args))...);
+
+		return HemisphericDistancesScalar<FP>{
+			distances.hemisphericDistanceOne.hsum() / static_cast<FP>(vct::width()),
+			distances.hemisphericDistanceTwo.hsum() / static_cast<FP>(vct::width())
+		};
+	}
+
 };
 
 template <typename _FP, vectra::SIMDLevel _level>
