@@ -113,7 +113,7 @@ FORCE_INLINE vectra::Vectratype<FP, level> distance1Rx2SBilateralIsotropicEuclid
 {
     using vct = vectra::Vectratype<FP, level>;
 
-    vct distanceOne = rivoli::distance1Rx2SBilateralIsotropicEuclidean(thetaAOne, thetaBOne, phiBOne,
+    vct distanceOne = rivoli::distance1Rx2SBilateralEuclidean(thetaAOne, thetaBOne, phiBOne,
                                                                        thetaATwo, thetaBTwo, phiBTwo);
     vct distanceIso = rivoli::isotropicDistance(thetaAOne, thetaBOne, thetaATwo, thetaBTwo);
 
@@ -154,7 +154,7 @@ FORCE_INLINE vectra::Vectratype<FP, level> distance1Rx2SReciprocalIsotropicEucli
 {
     using vct = vectra::Vectratype<FP, level>;
 
-    vct distanceOne = rivoli::distance1Rx2SReciprocalIsotropicEuclidean(thetaAOne, thetaBOne, phiBOne,
+    vct distanceOne = rivoli::distance1Rx2SReciprocalEuclidean(thetaAOne, thetaBOne, phiBOne,
                                                                         thetaATwo, thetaBTwo, phiBTwo);
     vct distanceIso = rivoli::isotropicDistance(thetaAOne, thetaBOne, thetaATwo, thetaBTwo);
 
