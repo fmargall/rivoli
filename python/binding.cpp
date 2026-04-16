@@ -51,8 +51,8 @@ using TopologyTypes = type_list<
 	TopologyTags<2, true , false, false, rivoli::CoordinateSystem::Spherical>   , // 2S      bilateral
 
 	TopologyTags<3, false, false, false, rivoli::CoordinateSystem::Spherical>   , // 1R x 2S euclidean
-	/*
 	TopologyTags<3, true , false, false, rivoli::CoordinateSystem::Spherical>   , // 1R x 2S bilateral  euclidean
+	/*
 	TopologyTags<3, false, true , false, rivoli::CoordinateSystem::Spherical>   , // 1R x 2S reciprocal euclidean
 	TopologyTags<3, true , true , false, rivoli::CoordinateSystem::Spherical>   , // 1R x 2S bilateral  reciprocal euclidean
 	*/

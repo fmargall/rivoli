@@ -72,6 +72,8 @@ protected:
 		return rivoli::distanceGreatCircle(thetaOne, phiOne, thetaTwo, phiTwo);
 	}
 
+	// This topology can be computed with its components solved separately
+	// This is particularly useful for the use of some anisotropic kernels
 	FORCE_INLINE static HemisphericDistances<FP, level> _getDistances(vct thetaOne, vct phiOne,
 																	  vct thetaTwo, vct phiTwo)
 	{
@@ -100,6 +102,8 @@ protected:
 		return rivoli::distanceGreatCircleBilateral(thetaOne, phiOne, thetaTwo, phiTwo);
 	}
 
+	// This topology can be computed with its components solved separately
+	// This is particularly useful for the use of some anisotropic kernels
 	FORCE_INLINE static HemisphericDistances<FP, level> _getDistances(vct thetaOne, vct phiOne,
 																	  vct thetaTwo, vct phiTwo)
 	{
@@ -180,6 +184,15 @@ protected:
 	{
 		return rivoli::distance1Rx2SBilateralEuclidean(thetaAOne, thetaBOne, phiBOne,
 											           thetaATwo, thetaBTwo, phiBTwo);
+	}
+
+	// This topology can be computed with its components solved separately
+	// This is particularly useful for the use of some anisotropic kernels
+	FORCE_INLINE static HemisphericDistances<FP, level> _getDistances(vct thetaAOne, vct thetaBOne, vct phiBOne,
+										                              vct thetaATwo, vct thetaBTwo, vct phiBTwo)
+	{
+		return rivoli::hemisphericDistance1Rx2SBilateral(thetaAOne, thetaBOne, phiBOne,
+														 thetaATwo, thetaBTwo, phiBTwo);
 	}
 };
 
