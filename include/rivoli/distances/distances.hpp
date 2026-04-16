@@ -572,6 +572,28 @@ FORCE_INLINE HemisphericDistances<FP, level> hemisphericDistance2Sx2SBilateral(
     return HemisphericDistances<FP, level>{distanceS1, distanceS2};
 }
 
+template <typename FP, vectra::SIMDLevel level>
+FORCE_INLINE HemisphericDistances<FP, level> hemisphericDistance2Sx2SReciprocalRusinkiewicz(
+    vectra::Vectratype<FP, level> thetaHOne,
+    vectra::Vectratype<FP, level> phiHOne  ,
+    vectra::Vectratype<FP, level> thetaDOne,
+    vectra::Vectratype<FP, level> phiDOne  ,
+    vectra::Vectratype<FP, level> thetaHTwo,
+    vectra::Vectratype<FP, level> phiHTwo  ,
+    vectra::Vectratype<FP, level> thetaDTwo,
+    vectra::Vectratype<FP, level> phiDTwo)
+{
+    using vct = vectra::Vectratype<FP, level>;
+
+    vct distanceH = rivoli::distanceGreatCircle(thetaHOne, phiHOne, thetaHTwo, phiHTwo);
+
+    vct distanceDOne = rivoli::distanceGreatCircle(thetaDOne, phiDOne, thetaDTwo, phiDTwo);
+    vct distanceDTwo = rivoli::distanceGreatCircle(thetaDOne, phiDOne, thetaDTwo, phiDTwo + vct::pi());
+    vct distanceD    = vct::min(distanceDOne, distanceDTwo);
+
+    return HemisphericDistances<FP, level>{distanceH, distanceD};
+}
+
 
 namespace experimental
 {
