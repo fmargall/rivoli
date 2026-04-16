@@ -536,6 +536,11 @@ public:
 	static constexpr std::size_t dimension = 4;
 	static constexpr std::string_view name = "2Sx2SReciprocalEuclidean";
 
+	// NB: because of its reciprocal nature combined to a spherical parameterization,
+	// the two hemispheres of this topology are strongly coupled, thus we should not
+	// implement _getDistances.
+	static constexpr bool hasDecomposedDistance = false;
+
 protected:
 	using vct = vectra::Vectratype<FP, level>;
 
@@ -558,6 +563,11 @@ public:
 	static constexpr vectra::SIMDLevel level = _level;
 	static constexpr std::size_t dimension = 4;
 	static constexpr std::string_view name = "2Sx2SBilateralReciprocalEuclidean";
+
+	// NB: because of its reciprocal nature combined to a spherical parameterization,
+	// the two hemispheres of this topology are strongly coupled, thus we should not
+	// implement _getDistances.
+	static constexpr bool hasDecomposedDistance = false;
 
 protected:
 	using vct = vectra::Vectratype<FP, level>;
