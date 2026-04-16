@@ -162,6 +162,9 @@ protected:
 		return rivoli::distance1Rx2SIsotropicEuclidean(thetaAOne, thetaBOne, phiBOne,
 											           thetaATwo, thetaBTwo, phiBTwo);
 	}
+
+	// NB: because of its isotropic nature, this topology cannot be computed with
+	// its components solved separately, thus we may not implement _getDistances.
 };
 
 template <typename _FP, vectra::SIMDLevel _level>
@@ -217,6 +220,9 @@ protected:
 		return rivoli::distance1Rx2SBilateralIsotropicEuclidean(thetaAOne, thetaBOne, phiBOne,
 											                    thetaATwo, thetaBTwo, phiBTwo);
 	}
+
+	// NB: because of its isotropic nature, this topology cannot be computed with
+	// its components solved separately, thus we may not implement _getDistances.
 };
 
 template <typename _FP, vectra::SIMDLevel _level>
@@ -263,6 +269,9 @@ protected:
 		return rivoli::distance1Rx2SReciprocalIsotropicEuclidean(thetaAOne, thetaBOne, phiBOne,
 											                     thetaATwo, thetaBTwo, phiBTwo);
 	}
+
+	// NB: because of its isotropic nature, this topology cannot be computed with
+	// its components solved separately, thus we may not implement _getDistances.
 };
 
 template <typename _FP, vectra::SIMDLevel _level>
@@ -309,6 +318,9 @@ protected:
 		return rivoli::distance1Rx2SBilateralReciprocalIsotropicEuclidean(thetaAOne, thetaBOne, phiBOne,
 											                              thetaATwo, thetaBTwo, phiBTwo);
 	}
+
+	// NB: because of its isotropic nature, this topology cannot be computed with
+	// its components solved separately, thus we may not implement _getDistances.
 };
 
 template <typename _FP, vectra::SIMDLevel _level>
@@ -364,6 +376,9 @@ protected:
 		return rivoli::distance1Rx2SReciprocalRusinkiewiczIsotropicEuclidean(thetaAOne, thetaBOne, phiBOne,
 											                                 thetaATwo, thetaBTwo, phiBTwo);
 	}
+
+	// NB: because of its isotropic nature, this topology cannot be computed with
+	// its components solved separately, thus we may not implement _getDistances.
 };
 
 template <typename _FP, vectra::SIMDLevel _level>
@@ -419,6 +434,9 @@ protected:
 		return rivoli::distance1Rx2SBilateralReciprocalRusinkiewiczIsotropicEuclidean(thetaAOne, thetaBOne, phiBOne,
 											                                          thetaATwo, thetaBTwo, phiBTwo);
 	}
+
+	// NB: because of its isotropic nature, this topology cannot be computed with
+	// its components solved separately, thus we may not implement _getDistances.
 };
 
 template <typename _FP, vectra::SIMDLevel _level>
