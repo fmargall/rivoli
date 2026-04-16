@@ -633,6 +633,15 @@ protected:
 		return rivoli::distance2Sx2SBilateralReciprocalRusinkiewiczEuclidean(thetaHOne, phiHOne, thetaDOne, phiDOne,
 																			 thetaHTwo, phiHTwo, thetaDTwo, phiDTwo);
 	}
+
+	// This topology can be computed with its components solved separately
+	// This is particularly useful for the use of some anisotropic kernels
+	FORCE_INLINE static HemisphericDistances<FP, level> _getDistances(vct thetaAOne, vct phiAOne, vct thetaBOne, vct phiBOne,
+																	  vct thetaATwo, vct phiATwo, vct thetaBTwo, vct phiBTwo)
+	{
+		return rivoli::hemisphericDistance2Sx2SBilateralReciprocalRusinkiewicz(thetaAOne, phiAOne, thetaBOne, phiBOne,
+										                                       thetaATwo, phiATwo, thetaBTwo, phiBTwo);
+	}
 };
 
 }
