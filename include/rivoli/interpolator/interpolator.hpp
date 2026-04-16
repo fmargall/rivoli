@@ -76,7 +76,7 @@ public:
             }
         }
 
-		// Clean input data for better stability of the system, by enforcing non-negativity
+        // Clean input data for better stability of the system, by enforcing non-negativity
         // and by removing any duplicates coordinates, by keeping for them their mean value
         auto [preprocessedCoordinates, preprocessedValues] = _preprocessInputData(inputCoordinates, inputValues);
 
@@ -113,13 +113,24 @@ public:
             //Eigen::FullPivLU<Eigen::Matrix<FP, Eigen::Dynamic, Eigen::Dynamic>> luDecomposition(kernelDistanceMatrix);
             //coefficients = luDecomposition.solve(resultVector);
 
+            LOG_TRACE("Performing LDLT decomposition...");
             // LDLT decomposition is used for better performance, but less stable than LU decomposition
             Eigen::LDLT<Eigen::Matrix<FP, Eigen::Dynamic, Eigen::Dynamic>> ldlt(kernelDistanceMatrix);
+            LOG_TRACE("LDLT decomposition achieved.");
 
             if (ldlt.info() != Eigen::Success)
                 LOG_CRITICAL("LDLT decomposition failed. The kernel distance matrix might not be positive definite. "
                              "Consider using a more stable decomposition method, such as LU decomposition, or adding"
                              " a stronger Tikhonov regularization.");
+
+            // Estimating LDLT condition number
+            const auto& vectorD = ldlt.vectorD();
+            FP conditionNumber = vectorD.cwiseAbs().maxCoeff() / vectorD.cwiseAbs().minCoeff();
+            if (conditionNumber > static_cast<FP>(1e8))
+                LOG_WARNING("Matrix likely ill-conditioned. Estimated condition number: ", conditionNumber);
+            else
+                LOG_DEBUG("Condition number estimated from LDLT diagonal decomposition: ", conditionNumber);
+
             coefficients = ldlt.solve(resultVector);
 
             // Checking residuals for debugging
@@ -133,9 +144,9 @@ public:
                          " rows: ", kernelDistanceMatrix.rows(), " | cols: ", kernelDistanceMatrix.cols());
         LOG_TRACE(coefficients.size(), " coefficients computed.");
 
-		FP epsilon = std::numeric_limits<FP>::epsilon();
-		Eigen::Index numZeroCoefs = (coefficients.array().abs() < epsilon).count();
-		if (numZeroCoefs > 0)
+        FP epsilon = std::numeric_limits<FP>::epsilon();
+        Eigen::Index numZeroCoefs = (coefficients.array().abs() < epsilon).count();
+        if (numZeroCoefs > 0)
             LOG_WARNING(numZeroCoefs, " coefficients with value equal to 0 detected.");
 
         _setCoordinates(preprocessedCoordinates);
@@ -284,8 +295,8 @@ private:
 
         const size_t N = inputValues.size();
 
-		// Removing negative BRDF values
-		size_t negativeValuesCounter = 0;
+        // Removing negative BRDF values
+        size_t negativeValuesCounter = 0;
         std::array<std::vector<FP>, _dimension> nonNegativeCoordinates;
         std::vector<FP> nonNegativeValues;
 
@@ -303,15 +314,15 @@ private:
                 nonNegativeCoordinates[d].push_back(inputCoordinates[d][i]);
 
             nonNegativeValues.push_back(inputValues[i]);
-		}
+        }
 
-		if (negativeValuesCounter > 0)
+        if (negativeValuesCounter > 0)
             LOG_WARNING("Negative values found during preprocess. Number"
                         " of values removed: ", negativeValuesCounter);
 
-		const size_t nonNegativeN = nonNegativeValues.size();
+        const size_t nonNegativeN = nonNegativeValues.size();
 
-		// Duplicates can be found using union-find data structure,
+        // Duplicates can be found using union-find data structure,
         // by uniting the indices of the coordinates that are equal
         // then by computing the mean value for each group.
         struct UnionFind final {
@@ -319,7 +330,7 @@ private:
 
             UnionFind(size_t n) : parent(n), rank(n, 0) {
                 for (size_t i = 0; i < n; ++i) parent[i] = i;
-			}
+            }
 
             size_t find(size_t x) {
                 if (parent[x] != x)
@@ -335,12 +346,12 @@ private:
 
                     if (rank[rootX] == rank[rootY]) rank[rootX]++;
                 }
-			}
+            }
         };
 
-		UnionFind unionFind(nonNegativeN);
+        UnionFind unionFind(nonNegativeN);
 
-		// Research of duplicates : two coordinates will be considered as
+        // Research of duplicates : two coordinates will be considered as
         // duplicates if their distance is smaller than a certain epsilon
         const FP epsilon = std::numeric_limits<FP>::epsilon() * FP(10);
 
@@ -355,7 +366,7 @@ private:
             }
         }
 
-		// Packing duplicates by groups of indices, and
+        // Packing duplicates by groups of indices, and
         // then computing the mean value for each group
         std::unordered_map<size_t, std::vector<size_t>> groups;
         groups.reserve(nonNegativeN);
@@ -372,10 +383,10 @@ private:
 
         preprocessedValues.reserve(newN);
 
-		// Computing mean value for each group of duplicates
+        // Computing mean value for each group of duplicates
         for (const auto& [root, indices] : groups) {
             // For each duplicate only a single coordinate is
-			// kept, since they are all considered equivalent
+            // kept, since they are all considered equivalent
             for (size_t d = 0; d < _dimension; d++)
                 // indices[0] will be used as the reference cooordinate for the group
                 preprocessedCoordinates[d].push_back(nonNegativeCoordinates[d][indices[0]]);
@@ -390,7 +401,7 @@ private:
             preprocessedValues.push_back(meanValue);
         }
 
-		LOG_DEBUG("Preprocessing complete. Initial number of coordinates: "
+        LOG_DEBUG("Preprocessing complete. Initial number of coordinates: "
                   , N, " | vs number of duplicates removed: ", N - newN);
 
         return { std::move(preprocessedCoordinates), std::move(preprocessedValues) };
@@ -407,7 +418,7 @@ private:
         // computer the upper or lower triangular par of the matrix.
         for (size_t i = 0; i < N; i++) {
             if constexpr (KernelType::isAnisotropic) {
-				// Anisotropic kernels use different distance structure
+                // Anisotropic kernels use different distance structure
                 rivoli::HemisphericDistances<FP, level> zeroDistances{};
                 zeroDistances.hemisphericDistanceOne = vct::zero();
                 zeroDistances.hemisphericDistanceTwo = vct::zero();
