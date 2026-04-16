@@ -16,6 +16,9 @@ public:
 
 	using vct = vectra::Vectratype<FP, level>;
 
+	// By default. Can be overridden for each topology
+	static constexpr bool hasDecomposedDistance = true;
+
 	template <typename... Args>
 	FORCE_INLINE vct getDistance(Args&&... args) const {
 		return static_cast<const DerivedTopology*>(this)->_getDistance(std::forward<Args>(args)...);
@@ -133,6 +136,8 @@ protected:
 											  thetaATwo, thetaBTwo, phiBTwo);
 	}
 
+	// This topology can be computed with its components solved separately
+	// This is particularly useful for the use of some anisotropic kernels
 	FORCE_INLINE static HemisphericDistances<FP, level> _getDistances(vct thetaAOne, vct thetaBOne, vct phiBOne,
 										                              vct thetaATwo, vct thetaBTwo, vct phiBTwo)
 	{
@@ -153,6 +158,10 @@ public:
 	static constexpr std::size_t dimension = 3;
 	static constexpr std::string_view name = "1Rx2SIsotropicEuclidean";
 
+	// NB: because of its isotropic nature, this topology cannot be computed with
+	// its components solved separately, thus we may not implement _getDistances.
+	static constexpr bool hasDecomposedDistance = false;
+
 protected:
 	using vct = vectra::Vectratype<FP, level>;
 
@@ -162,9 +171,6 @@ protected:
 		return rivoli::distance1Rx2SIsotropicEuclidean(thetaAOne, thetaBOne, phiBOne,
 											           thetaATwo, thetaBTwo, phiBTwo);
 	}
-
-	// NB: because of its isotropic nature, this topology cannot be computed with
-	// its components solved separately, thus we may not implement _getDistances.
 };
 
 template <typename _FP, vectra::SIMDLevel _level>
@@ -211,6 +217,10 @@ public:
 	static constexpr std::size_t dimension = 3;
 	static constexpr std::string_view name = "1Rx2SBilateralIsotropicEuclidean";
 
+	// NB: because of its isotropic nature, this topology cannot be computed with
+	// its components solved separately, thus we may not implement _getDistances.
+	static constexpr bool hasDecomposedDistance = false;
+
 protected:
 	using vct = vectra::Vectratype<FP, level>;
 
@@ -220,9 +230,6 @@ protected:
 		return rivoli::distance1Rx2SBilateralIsotropicEuclidean(thetaAOne, thetaBOne, phiBOne,
 											                    thetaATwo, thetaBTwo, phiBTwo);
 	}
-
-	// NB: because of its isotropic nature, this topology cannot be computed with
-	// its components solved separately, thus we may not implement _getDistances.
 };
 
 template <typename _FP, vectra::SIMDLevel _level>
@@ -236,6 +243,11 @@ public:
 	static constexpr vectra::SIMDLevel level = _level;
 	static constexpr std::size_t dimension = 3;
 	static constexpr std::string_view name = "1Rx2SReciprocalEuclidean";
+
+	// NB: because of its reciprocal nature combined to a spherical parameterization,
+	// the two hemispheres of this topology are strongly coupled, thus we should not
+	// implement _getDistances.
+	static constexpr bool hasDecomposedDistance = false;
 
 protected:
 	using vct = vectra::Vectratype<FP, level>;
@@ -260,6 +272,10 @@ public:
 	static constexpr std::size_t dimension = 3;
 	static constexpr std::string_view name = "1Rx2SReciprocalIsotropicEuclidean";
 
+	// NB: because of its isotropic nature, this topology cannot be computed with
+	// its components solved separately, thus we may not implement _getDistances.
+	static constexpr bool hasDecomposedDistance = false;
+
 protected:
 	using vct = vectra::Vectratype<FP, level>;
 
@@ -269,9 +285,6 @@ protected:
 		return rivoli::distance1Rx2SReciprocalIsotropicEuclidean(thetaAOne, thetaBOne, phiBOne,
 											                     thetaATwo, thetaBTwo, phiBTwo);
 	}
-
-	// NB: because of its isotropic nature, this topology cannot be computed with
-	// its components solved separately, thus we may not implement _getDistances.
 };
 
 template <typename _FP, vectra::SIMDLevel _level>
@@ -285,6 +298,11 @@ public:
 	static constexpr vectra::SIMDLevel level = _level;
 	static constexpr std::size_t dimension = 3;
 	static constexpr std::string_view name = "1Rx2SBilateralReciprocalEuclidean";
+
+	// NB: because of its reciprocal nature combined to a spherical parameterization,
+	// the two hemispheres of this topology are strongly coupled, thus we should not
+	// implement _getDistances.
+	static constexpr bool hasDecomposedDistance = false;
 
 protected:
 	using vct = vectra::Vectratype<FP, level>;
@@ -309,6 +327,10 @@ public:
 	static constexpr std::size_t dimension = 3;
 	static constexpr std::string_view name = "1Rx2SBilateralReciprocalIsotropicEuclidean";
 
+	// NB: because of its isotropic nature, this topology cannot be computed with
+	// its components solved separately, thus we may not implement _getDistances.
+	static constexpr bool hasDecomposedDistance = false;
+
 protected:
 	using vct = vectra::Vectratype<FP, level>;
 
@@ -318,9 +340,6 @@ protected:
 		return rivoli::distance1Rx2SBilateralReciprocalIsotropicEuclidean(thetaAOne, thetaBOne, phiBOne,
 											                              thetaATwo, thetaBTwo, phiBTwo);
 	}
-
-	// NB: because of its isotropic nature, this topology cannot be computed with
-	// its components solved separately, thus we may not implement _getDistances.
 };
 
 template <typename _FP, vectra::SIMDLevel _level>
@@ -367,6 +386,10 @@ public:
 	static constexpr std::size_t dimension = 3;
 	static constexpr std::string_view name = "1Rx2SReciprocalRusinkiewiczIsotropicEuclidean";
 
+	// NB: because of its isotropic nature, this topology cannot be computed with
+	// its components solved separately, thus we may not implement _getDistances.
+	static constexpr bool hasDecomposedDistance = false;
+
 protected:
 	using vct = vectra::Vectratype<FP, level>;
 
@@ -376,9 +399,6 @@ protected:
 		return rivoli::distance1Rx2SReciprocalRusinkiewiczIsotropicEuclidean(thetaAOne, thetaBOne, phiBOne,
 											                                 thetaATwo, thetaBTwo, phiBTwo);
 	}
-
-	// NB: because of its isotropic nature, this topology cannot be computed with
-	// its components solved separately, thus we may not implement _getDistances.
 };
 
 template <typename _FP, vectra::SIMDLevel _level>
@@ -425,6 +445,10 @@ public:
 	static constexpr std::size_t dimension = 3;
 	static constexpr std::string_view name = "1Rx2SBilateralReciprocalRusinkiewiczIsotropicEuclidean";
 
+	// NB: because of its isotropic nature, this topology cannot be computed with
+	// its components solved separately, thus we may not implement _getDistances.
+	static constexpr bool hasDecomposedDistance = false;
+
 protected:
 	using vct = vectra::Vectratype<FP, level>;
 
@@ -434,9 +458,6 @@ protected:
 		return rivoli::distance1Rx2SBilateralReciprocalRusinkiewiczIsotropicEuclidean(thetaAOne, thetaBOne, phiBOne,
 											                                          thetaATwo, thetaBTwo, phiBTwo);
 	}
-
-	// NB: because of its isotropic nature, this topology cannot be computed with
-	// its components solved separately, thus we may not implement _getDistances.
 };
 
 template <typename _FP, vectra::SIMDLevel _level>

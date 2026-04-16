@@ -52,10 +52,8 @@ using TopologyTypes = type_list<
 
 	TopologyTags<3, false, false, false, rivoli::CoordinateSystem::Spherical>   , // 1R x 2S euclidean
 	TopologyTags<3, true , false, false, rivoli::CoordinateSystem::Spherical>   , // 1R x 2S bilateral  euclidean
-	/*
 	TopologyTags<3, false, true , false, rivoli::CoordinateSystem::Spherical>   , // 1R x 2S reciprocal euclidean
 	TopologyTags<3, true , true , false, rivoli::CoordinateSystem::Spherical>   , // 1R x 2S bilateral  reciprocal euclidean
-	*/
 	TopologyTags<3, false, true , false, rivoli::CoordinateSystem::Rusinkiewicz>, // 1R x 2S reciprocal Rusinkiewicz euclidean
 	TopologyTags<3, true , true , false, rivoli::CoordinateSystem::Rusinkiewicz>, // 1R x 2S bilateral  reciprocal Rusinkiewicz euclidean
 	
@@ -103,8 +101,9 @@ NB_MODULE(_binding, m) {
 									constexpr bool isotropy   = Topology::isotropy;
 									constexpr rivoli::CoordinateSystem coordSystem = Topology::coordSystem;
 
-									// Never bind interpolators with anisotropic kernels for topologies that force isotropy
-									if constexpr (!(isotropy && rivoli::KernelSelector<kernelType, FP, level>::isAnisotropic))
+									// Never bind interpolators with anisotropic kernels with topology that can't decompose their distance into separate components
+									if constexpr (!(!(rivoli::TopologySelector<dim, bilateral, reciprocal, isotropy, coordSystem, FP, level>::hasDecomposedDistance)
+										           && rivoli::KernelSelector<kernelType, FP, level>::isAnisotropic))
 										rivoli::bindInterpolator<FP, level, dim, bilateral, reciprocal, isotropy, coordSystem, kernelType>(m);
 
 								}(), ...);
