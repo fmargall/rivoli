@@ -11,6 +11,8 @@
 #include <rivoli/kernels/kernels.hpp>
 #include <rivoli/topologies/topologies.hpp>
 
+#include "sampler.hpp"
+
 namespace rivoli {
 
 
@@ -58,8 +60,9 @@ public:
         const TopologyType& topology,
 
         // Optional additional parameters
-        const FP   tikhonovRegularizationFactor,
-        const bool nonNegativity
+        const FP     tikhonovRegularizationFactor,
+        const bool   nonNegativity,
+        const size_t sampledDataSize = 0 // Other value than 0 activates sampling
     )
         : _kernel(kernel), _topology(topology), _forceNonNegativity(nonNegativity)
     {
@@ -79,6 +82,16 @@ public:
         // Clean input data for better stability of the system, by enforcing non-negativity
         // and by removing any duplicates coordinates, by keeping for them their mean value
         auto [preprocessedCoordinates, preprocessedValues] = _preprocessInputData(inputCoordinates, inputValues);
+
+        // Once the input data have been preprocessed, it may be required to sample them,
+        // in order to reduce the number of points and thus the size of the kernel matrix
+        if (sampledDataSize != 0) {
+            SampledData<FP, _dimension> sampledData = sampleData<FP, TopologyType>(
+                preprocessedCoordinates, preprocessedValues, topology, sampledDataSize);
+
+            preprocessedCoordinates = sampledData.coordinates;
+            preprocessedValues = sampledData.values;
+        }
 
         // Eigen check for current SIMD instruction set version used, for debugging
         LOG_DEBUG("Current Eigen SIMD support: ", Eigen::SimdInstructionSetsInUse());
