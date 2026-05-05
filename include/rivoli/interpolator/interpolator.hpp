@@ -215,14 +215,6 @@ private:
             // Filling the remaining useful part of the tail
             // block, for every dimension of the coordinates
             [&] <std::size_t... I>(std::index_sequence<I...>) {
-                // Deprecated version. May be unsafe with SIMD
-                /*
-                (([&] {
-                    FP* arr = reinterpret_cast<FP*>(&remainingCoords[I]);
-                    for (size_t j = 0; j < remainingCoord; ++j)
-                        arr[j] = coordinates[I][(sizeOfSIMDData - 1) * vct::width() + j];
-                    }()), ...);
-                */
                 (([&] {
                     alignas(vct::alignment()) FP tmp[vct::width()] = {};
                     for (size_t j = 0; j < remainingCoord; ++j)
@@ -257,22 +249,6 @@ private:
 
         // Handling potential tail
         if (remainingCoefs != 0) {
-            // Deprecated version. May be unsafe for SIMD
-            /*
-            // Initialisation of the last tail block to
-            // zero for the remaining RBF coefficients:
-            vct remainingCoefsBlock = vct::zero();
-
-            // Filling the useful part of the tail block for the RBF coefficients
-            FP* remainingCoefsArray = reinterpret_cast<FP*>(&remainingCoefsBlock);
-            for (size_t j = 0; j < remainingCoefs; ++j)
-                remainingCoefsArray[j] = coefficients[(sizeOfSIMDData - 1) * vct::width() + j];
-
-            // Storing the final backend block for the coefficients
-            _coefficients[sizeOfSIMDData - 1] = remainingCoefsBlock;
-            */
-            // Initialisation of the last tail block to
-            // zero for the remaining RBF coefficients:
             alignas(vct::alignment()) FP tmp[vct::width()] = {};
 
             // Filling the useful part of the tail block for the RBF coefficients
