@@ -109,10 +109,6 @@ public:
         // The system can be solved directly if we have a square matrix
         LOG_TRACE("Computing the coefficients...");
         if (kernelDistanceMatrix.rows() == kernelDistanceMatrix.cols()) {
-            // FullPivLU decomposition is used for a better stability, even if it is one of the worst for performance
-            //Eigen::FullPivLU<Eigen::Matrix<FP, Eigen::Dynamic, Eigen::Dynamic>> luDecomposition(kernelDistanceMatrix);
-            //coefficients = luDecomposition.solve(resultVector);
-
             LOG_TRACE("Performing LDLT decomposition...");
             // LDLT decomposition is used for better performance, but less stable than LU decomposition
             Eigen::LDLT<Eigen::Matrix<FP, Eigen::Dynamic, Eigen::Dynamic>> ldlt(kernelDistanceMatrix);
@@ -157,7 +153,7 @@ public:
 
     template <typename... CoordinatesType>
     FP interpolate (const CoordinatesType&... coordinates) const noexcept {
-        
+
         // Convert scalar inputs into chosen SIMD backend type through vct
         std::array<vct, _dimension> coordinatesSIMD{ vct(coordinates)... };
         vct results = vct::zero();
@@ -205,7 +201,7 @@ private:
         for (size_t scalarID = 0, simdID = 0; scalarID + vct::width() < coordinates[0].size(); simdID++, scalarID += vct::width()) {
             // Conversion to SIMD backend for each dimension
             [&] <std::size_t... I>(std::index_sequence<I...>) {
-                ((_coordinates[I][simdID] = vct::loadu(coordinates[I].data() + scalarID)), ...); 
+                ((_coordinates[I][simdID] = vct::loadu(coordinates[I].data() + scalarID)), ...);
             }(std::make_index_sequence<_dimension>{});
         }
 
@@ -231,7 +227,7 @@ private:
                     alignas(vct::alignment()) FP tmp[vct::width()] = {};
                     for (size_t j = 0; j < remainingCoord; ++j)
                         tmp[j] = coordinates[I][(sizeOfSIMDData - 1) * vct::width() + j];
-                    
+
                     remainingCoords[I] = vct::loadu(tmp);
                     }()), ...);
             }(std::make_index_sequence<_dimension>{});
@@ -408,7 +404,7 @@ private:
     }
 
     Eigen::Matrix<FP, Eigen::Dynamic, Eigen::Dynamic> _computeKernelDistanceMatrix(
-        const std::array<std::vector<FP>, _dimension>& coordinates) const 
+        const std::array<std::vector<FP>, _dimension>& coordinates) const
     {
         const size_t N = coordinates[0].size();
 
