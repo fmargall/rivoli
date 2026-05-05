@@ -36,7 +36,7 @@ void bindInterpolator(nb::module_& m) {
 	name += vectra::toString(level);
 
 	name += std::is_same_v<FP, float> ? "_f32" : "_f64";
-	
+
 	// Class instantiation
 	nb::class_<InterpolatorClass> cls(m, name.c_str());
 
@@ -47,7 +47,7 @@ void bindInterpolator(nb::module_& m) {
 		cls.def("__init__", [](InterpolatorClass* self,
 			const nb::ndarray<FP, nb::shape<-1, dim>, nb::c_contig>& coordinatesFromPython ,
 			const nb::ndarray<FP, nb::shape<-1>,      nb::c_contig>& coefficientsFromPython,
-			FP tikhonovRegularizationFactor, bool nonNegativity
+			FP tikhonovRegularizationFactor, bool nonNegativity, size_t nbSamples
 			) {
 				size_t n = coordinatesFromPython.shape(0);
 
@@ -67,7 +67,7 @@ void bindInterpolator(nb::module_& m) {
 				KernelClass   kernel{};
 				TopologyClass topology{};
 
-				new (self) InterpolatorClass(coordinates, coefficients, kernel, topology, tikhonovRegularizationFactor, nonNegativity);
+				new (self) InterpolatorClass(coordinates, coefficients, kernel, topology, tikhonovRegularizationFactor, nonNegativity, nbSamples);
 			}
 		);
 	}
@@ -77,7 +77,7 @@ void bindInterpolator(nb::module_& m) {
 		cls.def("__init__", [](InterpolatorClass* self,
 			const nb::ndarray<FP, nb::shape<-1, dim>, nb::c_contig>& coordinatesFromPython ,
 			const nb::ndarray<FP, nb::shape<-1>,      nb::c_contig>& coefficientsFromPython,
-			FP tikhonovRegularizationFactor, bool nonNegativity, FP parameter
+			FP tikhonovRegularizationFactor, bool nonNegativity, size_t nbSamples, FP parameter
 			) {
 				size_t n = coordinatesFromPython.shape(0);
 
@@ -97,7 +97,7 @@ void bindInterpolator(nb::module_& m) {
 				KernelClass   kernel{parameter};
 				TopologyClass topology{};
 
-				new (self) InterpolatorClass(coordinates, coefficients, kernel, topology, tikhonovRegularizationFactor, nonNegativity);
+				new (self) InterpolatorClass(coordinates, coefficients, kernel, topology, tikhonovRegularizationFactor, nonNegativity, nbSamples);
 			}
 		);
 	}
@@ -107,7 +107,7 @@ void bindInterpolator(nb::module_& m) {
 		cls.def("__init__", [](InterpolatorClass* self,
 			const nb::ndarray<FP, nb::shape<-1, dim>, nb::c_contig>& coordinatesFromPython ,
 			const nb::ndarray<FP, nb::shape<-1>,      nb::c_contig>& coefficientsFromPython,
-			FP tikhonovRegularizationFactor, bool nonNegativity, FP paramOne, FP paramTwo
+			FP tikhonovRegularizationFactor, bool nonNegativity, size_t nbSamples, FP paramOne, FP paramTwo
 			) {
 				size_t n = coordinatesFromPython.shape(0);
 
@@ -127,7 +127,7 @@ void bindInterpolator(nb::module_& m) {
 				KernelClass   kernel{paramOne, paramTwo};
 				TopologyClass topology{};
 
-				new (self) InterpolatorClass(coordinates, coefficients, kernel, topology, tikhonovRegularizationFactor, nonNegativity);
+				new (self) InterpolatorClass(coordinates, coefficients, kernel, topology, tikhonovRegularizationFactor, nonNegativity, nbSamples);
 			}
 		);
 	}
@@ -207,7 +207,7 @@ void bindInterpolator(nb::module_& m) {
 
 		// Call to the interpolate function in numpy-ndarray mode
 		cls.def("interpolate", [](const InterpolatorClass& self,
-            const nb::ndarray<FP>& thetaI, const nb::ndarray<FP>& phiI, 
+            const nb::ndarray<FP>& thetaI, const nb::ndarray<FP>& phiI,
             const nb::ndarray<FP>& thetaO, const nb::ndarray<FP>& phiO,
 			int numberThreads) {
                 nb::ndarray<FP> result(thetaI);
