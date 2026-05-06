@@ -60,9 +60,10 @@ public:
         const TopologyType& topology,
 
         // Optional additional parameters
-        const FP     tikhonovRegularizationFactor,
-        const bool   nonNegativity,
-        const size_t sampledDataSize = 0 // Other value than 0 activates sampling
+        const FP          tikhonovRegularizationFactor,
+        const bool        nonNegativity,
+        const size_t      sampledDataSize = 0, // Other value than 0 activates sampling
+        const std::string fitMode = "interpolation" // "interpolation" or "approximation"
     )
         : _kernel(kernel), _topology(topology), _forceNonNegativity(nonNegativity)
     {
@@ -82,6 +83,13 @@ public:
         // Clean input data for better stability of the system, by enforcing non-negativity
         // and by removing any duplicates coordinates, by keeping for them their mean value
         auto [preprocessedCoordinates, preprocessedValues] = _preprocessInputData(inputCoordinates, inputValues);
+
+        // Fit modes are not supported yet, but it will in the future allow to force interpolation,
+        // by keeping only sampled values or to perform approximation by keeping all the input data
+        if      (fitMode == "approximation")
+            LOG_CRITICAL("RIVOLI currently does not support approximation mode.");
+        else if (fitMode != "interpolation")
+            LOG_CRITICAL("Unknown fit mode: ", fitMode, ". Only currently supported mode is \"interpolation\".");
 
         // Once the input data have been preprocessed, it may be required to sample them,
         // in order to reduce the number of points and thus the size of the kernel matrix

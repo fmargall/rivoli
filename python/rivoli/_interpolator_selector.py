@@ -12,6 +12,7 @@ def _build_interpolator(coordinates, values, **kwargs):
     dtype         = kwargs.get("dtype", "float32")
     tikhonov      = kwargs.get("tikhonov", 0.0)
     nbSamples     = kwargs.get("nbSamples", 0)
+    fitMode       = kwargs.get("fitMode", "interpolation")
 
     parameterisation = kwargs.get("parameterisation", "spherical")
 
@@ -91,4 +92,4 @@ def _build_interpolator(coordinates, values, **kwargs):
     except AttributeError:
         raise ValueError(f"Unsupported configuration: {className}")
 
-    return cls(coordinates, values, tikhonov, nonNegativity, nbSamples, *kernelParams)
+    return cls(coordinates, values, tikhonov, nonNegativity, nbSamples, fitMode, *kernelParams)
