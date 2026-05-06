@@ -131,8 +131,8 @@ std::vector<size_t> _weightedSampleWithoutReplacement(
     if (sampleSize > N)
         LOG_CRITICAL("Requested sample size (", sampleSize, ") exceeds population size (", N, ").");
 
-    // Check special case
     if (sampleSize == N) {
+        // Case where all data is returned
         std::vector<size_t> allIndices(N);
         std::iota(allIndices.begin(), allIndices.end(), size_t(0));
         return allIndices;
