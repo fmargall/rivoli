@@ -456,6 +456,48 @@ private:
         return kernelDistanceMatrix;
     }
 
+    Eigen::Matrix<FP, Eigen::Dynamic, Eigen::Dynamic> _computeKernelDistanceMatrix(
+        const std::array<std::vector<FP>, _dimension>& dataCoordinates,
+        const std::array<std::vector<FP>, _dimension>& siteCoordinates) const
+    {
+        const size_t N = dataCoordinates[0].size();
+        const size_t M = siteCoordinates[0].size();
+
+        Eigen::Matrix<FP, Eigen::Dynamic, Eigen::Dynamic> kernelDistanceMatrix(N, M);
+
+
+        for (size_t i = 0; i < N; i++) {
+            for (size_t j = 0; j < M; j++) {
+                FP kernelDistanceValue;
+
+                if constexpr (KernelType::isAnisotropic) {
+                    // Anisotropic kernels use different distance structure
+                    auto distancesScalar = [&]<std::size_t... I>(std::index_sequence<I...>) {
+                        return _topology.getDistancesScalar(dataCoordinates[I][i]..., siteCoordinates[I][j]...);
+                    }(std::make_index_sequence<_dimension>{});
+
+                    rivoli::HemisphericDistances<FP, level> distances{
+                        vct(distancesScalar.hemisphericDistanceOne),
+                        vct(distancesScalar.hemisphericDistanceTwo)
+                    };
+
+                    kernelDistanceValue = _kernel(distances).hsum() / static_cast<FP>(vct::width());
+                }
+                else {
+                    FP distance = [&]<std::size_t... I>(std::index_sequence<I...>) {
+                        return _topology.getDistanceScalar(dataCoordinates[I][i]..., siteCoordinates[I][j]...);
+                    }(std::make_index_sequence<_dimension>{});
+
+                    kernelDistanceValue = _kernel(vct(distance)).hsum() / static_cast<FP>(vct::width());
+                }
+
+                kernelDistanceMatrix(i, j) = kernelDistanceValue;
+            }
+        }
+
+        return kernelDistanceMatrix;
+    }
+
     const KernelType   _kernel;
     const TopologyType _topology;
 
