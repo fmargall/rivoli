@@ -56,7 +56,7 @@ public:
         const std::array<std::vector<FP>, _dimension>& inputCoordinates,
         const            std::vector<FP>&              inputValues,
 
-        const KernelType& kernel,
+        const KernelType&   kernel,
         const TopologyType& topology,
 
         // Optional additional parameters
@@ -80,85 +80,104 @@ public:
             }
         }
 
+        // Eigen check for current SIMD instruction set version used, for debugging
+        LOG_DEBUG("Current Eigen SIMD support: ", Eigen::SimdInstructionSetsInUse());
+
         // Clean input data for better stability of the system, by enforcing non-negativity
         // and by removing any duplicates coordinates, by keeping for them their mean value
-        auto [preprocessedCoordinates, preprocessedValues] = _preprocessInputData(inputCoordinates, inputValues);
+        auto [dataCoordinates, dataValues] = _preprocessInputData(inputCoordinates, inputValues);
 
-        // Fit modes are not supported yet, but it will in the future allow to force interpolation,
-        // by keeping only sampled values or to perform approximation by keeping all the input data
-        if      (fitMode == "approximation")
-            LOG_CRITICAL("RIVOLI currently does not support approximation mode.");
-        else if (fitMode != "interpolation")
-            LOG_CRITICAL("Unknown fit mode: ", fitMode, ". Only currently supported mode is \"interpolation\".");
+        // By default, RBF coordinates and values are initialised with input data
+        std::array<std::vector<FP>, _dimension> siteCoordinates = dataCoordinates;
+        std::vector<FP> siteValues = dataValues;
 
         // Once the input data have been preprocessed, it may be required to sample them,
         // in order to reduce the number of points and thus the size of the kernel matrix
         if (sampledDataSize != 0) {
             SampledData<FP, _dimension> sampledData = sampleData<FP, TopologyType>(
-                preprocessedCoordinates, preprocessedValues, topology, sampledDataSize);
+                dataCoordinates, dataValues, topology, sampledDataSize);
 
-            preprocessedCoordinates = sampledData.coordinates;
-            preprocessedValues = sampledData.values;
+            // Should use move semantics for better performance
+            siteCoordinates = std::move(sampledData.coordinates);
+            siteValues      = std::move(sampledData.values);
         }
-
-        // Eigen check for current SIMD instruction set version used, for debugging
-        LOG_DEBUG("Current Eigen SIMD support: ", Eigen::SimdInstructionSetsInUse());
 
         // RBF interpolator is made by computing its coefficients, starting by
         // the computation of its kernel-distance matrix, using Eigen library.
         LOG_TRACE("Computing kernel distance matrix...");
-        Eigen::Matrix<FP, Eigen::Dynamic, Eigen::Dynamic> kernelDistanceMatrix
-            = _computeKernelDistanceMatrix(preprocessedCoordinates);
-        LOG_TRACE("Kernel distance matrix computed.");
+
+        Eigen::Matrix<FP, Eigen::Dynamic, Eigen::Dynamic> systemMatrix;
+        Eigen::Vector<FP, Eigen::Dynamic> rightHandVector;
+        if (sampledDataSize != 0) {
+            if      (fitMode == "interpolation") {
+                systemMatrix    = _computeKernelDistanceMatrix(siteCoordinates);
+                rightHandVector = Eigen::Map<const Eigen::Vector<FP, Eigen::Dynamic>>(siteValues.data(), siteValues.size());
+
+                // Enforcing the non-negativity on the right hand vector if required
+                if (nonNegativity) rightHandVector = rightHandVector.array().sqrt();
+            }
+            else if (fitMode == "approximation") {
+                systemMatrix    = _computeKernelDistanceMatrix(dataCoordinates, siteCoordinates);
+                rightHandVector = Eigen::Map<const Eigen::Vector<FP, Eigen::Dynamic>>(dataValues.data(), dataValues.size());
+
+                // Enforcing the non-negativity on the right hand vector if required
+                if (nonNegativity) rightHandVector = rightHandVector.array().sqrt();
+
+                rightHandVector = (systemMatrix.transpose() * rightHandVector).eval();
+                systemMatrix    = (systemMatrix.transpose() * systemMatrix).eval();
+            }
+            else
+                LOG_CRITICAL("Unknown fit mode: ", fitMode, ". Supported modes: \"interpolation\" or \"approximation\".");
+        }
+        else {
+            if (fitMode != "interpolation")
+                LOG_WARNING("Solving method set to: '", fitMode, "'. Can only be set to 'interpolation' without sampling "
+                            "data. Consider activating sampling by setting 'sampledDataSize' to a value different than 0."
+                            " For the rest of the computation, everything will be made using the 'interpolation' mode.");
+            systemMatrix    = _computeKernelDistanceMatrix(dataCoordinates);
+            rightHandVector = Eigen::Map<const Eigen::Vector<FP, Eigen::Dynamic>>(dataValues.data(), dataValues.size());
+
+            // Enforcing the non-negativity on the right hand vector if required
+            if (nonNegativity) rightHandVector = rightHandVector.array().sqrt();
+        }
 
         // Tikhonov regularization is added to the diagonal of the kernel distance matrix
         if (tikhonovRegularizationFactor > static_cast<FP>(0.)) {
-            kernelDistanceMatrix.diagonal().array() += tikhonovRegularizationFactor;
+            systemMatrix.diagonal().array() += tikhonovRegularizationFactor;
         }
-
-        // Initialisation of result vector containing BRDF values
-        Eigen::Vector<FP, Eigen::Dynamic> resultVector =
-            Eigen::Map<const Eigen::Vector<FP, Eigen::Dynamic>>(
-                preprocessedValues.data(), preprocessedValues.size());
-
-        // Enforcing non-negativity on the result vector if required
-        if (nonNegativity) resultVector = resultVector.array().sqrt();
 
         // Coefficients are computed using Eigen library
         Eigen::Vector<FP, Eigen::Dynamic> coefficients;
 
         // The system can be solved directly if we have a square matrix
         LOG_TRACE("Computing the coefficients...");
-        if (kernelDistanceMatrix.rows() == kernelDistanceMatrix.cols()) {
-            LOG_TRACE("Performing LDLT decomposition...");
-            // LDLT decomposition is used for better performance, but less stable than LU decomposition
-            Eigen::LDLT<Eigen::Matrix<FP, Eigen::Dynamic, Eigen::Dynamic>> ldlt(kernelDistanceMatrix);
-            LOG_TRACE("LDLT decomposition achieved.");
 
-            if (ldlt.info() != Eigen::Success)
-                LOG_CRITICAL("LDLT decomposition failed. The kernel distance matrix might not be positive definite. "
-                             "Consider using a more stable decomposition method, such as LU decomposition, or adding"
-                             " a stronger Tikhonov regularization.");
+        LOG_TRACE("Performing LDLT decomposition...");
+        // LDLT decomposition has been chosen here for better performance
+        // even if it is less stable than a LU decomposition for instance
+        Eigen::LDLT<Eigen::Matrix<FP, Eigen::Dynamic, Eigen::Dynamic>> ldlt(systemMatrix);
+        LOG_TRACE("LDLT decomposition achieved.");
 
-            // Estimating LDLT condition number
-            const auto& vectorD = ldlt.vectorD();
-            FP conditionNumber = vectorD.cwiseAbs().maxCoeff() / vectorD.cwiseAbs().minCoeff();
-            if (conditionNumber > static_cast<FP>(1e8))
-                LOG_WARNING("Matrix likely ill-conditioned. Estimated condition number: ", conditionNumber);
-            else
-                LOG_DEBUG("Condition number estimated from LDLT diagonal decomposition: ", conditionNumber);
+        if (ldlt.info() != Eigen::Success)
+            LOG_CRITICAL("LDLT decomposition failed. The kernel distance matrix might not be positive definite. "
+                         "Consider using a more stable decomposition method, such as LU decomposition, or adding"
+                         " a stronger Tikhonov regularization.");
 
-            coefficients = ldlt.solve(resultVector);
-
-            // Checking residuals for debugging
-            Eigen::Vector<FP, Eigen::Dynamic> residuals = (kernelDistanceMatrix * coefficients - resultVector);
-            FP relativeError = residuals.norm() / resultVector.norm();
-            LOG_DEBUG("Relative error of residuals: ", relativeError);
-
-        }
+        // Estimating LDLT condition number
+        const auto& vectorD = ldlt.vectorD();
+        FP conditionNumber = vectorD.cwiseAbs().maxCoeff() / vectorD.cwiseAbs().minCoeff();
+        if (conditionNumber > static_cast<FP>(1e8))
+            LOG_WARNING("Matrix likely ill-conditioned. Estimated condition number: ", conditionNumber);
         else
-            LOG_CRITICAL("For now, only square kernel distance matrix is supported. Kernel distance matrix"
-                         " rows: ", kernelDistanceMatrix.rows(), " | cols: ", kernelDistanceMatrix.cols());
+            LOG_DEBUG("Condition number estimated from LDLT diagonal decomposition: ", conditionNumber);
+
+        coefficients = ldlt.solve(rightHandVector);
+
+        // Checking residuals for debugging
+        Eigen::Vector<FP, Eigen::Dynamic> residuals = (systemMatrix * coefficients - rightHandVector);
+        FP relativeError = residuals.norm() / rightHandVector.norm();
+        LOG_DEBUG("Relative error of the residuals: ", relativeError);
+
         LOG_TRACE(coefficients.size(), " coefficients computed.");
 
         FP epsilon = std::numeric_limits<FP>::epsilon();
@@ -166,7 +185,7 @@ public:
         if (numZeroCoefs > 0)
             LOG_WARNING(numZeroCoefs, " coefficients with value equal to 0 detected.");
 
-        _setCoordinates(preprocessedCoordinates);
+        _setCoordinates(siteCoordinates);
         _setCoefficients(coefficients);
 
         LOG_INFO(topology.name, " interpolator initialised successfully.");
