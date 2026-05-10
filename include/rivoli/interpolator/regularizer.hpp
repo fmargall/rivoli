@@ -98,7 +98,7 @@ private:
         // Warning if the optimum value sits at the boundary
         if (bestLambda <= lambdaMin * static_cast<FP>(1.01) ||
             bestLambda >= lambdaMax * static_cast<FP>(0.99))
-            LOG_WARNING("GCV optimum found near grid boundary (lambda =", bestLambda,
+            LOG_WARNING("GCV optimum found near grid boundary (lambda = ", bestLambda,
                         "). Consider expanding the search range, for now too narrow.");
 
         return bestLambda;
