@@ -9,3 +9,4 @@
 #include <rivoli/topologies/topologies_selector.hpp>
 
 #include <rivoli/interpolator/interpolator.hpp>
+#include <rivoli/interpolator/regularizer.hpp>

@@ -12,6 +12,7 @@
 #include <rivoli/topologies/topologies.hpp>
 
 #include "sampler.hpp"
+#include <rivoli/interpolator/regularizer.hpp>
 
 namespace rivoli {
 
@@ -60,7 +61,7 @@ public:
         const TopologyType& topology,
 
         // Optional additional parameters
-        const FP          tikhonovRegularizationFactor,
+        Regularizer<FP>   regularizer,
         const bool        nonNegativity,
         const size_t      sampledDataSize = 0, // Other value than 0 activates sampling
         const std::string fitMode = "interpolation" // "interpolation" or "approximation"
@@ -141,10 +142,8 @@ public:
             if (nonNegativity) rightHandVector = rightHandVector.array().sqrt();
         }
 
-        // Tikhonov regularization is added to the diagonal of the kernel distance matrix
-        if (tikhonovRegularizationFactor > static_cast<FP>(0.)) {
-            systemMatrix.diagonal().array() += tikhonovRegularizationFactor;
-        }
+        // Regularization is applied to the system matrix
+        regularizer.apply(systemMatrix, rightHandVector);
 
         // Coefficients are computed using Eigen library
         Eigen::Vector<FP, Eigen::Dynamic> coefficients;
