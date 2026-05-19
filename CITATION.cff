@@ -1,0 +1,24 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+authors:
+  - family-names: Margall
+    given-names: François
+    orcid: https://orcid.org/0009-0004-0585-087X
+    affiliation: INRIA
+    email: francois.margall@inria.fr
+title: RIVOLI
+abstract: "Physically-based interpolation code by radial basis function dedicated to BRDF, spherical or bispherical modeling functions and data reconstruction."
+keywords:
+  - interpolation
+  - brdf
+  - rbf
+  - ebf
+  - erbf
+  - pbr
+  - simd
+  - modeling
+version:
+doi:
+date-released:
+repository-code: https://github.com/fmargall/RIVOLI
+license: AGPL-3.0
