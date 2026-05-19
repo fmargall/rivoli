@@ -210,6 +210,123 @@ The stages, briefly:
 
 ---
 
+## 3. Component Deep-Dive
+
+### 3.1 Kernels
+
+A kernel is a callable `K(r) → ℝ` where `r` is a distance (already produced
+by the topology). The CRTP base in `kernels/kernels.hpp` provides:
+
+- A **SIMD overload** `vct operator()(const vct& r)` that delegates to the
+  derived class's `_runKernel`.
+- A **scalar overload** `FP operator()(FP r)` that broadcasts to a SIMD
+  vector, computes, and reduces back. This overload is only enabled when the
+  backend has a true SIMD width > 1, so the scalar backend does not get
+  ambiguous overloads.
+- An **anisotropic overload** that accepts a `HemisphericDistances` struct
+  instead of a single distance. It is gated by a C++20 `requires` clause that
+  checks whether the derived class implements `_runKernel` for that
+  signature.
+
+Provided kernels include `KernelLinear`, `KernelCubic`, `KernelEpanechnikov`,
+`KernelGaussian`, `KernelLaplacian`, and their anisotropic variants
+(`KernelAnisotropicGaussian`, `KernelAnisotropicLaplacian`).
+
+Parameter-free kernels expose a `static` `_runKernel`. Parameter-bearing
+kernels (Gaussian's σ, etc.) store the parameter (pre-inverted, pre-squared
+where useful) at construction time so that the inner loop reduces to one or
+two SIMD operations.
+
+### 3.2 Topologies and Anisotropy
+
+A topology answers the question: *what is the distance between two points in
+this space?* This is quite an interesting geometrical question that we won't
+develop here, but we will soon add some mathematical explanation of the chosen
+topologies in RIVOLI. The base class `Topology<FP, level, Derived>` exposes:
+
+- `getDistance(...)` — the standard scalar distance, used by isotropic
+  kernels.
+- `getDistances(...)` — an **optional** decomposed distance, returning a
+  `HemisphericDistances` struct with two components. This is what anisotropic
+  kernels consume.
+
+Whether a topology supports the decomposed form is advertised via
+`static constexpr bool hasDecomposedDistance`. Whether a kernel needs the
+decomposed form is advertised via `static constexpr bool isAnisotropic`.
+`Interpolator` dispatches between the two code paths using `if constexpr`,
+so the wrong combination either compiles into the right path or fails at
+compile time with a clear error.
+
+The shipped topologies cover hemispherical (`Topology2S`, `Topology2SBilateral`), 
+bi-hemispherical and more fancy ones that are relevant to BRDF representation.
+
+### 3.3 Sampler
+
+The sampler is invoked when `sampledDataSize > 0` and reduces the active site
+set. It is topology-aware — it uses the topology's own distance function to
+pick representative sites — so it works correctly on spheres, periodic
+domains, etc. See `interpolator/sampler.hpp`.
+
+### 3.4 Regularizer
+
+The regularizer encapsulates the regularization strategy applied to the
+linear system before solving. The current implementation provides Tikhonov
+regularization with a tunable strength, or either an automatic selection. See
+`interpolator/regularizer.hpp`.
+
+### 3.5 vectra — the SIMD layer
+
+`vectra` provides `Vectratype<FP, SIMDLevel>`, a uniform SIMD type that
+compiles down to the native intrinsics for the target ISA (SSE, AVX2,
+AVX-512) or to plain scalars when `SIMDLevel::Scalar` is used. The same
+kernel source code therefore compiles to scalar, SSE, AVX2, and AVX-512
+versions with no source changes — the optimizer sees the same intrinsics it
+would if you had written them by hand.
+
+`vectra` also provides the `aligned_allocator` used for the coordinate and
+coefficient storage, and the `FORCE_INLINE` macro mentioned above.
+
+### 3.6 tinylogger
+
+`tinylogger` is a header-only logger with per-level compile-time gating. The
+`LOG_*` macros expand to no-ops below the configured threshold, which is
+typically `LOG_LEVEL_WARNING` or `LOG_LEVEL_INFO` in release builds. This
+keeps `LOG_TRACE` calls inside hot loops free at runtime.
+
+### 3.7 Python binding (nanobind)
+
+The binding lives in a separate directory (`bindings/python/`) and exposes
+pre-instantiated `Interpolator` types. It uses
+[nanobind](https://github.com/wjakob/nanobind) rather than pybind11 for its
+smaller binary footprint and faster compile times — important given how much
+template instantiation it pulls in.
+
+---
+
+## 4. Extending the Library — Overview
+
+A short orientation; full step-by-step instructions live in
+[`CONTRIBUTING.md`](./CONTRIBUTING.md).
+
+**Adding a kernel.** Create a class deriving from `Kernel<FP, level,
+YourKernel>`, expose a `static constexpr std::string_view name`, and
+implement `_runKernel(const vct& r)`. If the kernel needs a parameter, store
+its pre-computed form (inverted, squared, etc.) and provide an explicit
+constructor. For anisotropic kernels, also set `static constexpr bool
+isAnisotropic = true` and have `_runKernel` take a `HemisphericDistances`
+argument.
+
+**Adding a topology.** Create a class deriving from `Topology<FP, level,
+YourTopology>`, set `static constexpr std::size_t dimension`, and implement
+`_getDistance(...)` taking `2 × dimension` `vct` arguments (the two points'
+coordinates). Optionally implement `_getDistances(...)` returning a
+`HemisphericDistances` if your topology has a meaningful decomposed form.
+
+**Exposing to Python.** Register the new instantiation in the nanobind
+binding module.
+
+---
+
 ## 5. Design Decisions and Trade-offs
  
 A few choices deserve being stated explicitly:
