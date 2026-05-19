@@ -69,6 +69,16 @@ flowchart TB
     class V,E,L lowlevel
 ```
 
+- **Python layer.** A thin [nanobind](https://github.com/wjakob/nanobind)
+  binding exposes a small set of pre-instantiated `Interpolator` flavors. End
+  users get a friendly, NumPy-compatible API without paying the template
+  compilation cost.
+- **C++ core.** `Interpolator`, `Kernel`, `Topology` and their derived classes.
+  This is where the math lives.
+- **Low-level dependencies.** [`vectra`](https://github.com/fmargall/vectra) (a home-made SIMD abstraction
+  layer), [Eigen](https://libeigen.gitlab.io/) for the dense linear system
+  solve, and [`tinylogger`](https://github.com/fmargall/tinylogger) for diagnostics that vanish in release builds, with a zero cost at runtime.
+
 ### 1.2 Heavy templating and CRTP
 
 Ok, here we are: yes, it is heavy. Yes, the type
