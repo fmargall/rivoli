@@ -60,9 +60,9 @@ flowchart TB
     I --> L
     I --> V
 
-    click I "./include/rivoli/interpolator/interpolator.hpp" "Interpolator header"
-    click K "./include/rivoli/kernels/kernels.hpp" "Kernel header"
-    click T "./include/rivoli/topologies/topologies.hpp" "Topology header"
+    click I "https://github.com/fmargall/RIVOLI/blob/HEAD/include/rivoli/interpolator/interpolator.hpp"
+    click K "https://github.com/fmargall/RIVOLI/blob/HEAD/include/rivoli/kernels/kernels.hpp"
+    click T "https://github.com/fmargall/RIVOLI/blob/HEAD/include/rivoli/topologies/topologies.hpp"
  
     classDef python fill:#e1f5ff,stroke:#0277bd,color:#01579b
     classDef core fill:#e1f5ff,stroke:#0277bd,color:#01579b
