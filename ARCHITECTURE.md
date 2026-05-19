@@ -39,10 +39,6 @@ flowchart TB
         I["<code>Interpolator&lt;KernelType, TopologyType&gt;</code>"]
         K["<code>Kernel&lt;FP, level, Derived&gt;</code><br/><i>CRTP base</i>"]
         T["<code>Topology&lt;FP, level, Derived&gt;</code><br/><i>CRTP base</i>"]
-        K1["<code>KernelGaussian</code><br/><code>KernelLaplacian</code><br/><code>KernelEpanechnikov</code><br/>..."]
-        T1["<code>Topology2S</code><br/><code>Topology1R2S</code><br/>..."]
-        K --> K1
-        T --> T1
         I --> K
         I --> T
     end
@@ -54,8 +50,8 @@ flowchart TB
     end
  
     NB --> I
-    K1 --> V
-    T1 --> V
+    K --> V
+    T --> V
     I --> E
     I --> L
     I --> V
