@@ -137,6 +137,21 @@ front:
 Together these two tools let the source code stay readable and instrumented
 while the compiled output stays lean.
 
+### 1.4 Why the Python binding exists
+
+Heavy templating produces fast binaries but a steep usability cost: the user
+would otherwise need to know about `SIMDLevel`, `FP`, kernel parameters, and
+topology types just to interpolate a few points. The nanobind layer absorbs
+that complexity:
+
+- It picks a sensible `SIMDLevel` at runtime (or at build time per target).
+- It exposes simple Python classes (`GaussianInterpolator2S`, etc.) backed by
+  pre-instantiated C++ templates.
+- It handles NumPy ↔ aligned C++ buffer conversions.
+
+The result: end users get a one-line API; performance-conscious C++ users
+keep the full template machinery.
+
 ---
 
 ## 2. The Interpolation Pipeline
