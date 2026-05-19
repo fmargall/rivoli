@@ -48,9 +48,9 @@ flowchart TB
     end
  
     subgraph LowLevel["Low-level dependencies"]
-        V["<code>vectra</code><br/><i>home-made SIMD abstraction</i>"]
-        E["<code>Eigen</code><br/><i>dense linear algebra</i>"]
-        L["<code>tinylogger</code><br/><i>home-made compile-time logger</i>"]
+        V["<code>vectra</code><br/><i>Home-made SIMD abstraction</i>"]
+        E["<code>Eigen</code><br/><i>Dense linear algebra</i>"]
+        L["<code>tinylogger</code><br/><i>Home-made compile-time logger</i>"]
     end
  
     NB --> I
@@ -60,13 +60,14 @@ flowchart TB
     I --> L
     I --> V
 
+    click NB "https://github.com/fmargall/RIVOLI/blob/HEAD/python/binding.cpp"
     click I "https://github.com/fmargall/RIVOLI/blob/HEAD/include/rivoli/interpolator/interpolator.hpp"
     click K "https://github.com/fmargall/RIVOLI/blob/HEAD/include/rivoli/kernels/kernels.hpp"
     click T "https://github.com/fmargall/RIVOLI/blob/HEAD/include/rivoli/topologies/topologies.hpp"
+    click E "https://libeigen.gitlab.io/"
+    click V "https://github.com/fmargall/vectra"
+    click L "https://github.com/fmargall/tinylogger"
  
-    classDef python fill:#e1f5ff,stroke:#0277bd,color:#01579b
-    classDef core fill:#e1f5ff,stroke:#0277bd,color:#01579b
-    classDef lowlevel fill:#e1f5ff,stroke:#0277bd,color:#01579b
     class NB python
     class I,K,T,K1,T1 core
     class V,E,L lowlevel
