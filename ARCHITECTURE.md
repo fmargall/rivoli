@@ -48,9 +48,9 @@ flowchart TB
     end
  
     subgraph LowLevel["Low-level dependencies"]
-        V["<code>vectra</code><br/><i>in-house SIMD abstraction</i>"]
+        V["<code>vectra</code><br/><i>home-made SIMD abstraction</i>"]
         E["<code>Eigen</code><br/><i>dense linear algebra</i>"]
-        L["<code>tinylogger</code><br/><i>in-house compile-time logger</i>"]
+        L["<code>tinylogger</code><br/><i>home-made compile-time logger</i>"]
     end
  
     NB --> I
@@ -59,6 +59,10 @@ flowchart TB
     I --> E
     I --> L
     I --> V
+
+    click I "./include/rivoli/interpolator/interpolator.hpp" "Interpolator header"
+    click K "./include/rivoli/kernels/kernels.hpp" "Kernel header"
+    click T "./include/rivoli/topologies/topologies.hpp" "Topology header"
  
     classDef python fill:#e1f5ff,stroke:#0277bd,color:#01579b
     classDef core fill:#e1f5ff,stroke:#0277bd,color:#01579b
