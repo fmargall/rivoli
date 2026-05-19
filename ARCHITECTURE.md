@@ -1,10 +1,11 @@
 # RIVOLI — Architecture
 
 This document describes how RIVOLI is structured, **why** it is structured this
-way (and yes — if you are already wondering why there are so many templates
-everywhere, jump to [§1.2](#12-heavy-templating-and-crtp). There is an explanation, really!), and how the main 
-components fit together. It is intended for developers who want to understand the 
-codebase before reading it, debugging it, or extending it.
+way (and yes — if you already had a look at some of the headers and are wondering 
+why there are so many templates everywhere, jump to [§1.2](#12-heavy-templating-and-crtp). 
+There is an explanation, really!), and how the main  components fit together. It 
+is intended for developers who want to understand the codebase before reading it,
+debugging it, or extending it.
 
 For step-by-step recipes (how to add a new kernel, a new topology, run the
 tests, etc.), see [`CONTRIBUTING.md`](./CONTRIBUTING.md).
@@ -29,6 +30,42 @@ components: a **Kernel** and a **Topology**.
 ### 1.1 The big picture
 
 ```mermaid
+flowchart TB
+    subgraph Python["Python layer"]
+        NB["<code>nanobind</code> bindings"]
+    end
+ 
+    subgraph Core["C++ core (RIVOLI)"]
+        I["<code>Interpolator&lt;KernelType, TopologyType&gt;</code>"]
+        K["<code>Kernel&lt;FP, level, Derived&gt;</code><br/><i>CRTP base</i>"]
+        T["<code>Topology&lt;FP, level, Derived&gt;</code><br/><i>CRTP base</i>"]
+        K1["<code>KernelGaussian</code><br/><code>KernelLaplacian</code><br/><code>KernelEpanechnikov</code><br/>..."]
+        T1["<code>Topology2S</code><br/><code>Topology1R2S</code><br/>..."]
+        K --> K1
+        T --> T1
+        I --> K
+        I --> T
+    end
+ 
+    subgraph LowLevel["Low-level dependencies"]
+        V["<code>vectra</code><br/><i>in-house SIMD abstraction</i>"]
+        E["<code>Eigen</code><br/><i>dense linear algebra</i>"]
+        L["<code>tinylogger</code><br/><i>in-house compile-time logger</i>"]
+    end
+ 
+    NB --> I
+    K1 --> V
+    T1 --> V
+    I --> E
+    I --> L
+    I --> V
+ 
+    classDef python fill:#e1f5ff,stroke:#0277bd,color:#01579b
+    classDef core fill:#e1f5ff,stroke:#0277bd,color:#01579b
+    classDef lowlevel fill:#e1f5ff,stroke:#0277bd,color:#01579b
+    class NB python
+    class I,K,T,K1,T1 core
+    class V,E,L lowlevel
 ```
 
 ### 1.2 Heavy templating and CRTP
@@ -133,9 +170,10 @@ The stages, briefly:
    subset of representative sites is selected. This trades accuracy for
    speed and matrix size — useful for very large datasets.
 3. **Kernel-distance matrix.** The dense N×N matrix `K_ij = kernel(d(x_i,
-   x_j))` is built. This is the most SIMD-intensive step. Anisotropic kernels
-   take a different code path that retains the distance components
-   separately (see [§3.2](#32-topologies-and-anisotropy)).
+   x_j))` is built. This is the most SIMD-intensive step (even if for now,
+   it is always computed in scalar mode. Better performance will come). 
+   Anisotropic kernels take a different code path that retains the distance
+   components separately (see [§3.2](#32-topologies-and-anisotropy)).
 4. **Regularization.** Tikhonov-style regularization is applied to stabilize
    the system before solving.
 5. **LDLT solve.** Eigen's `LDLT` factorization gives us the coefficients.
