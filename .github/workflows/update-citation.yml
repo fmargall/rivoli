@@ -1,0 +1,103 @@
+name: Update CITATION.cff
+ 
+# Triggered when a version tag is pushed (e.g., v1.2.0, v0.3.1-rc1).
+# The job updates CITATION.cff on main with the new version, release
+# date, and the commit SHA the tag points to.
+on:
+  push:
+    tags:
+      - 'v*'
+
+# Prevent concurrent updates from racing
+concurrency:
+  group: update-citation
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  update-citation:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+
+      # Extract metadata from the tag.
+      - name: Extract release metadata
+        id: meta
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          COMMIT_SHA="${GITHUB_SHA}"
+          DATE=$(date -u +%Y-%m-%d)
+
+          echo "version=${VERSION}"   >> "$GITHUB_OUTPUT"
+          echo "commit=${COMMIT_SHA}" >> "$GITHUB_OUTPUT"
+          echo "date=${DATE}"         >> "$GITHUB_OUTPUT"
+
+          # Print the metadata for debugging
+          echo "Tag:     ${GITHUB_REF_NAME}"
+          echo "Version: ${VERSION}"
+          echo "Commit:  ${COMMIT_SHA}"
+          echo "Date:    ${DATE}"
+
+      - name: Update CITATION.cff
+        run: |
+          python3 <<'EOF'
+          import re
+          from pathlib import Path
+ 
+          path = Path("CITATION.cff")
+          text = path.read_text(encoding="utf-8")
+ 
+          version = "${{ steps.meta.outputs.version }}"
+          date    = "${{ steps.meta.outputs.date }}"
+          commit  = "${{ steps.meta.outputs.commit }}"
+ 
+          # Replace top-level keys. (?m) flag enables multiline
+          # mode, so that ^ will match the start of every line.
+          def replace_key(content, key, value):
+              pattern = rf"(?m)^{key}:.*$"
+              replacement = f"{key}: {value}"
+              new_content, count = re.subn(pattern, replacement, content)
+              if count == 0:
+                  raise SystemExit(f"Key '{key}' not found in CITATION.cff")
+              return new_content
+ 
+          text = replace_key(text, "version",       version)
+          text = replace_key(text, "date-released", date)
+          text = replace_key(text, "commit",        commit)
+ 
+          path.write_text(text, encoding="utf-8")
+          print("CITATION.cff updated successfully.")
+          EOF
+
+      # Validate file is still valid CFF
+      - name: Validate CITATION.cff
+        uses: citation-file-format/cffconvert-github-action@v2
+        with:
+          args: --validate
+
+      # Commit and push only if something actually changed.
+      - name: Commit and push
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+ 
+          git add CITATION.cff
+ 
+          # If nothing changed, exit gracefully (no-op release re-tag, etc.)
+          if git diff --quiet --cached; then
+            echo "No changes to CITATION.cff, skipping commit."
+            exit 0
+          fi
+ 
+          git commit \
+            -m "🔖 chore(citation): update for ${GITHUB_REF_NAME}" \
+            -m "- version: ${{ steps.meta.outputs.version }}" \
+            -m "- date-released: ${{ steps.meta.outputs.date }}" \
+            -m "- commit: ${{ steps.meta.outputs.commit }}"
+ 
+          git push origin main
