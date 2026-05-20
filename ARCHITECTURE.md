@@ -116,6 +116,64 @@ The flip side is **compile times and binary size**: instantiating
 a substantial amount of code. This is why the Python layer pre-instantiates a
 curated set of combinations rather than exposing the full template space.
 
+#### An explanation of a little compiler wizardry
+
+A pattern you will see several times inside the `Interpolator` class looks like this:
+
+```cpp
+vct distance = [&]<std::size_t... I>(std::index_sequence<I...>) {
+    return _topology.getDistance(_coordinates[I][i]..., coordinatesSIMD[I]...);
+}(std::make_index_sequence<_dimension>{});
+```
+
+It is dense, it has three dots in unusual places, and it does not look like
+normal C++ — so it deserves an explanation.
+ 
+**The problem it solves.** Topologies expose `getDistance` as a function
+taking `2 × dimension` scalar arguments: in 2D,
+`getDistance(x1, y1, x2, y2)`; in 3D, `getDistance(x1, y1, z1, x2, y2, z2)`;
+and so on. The number of arguments is therefore not fixed — it depends on
+the topology's dimension, which is a **compile-time** constant
+(`TopologyType::dimension`). We need a way to call `getDistance` with the
+right number of arguments, **generated from a compile-time integer**, without
+writing one overload per dimension.
+ 
+**How it works.** The trick is to unpack a sequence of indices using a
+generic lambda with an explicit template parameter list (a C++20 feature).
+Step by step:
+ 
+1. `std::make_index_sequence<_dimension>{}` builds a compile-time list of
+   indices: `<0, 1>` in 2D, `<0, 1, 2>` in 3D, etc.
+2. That sequence is passed to a generic lambda whose template parameters
+   `<std::size_t... I>` capture it as a **parameter pack**.
+3. Inside the lambda, `coordinates[I][i]...` is a **pack expansion**: it
+   gets unfolded into `coordinates[0][i], coordinates[1][i], ...` — one
+   entry per dimension.
+4. The lambda is invoked immediately (the trailing `(...)`), so the
+   expanded call to `getDistanceScalar` happens right where it is written.
+In 2D, after expansion, the body of the lambda is literally:
+ 
+```cpp
+return _topology.getDistance(coordinates[0][i], coordinates[1][i],
+                             coordinates[0][j], coordinates[1][j]);
+```
+ 
+In 3D, it grows one argument per axis on each side. No `if constexpr`
+ladder, no manual specialization per dimension, no runtime overhead —
+everything is resolved at compile time, and the compiler sees the same code
+it would if we had hand-written the call for each dimension.
+ 
+**Why a lambda?** Because the unpacking syntax requires a template
+parameter list, and lambdas are the only way to introduce a new template
+parameter list mid-function in C++20. Without this idiom, we would need a
+helper function template at namespace scope (more boilerplate, less local
+context) or repeated `if constexpr` blocks for `dimension == 2`,
+`dimension == 3`, etc. (poorly scaling, error-prone). The
+`index_sequence` trick keeps the dimension-agnostic logic in one place.
+ 
+This same pattern also shows up for `getDistances` (the overload associated 
+to the anisotropic kernels) — same shape, same reasoning.
+
 ### 1.3 Two performance-critical helpers
  
 Two macros come up everywhere in the code base and are worth a mention up
