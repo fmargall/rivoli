@@ -1,0 +1,148 @@
+# =============================================================================
+# .clang-format — Custom style built from scratch
+# =============================================================================
+# Use `// clang-format off` ... `// clang-format on` around blocks where you
+# want to preserve manual alignment (e.g. value_list / type_list tables with
+# shifted commas, aligned trailing comments, padded variable initializations).
+# =============================================================================
+
+Language: Cpp
+Standard: c++20
+
+# -----------------------------------------------------------------------------
+# Indentation
+# -----------------------------------------------------------------------------
+UseTab: Never
+TabWidth: 4
+IndentWidth: 4
+ContinuationIndentWidth: 4
+ConstructorInitializerIndentWidth: 4
+AccessModifierOffset: -4
+NamespaceIndentation: None
+IndentCaseLabels: false
+IndentPPDirectives: None
+IndentRequiresClause: true
+RequiresClausePosition: OwnLine
+IndentExternBlock: NoIndent
+
+# -----------------------------------------------------------------------------
+# Line length: very permissive (effectively no hard limit)
+# -----------------------------------------------------------------------------
+ColumnLimit: 0
+
+# -----------------------------------------------------------------------------
+# Braces: attached style (K&R-like, braces on same line)
+# -----------------------------------------------------------------------------
+BreakBeforeBraces: Attach
+Cpp11BracedListStyle: true
+
+# -----------------------------------------------------------------------------
+# Pointers and references: glued to the type (`int* p`, `const T& r`)
+# -----------------------------------------------------------------------------
+PointerAlignment: Left
+ReferenceAlignment: Left
+DerivePointerAlignment: false
+
+# -----------------------------------------------------------------------------
+# Spacing
+# -----------------------------------------------------------------------------
+SpaceAfterCStyleCast: false
+SpaceAfterLogicalNot: false
+SpaceAfterTemplateKeyword: true
+SpaceBeforeAssignmentOperators: true
+SpaceBeforeCpp11BracedList: false
+SpaceBeforeCtorInitializerColon: true
+SpaceBeforeInheritanceColon: true
+SpaceBeforeParens: ControlStatements   # space after if/for/while/requires, not after function names
+SpaceBeforeRangeBasedForLoopColon: true
+SpaceBeforeSquareBrackets: false
+SpaceInEmptyParentheses: false
+SpacesBeforeTrailingComments: 1
+SpacesInAngles: false
+SpacesInCStyleCastParentheses: false
+SpacesInContainerLiterals: false
+SpacesInParentheses: false
+SpacesInSquareBrackets: false
+
+# -----------------------------------------------------------------------------
+# Alignment: aggressive — leverages everything clang-format can align
+# -----------------------------------------------------------------------------
+AlignAfterOpenBracket: Align
+AlignConsecutiveAssignments:
+  Enabled: true
+  AcrossEmptyLines: false
+  AcrossComments: false
+  AlignCompound: true
+  PadOperators: true
+AlignConsecutiveDeclarations:
+  Enabled: true
+  AcrossEmptyLines: false
+  AcrossComments: false
+AlignConsecutiveMacros:
+  Enabled: true
+  AcrossEmptyLines: false
+  AcrossComments: false
+AlignConsecutiveBitFields:
+  Enabled: true
+  AcrossEmptyLines: false
+  AcrossComments: false
+AlignTrailingComments:
+  Kind: Always
+  OverEmptyLines: 0
+AlignArrayOfStructures: Left
+AlignEscapedNewlines: Left
+AlignOperands: Align
+
+# -----------------------------------------------------------------------------
+# Line breaking
+# -----------------------------------------------------------------------------
+AllowAllArgumentsOnNextLine: true
+AllowAllParametersOfDeclarationOnNextLine: true
+AllowShortBlocksOnASingleLine: Empty
+AllowShortCaseLabelsOnASingleLine: false
+AllowShortEnumsOnASingleLine: false
+AllowShortFunctionsOnASingleLine: Empty
+AllowShortIfStatementsOnASingleLine: Never
+AllowShortLambdasOnASingleLine: All
+AllowShortLoopsOnASingleLine: false
+AlwaysBreakAfterReturnType: None
+AlwaysBreakBeforeMultilineStrings: false
+AlwaysBreakTemplateDeclarations: Yes   # template <...> on its own line
+BinPackArguments: true
+BinPackParameters: true
+BreakBeforeBinaryOperators: None
+BreakBeforeTernaryOperators: true
+BreakConstructorInitializers: BeforeColon
+BreakInheritanceList: BeforeColon
+BreakStringLiterals: false
+CompactNamespaces: false
+KeepEmptyLinesAtTheStartOfBlocks: false
+MaxEmptyLinesToKeep: 2
+ReflowComments: false
+
+# -----------------------------------------------------------------------------
+# Includes: preserve your block structure (system / third-party / project)
+# -----------------------------------------------------------------------------
+SortIncludes: CaseSensitive
+IncludeBlocks: Preserve   # keep existing blank-line-separated groups intact
+IncludeCategories:
+  - Regex:           '^<[^/]+>$'              # standard library: <vector>, <type_traits>
+    Priority:        1
+  - Regex:           '^<.*\.h(pp)?>$'         # third-party: <nanobind/...>, <vectra/...>
+    Priority:        2
+  - Regex:           '^".*"$'                 # project-local: "bind_interpolator.hpp"
+    Priority:        3
+
+# -----------------------------------------------------------------------------
+# Other / quality of life
+# -----------------------------------------------------------------------------
+SortUsingDeclarations: false
+FixNamespaceComments: false
+InsertNewlineAtEOF: true
+InsertBraces: false
+RemoveBracesLLVM: false
+QualifierAlignment: Leave   # don't reorder const/volatile
+LambdaBodyIndentation: Signature
+PackConstructorInitializers: NextLine
+EmptyLineBeforeAccessModifier: LogicalBlock
+SeparateDefinitionBlocks: Leave
