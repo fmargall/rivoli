@@ -41,6 +41,22 @@ void rusinkiewiczToSpherical(
     vectra::Vectratype<FP, level> phiD)
 {
 
+/*
+ * 10.1109/TPAMI.2006.170
+ */
+template <typename FP, vectra::SIMDLevel level>
+void rusinkiewiczToZickler(
+    vectra::Vectratype<FP, level> thetaH,
+    vectra::Vectratype<FP, level> thetaD,
+    vectra::Vectratype<FP, level> phiD)
+{
+    using vct = vectra::Vectratype<FP, level>;
+
+    vct twoPhiD = 2. * phiD;
+
+    vct u = vct::sin(thetaH) * vct::cos(twoPhiD);
+    vct v = vct::sin(thetaH) * vct::sin(twoPhiD);
+    vct w = 2. * phiD / vct::pi;
 }
 
 }
