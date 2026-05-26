@@ -11,7 +11,7 @@ void sphericalToRusinkiewicz(
     vectra::Vectratype<FP, level> thetaO,
     vectra::Vectratype<FP, level> deltaPhi)
 {
-
+    using vct = vectra::Vectratype<FP, level>;
 }
 
 template <typename FP, vectra::SIMDLevel level>
@@ -21,7 +21,7 @@ void sphericalToRusinkiewicz(
     vectra::Vectratype<FP, level> thetaO,
     vectra::Vectratype<FP, level> phiO)
 {
-
+    using vct = vectra::Vectratype<FP, level>;
 }
 
 template <typename FP, vectra::SIMDLevel level>
@@ -30,7 +30,7 @@ void rusinkiewiczToSpherical(
     vectra::Vectratype<FP, level> thetaD,
     vectra::Vectratype<FP, level> phiD)
 {
-
+    using vct = vectra::Vectratype<FP, level>;
 }
 
 template <typename FP, vectra::SIMDLevel level>
@@ -40,6 +40,8 @@ void rusinkiewiczToSpherical(
     vectra::Vectratype<FP, level> thetaD,
     vectra::Vectratype<FP, level> phiD)
 {
+    using vct = vectra::Vectratype<FP, level>;
+}
 
 /*
  * 10.1109/TPAMI.2006.170
