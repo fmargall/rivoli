@@ -50,43 +50,57 @@ std::vector<FP> _computeLocalLipschitzConstants(
 
     const FP epsilon = std::numeric_limits<FP>::epsilon() * FP(100);
 
-    // Computing the distance matrix between all pairs of input coordinates
-    Eigen::Matrix<FP, Eigen::Dynamic, Eigen::Dynamic> distanceMatrix(N, N);
-    distanceMatrix.diagonal().setZero();
+    // Only the k nearest neighbours of each point are ever used. Materialising the
+    // full N x N distance matrix to then discard all but k entries per row costs
+    // 4*N^2 bytes: 340 GB at N = 3e5, which is where this used to throw bad_alloc.
+    //
+    // Instead, each point owns a bounded max-heap of its k best candidates so far.
+    // Every pair is still visited exactly once and offered to both of its endpoints,
+    // so the time complexity is unchanged and the memory drops to O(N * k).
+    using Neighbour = std::pair<FP, std::size_t>; // (distance, index)
+
+    // Ordering the heap on distance ascending puts the *worst* of the current k
+    // best at the root, which is the entry a better candidate has to evict
+    auto worseFirst = [](const Neighbour& a, const Neighbour& b) { return a.first < b.first; };
+
+    // Flat storage: one contiguous block of k slots per point, plus a fill count
+    std::vector<Neighbour>   nearest(N * k);
+    std::vector<std::size_t> neighbourCounts(N, 0);
+
+    auto offerNeighbour = [&](std::size_t owner, FP distance, std::size_t candidate) {
+        Neighbour*   heap  = nearest.data() + owner * k;
+        std::size_t& count = neighbourCounts[owner];
+
+        if (count < k) {
+            heap[count++] = {distance, candidate};
+            std::push_heap(heap, heap + count, worseFirst);
+        } else if (distance < heap[0].first) {
+            std::pop_heap(heap, heap + k, worseFirst);
+            heap[k - 1] = {distance, candidate};
+            std::push_heap(heap, heap + k, worseFirst);
+        }
+    };
 
     for (size_t i = 0; i < N; i++) {
-        // Since distance matrix is symmetrical
-        // only upper triangular part is needed
+        // Since the distance is symmetric, only the upper
+        // triangular part of the pairs has to be visited
         for (std::size_t j = i + 1; j < N; j++) {
-
             // Compute the distance between two points using the topology's distance function
             FP distance = [&]<std::size_t... I>(std::index_sequence<I...>) {
                 return topology.getDistanceScalar(inputCoordinates[I][i]..., inputCoordinates[I][j]...);
             }(std::make_index_sequence<TopologyType::dimension>{});
 
-            distanceMatrix(i, j) = distance;
-            distanceMatrix(j, i) = distance; // Equal by symmetry
+            offerNeighbour(i, distance, j);
+            offerNeighbour(j, distance, i);
         }
+    }
 
-        // Each distance associated to point i is computed
-        std::vector<std::pair<FP, std::size_t>> distances;
-        distances.reserve(N - 1);
-        for (std::size_t j = 0; j < N; ++j) {
-            if (j == i) continue; // Skip distance to itself
-            distances.emplace_back(distanceMatrix(i, j), j);
-        }
-
-        // Keep k nearest neighbors
-        if (k < distances.size()) {
-            std::nth_element(
-                distances.begin(), distances.begin() + k, distances.end(),
-                [](const auto& a, const auto& b) { return a.first < b.first; }
-            );
-        }
+    for (size_t i = 0; i < N; i++) {
+        const Neighbour* heap = nearest.data() + i * k;
 
         FP maxLipschitzConstant = static_cast<FP>(0.);
-        for (std::size_t neighborID = 0; neighborID < k; ++neighborID) {
-            const auto& [distance, j] = distances[neighborID];
+        for (std::size_t neighborID = 0; neighborID < neighbourCounts[i]; ++neighborID) {
+            const auto& [distance, j] = heap[neighborID];
 
             FP lipschitzConstant = std::abs(inputValues[i] - inputValues[j]) / (distance + epsilon);
             if (lipschitzConstant > maxLipschitzConstant)
