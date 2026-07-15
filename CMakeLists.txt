@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.21)
 
 # Get automatic project name, version and description
 # directly from the Git repository using git describe
-get_filename_component(PROJECT_NAME_FROM_DIR 
+get_filename_component(PROJECT_NAME_FROM_DIR
     ${CMAKE_CURRENT_SOURCE_DIR} NAME
 )
 
