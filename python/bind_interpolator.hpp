@@ -49,7 +49,7 @@ void bindInterpolator(nb::module_& m) {
 			const nb::ndarray<FP, nb::shape<-1, dim>, nb::c_contig>& coordinatesFromPython ,
 			const nb::ndarray<FP, nb::shape<-1>,      nb::c_contig>& coefficientsFromPython,
             const std::string& regSolver, const std::string& regMethod, FP regLambda,
-            bool nonNegativity, size_t nbSamples, std::string fitMode
+            bool nonNegativity, size_t nbSamples, std::string fitMode, bool preprocess
 			) {
 				size_t n = coordinatesFromPython.shape(0);
 
@@ -72,7 +72,7 @@ void bindInterpolator(nb::module_& m) {
                 // Initialization of the regularizer with chosen parameters
                 Regularizer<FP> regularizer(regSolver, regMethod, regLambda);
 
-				new (self) InterpolatorClass(coordinates, coefficients, kernel, topology, regularizer, nonNegativity, nbSamples, fitMode);
+				new (self) InterpolatorClass(coordinates, coefficients, kernel, topology, regularizer, nonNegativity, nbSamples, fitMode, preprocess);
 			}
 		);
 	}
@@ -83,7 +83,7 @@ void bindInterpolator(nb::module_& m) {
 			const nb::ndarray<FP, nb::shape<-1, dim>, nb::c_contig>& coordinatesFromPython ,
 			const nb::ndarray<FP, nb::shape<-1>,      nb::c_contig>& coefficientsFromPython,
             const std::string& regSolver, const std::string& regMethod, FP regLambda,
-            bool nonNegativity, size_t nbSamples, std::string fitMode, FP parameter
+            bool nonNegativity, size_t nbSamples, std::string fitMode, bool preprocess, FP parameter
 			) {
 				size_t n = coordinatesFromPython.shape(0);
 
@@ -106,7 +106,7 @@ void bindInterpolator(nb::module_& m) {
                 // Initialization of the regularizer with chosen parameters
                 Regularizer<FP> regularizer(regSolver, regMethod, regLambda);
 
-				new (self) InterpolatorClass(coordinates, coefficients, kernel, topology, regularizer, nonNegativity, nbSamples, fitMode);
+				new (self) InterpolatorClass(coordinates, coefficients, kernel, topology, regularizer, nonNegativity, nbSamples, fitMode, preprocess);
 			}
 		);
 	}
@@ -117,7 +117,7 @@ void bindInterpolator(nb::module_& m) {
 			const nb::ndarray<FP, nb::shape<-1, dim>, nb::c_contig>& coordinatesFromPython ,
 			const nb::ndarray<FP, nb::shape<-1>,      nb::c_contig>& coefficientsFromPython,
             const std::string& regSolver, const std::string& regMethod, FP regLambda,
-            bool nonNegativity, size_t nbSamples, std::string fitMode, FP paramOne, FP paramTwo
+            bool nonNegativity, size_t nbSamples, std::string fitMode, bool preprocess, FP paramOne, FP paramTwo
 			) {
 				size_t n = coordinatesFromPython.shape(0);
 
@@ -140,7 +140,7 @@ void bindInterpolator(nb::module_& m) {
                 // Initialization of the regularizer with chosen parameters
                 Regularizer<FP> regularizer(regSolver, regMethod, regLambda);
 
-				new (self) InterpolatorClass(coordinates, coefficients, kernel, topology, regularizer, nonNegativity, nbSamples, fitMode);
+				new (self) InterpolatorClass(coordinates, coefficients, kernel, topology, regularizer, nonNegativity, nbSamples, fitMode, preprocess);
 			}
 		);
 	}

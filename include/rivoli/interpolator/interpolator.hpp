@@ -63,8 +63,9 @@ public:
         // Optional additional parameters
         Regularizer<FP>   regularizer,
         const bool        nonNegativity,
-        const size_t      sampledDataSize = 0, // Other value than 0 activates sampling
-        const std::string fitMode = "interpolation" // "interpolation" or "approximation"
+        const size_t      sampledDataSize = 0,       // Other value than 0 activates sampling
+        const std::string fitMode = "interpolation", // "interpolation" or "approximation"
+        const bool        preprocessInputData = true
     )
         : _kernel(kernel), _topology(topology), _forceNonNegativity(nonNegativity)
     {
@@ -86,7 +87,17 @@ public:
 
         // Clean input data for better stability of the system, by enforcing non-negativity
         // and by removing any duplicates coordinates, by keeping for them their mean value
-        auto [dataCoordinates, dataValues] = _preprocessInputData(inputCoordinates, inputValues);
+        std::array<std::vector<FP>, _dimension> dataCoordinates;
+        std::vector<FP>                         dataValues;
+        if (preprocessInputData) {
+            auto preprocessed = _preprocessInputData(inputCoordinates, inputValues);
+            dataCoordinates   = std::move(preprocessed.first);
+            dataValues        = std::move(preprocessed.second);
+        } else {
+            LOG_DEBUG("Preprocessing skipped: caller guarantees distinct, non-negative samples.");
+            dataCoordinates = inputCoordinates;
+            dataValues      = inputValues;
+        }
 
         // By default, RBF coordinates and values are initialised with input data
         std::array<std::vector<FP>, _dimension> siteCoordinates = dataCoordinates;

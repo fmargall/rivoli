@@ -15,6 +15,7 @@ def _build_interpolator(coordinates, values, **kwargs):
     regLambda     = kwargs.get("regLambda", 0.0)
     nbSamples     = kwargs.get("nbSamples", 0)
     fitMode       = kwargs.get("fitMode", "interpolation")
+    preprocess    = kwargs.get("preprocess", True)
 
     parameterisation = kwargs.get("parameterisation", "spherical")
 
@@ -94,4 +95,4 @@ def _build_interpolator(coordinates, values, **kwargs):
     except AttributeError:
         raise ValueError(f"Unsupported configuration: {className}")
 
-    return cls(coordinates, values, regSolver, regMethod, regLambda, nonNegativity, nbSamples, fitMode, *kernelParams)
+    return cls(coordinates, values, regSolver, regMethod, regLambda, nonNegativity, nbSamples, fitMode, preprocess, *kernelParams)
