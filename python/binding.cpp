@@ -1,6 +1,7 @@
 #include <rivoli/rivoli.hpp>
 
 #include "bind_interpolator.hpp"
+#include "bind_utils.hpp"
 
 
 namespace nb = nanobind;
@@ -13,28 +14,28 @@ struct value_list {};
 
 using SIMDLevels = value_list<
 	vectra::SIMDLevel        , // Mandatory to expose type of enum before the values
-	vectra::SIMDLevel::None  , // All of the following backends are not implemented.
+	vectra::SIMDLevel::None//  , // All of the following backends are not implemented.
 	//vectra::SIMDLevel::SSE   ,
 	//vectra::SIMDLevel::SSE2  ,
 	//vectra::SIMDLevel::SSE3  ,
-	vectra::SIMDLevel::SSE41 ,
+	//vectra::SIMDLevel::SSE41 ,
 	//vectra::SIMDLevel::SSE42 ,
-	vectra::SIMDLevel::AVX
+	//vectra::SIMDLevel::AVX
 	//vectra::SIMDLevel::AVX2  ,
 	//vectra::SIMDLevel::AVX512
 >;
 
 using KernelTypes = value_list<
 	rivoli::KernelType              , // Mandatory to expose type of enum before the values
-	rivoli::KernelType::Linear      ,
-	rivoli::KernelType::Cubic       ,
-	rivoli::KernelType::Epanechnikov,
+	//rivoli::KernelType::Linear      ,
+	//rivoli::KernelType::Cubic       ,
+	//rivoli::KernelType::Epanechnikov,
 	rivoli::KernelType::Gaussian    ,
-	rivoli::KernelType::Laplacian   ,
+	//rivoli::KernelType::Laplacian   ,
 
 	// Some kernels are defined as anisotropic
-	rivoli::KernelType::AnisotropicGaussian,
-	rivoli::KernelType::AnisotropicLaplacian
+	rivoli::KernelType::AnisotropicGaussian
+	//rivoli::KernelType::AnisotropicLaplacian
 >;
 
 template <size_t Dimension, bool Bilateral, bool Reciprocal, bool Isotropy, rivoli::CoordinateSystem coordSystem>
@@ -110,6 +111,29 @@ NB_MODULE(_binding, m) {
 
 						}(), ...);
 					}(KernelTypes{});
+
+				}(), ...);
+			}(SIMDLevels{});
+
+		}(), ...);
+	}(type_list<float, double>{});
+
+
+    // Bindings for the utility functions
+    nb::module_ utils = m.def_submodule("utils", "Utility functions");
+
+    // Compile-time, for-loop over FP types
+	[&] <typename... FPs>(type_list<FPs...>) {
+		([&] {
+			using FP = FPs;
+			
+			// Compile-time for-loop over SIMD levels
+			[&] <vectra::SIMDLevel... Levels>(value_list<vectra::SIMDLevel, Levels...>) {
+				([&] {
+					constexpr auto level = Levels;
+
+                    // Binding every utility functions
+					rivoli::bindUtils<FP, level>(utils);
 
 				}(), ...);
 			}(SIMDLevels{});
