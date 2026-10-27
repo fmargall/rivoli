@@ -8,4 +8,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `rivoli.geometry`: conversions between spherical angles and unit vectors,
+  normalization and rotations around an axis, vectorized over batches of vectors.
+
 [unreleased]: https://github.com/fmargall/rivoli/commits/HEAD
