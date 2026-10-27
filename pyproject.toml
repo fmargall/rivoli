@@ -31,7 +31,9 @@ readme = "README.md"
 license = "AGPL-3.0-or-later"
 license-files = ["LICENSE.txt"]
 requires-python = ">=3.13"
-dependencies = []
+dependencies = [
+    "numpy>=2.5.4",
+]
 
 [project.urls]
 Homepage = "https://github.com/fmargall/rivoli"
