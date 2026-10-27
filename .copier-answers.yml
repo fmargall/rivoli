@@ -1,0 +1,29 @@
+# Changes here will be overwritten by Copier; NEVER EDIT MANUALLY
+_commit: v0.1.1
+_src_path: gh:fmargall/scientific-python-template
+author_email: fr.margall@proton.me
+author_family_names: Margall
+author_given_names: François
+author_orcid: https://orcid.org/0009-0004-0585-087X
+conduct_email: fr.margall@proton.me
+copyright_holder: François Margall
+copyright_year: '2026'
+creation_date: '2026-10-26'
+distribution_name: rivoli
+homepage_url: ''
+keywords:
+- interpolation
+- brdf
+- rbf
+- ebf
+- erbf
+- pbr
+- modeling
+license: AGPL-3.0-or-later
+package_name: rivoli
+project_description: Physically-based interpolation code by radial basis function
+    dedicated to BRDF, spherical or bispherical modeling functions and data reconstruction.
+project_name: RIVOLI
+python_min_version: '3.13'
+repository_url: https://github.com/fmargall/rivoli
+use_codecov: true

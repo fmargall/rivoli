@@ -1,0 +1,20 @@
+cff-version: 1.2.0
+message: "If you use RIVOLI in your research, please cite it as below."
+type: software
+title: "RIVOLI"
+abstract: "Physically-based interpolation code by radial basis function dedicated to BRDF, spherical or bispherical modeling functions and data reconstruction."
+authors:
+  - family-names: "Margall"
+    given-names: "François"
+    email: "fr.margall@proton.me"
+    orcid: "https://orcid.org/0009-0004-0585-087X"
+repository-code: "https://github.com/fmargall/rivoli"
+license: AGPL-3.0-or-later
+keywords:
+  - "interpolation"
+  - "brdf"
+  - "rbf"
+  - "ebf"
+  - "erbf"
+  - "pbr"
+  - "modeling"
