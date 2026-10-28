@@ -17,5 +17,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   The spherical angles of the directions are converted by
   `spherical_to_rusinkiewicz` and `rusinkiewicz_to_spherical`, with four angles,
   or three for isotropic BRDFs.
+- `rivoli.sampling`: Super-Fibonacci low-discrepancy sampling of the
+  Rusinkiewicz domain, for isotropic and anisotropic BRDFs, with an optional
+  spectral dimension sampled jointly with the angles.
 
 [unreleased]: https://github.com/fmargall/rivoli/commits/HEAD
