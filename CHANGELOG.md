@@ -19,6 +19,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   or three for isotropic BRDFs.
 - `rivoli.sampling`: Super-Fibonacci low-discrepancy sampling of the
   Rusinkiewicz domain, for isotropic and anisotropic BRDFs, with an optional
-  spectral dimension sampled jointly with the angles.
+  spectral dimension sampled jointly with the angles. With `above_horizon=True`,
+  the samplers return exactly the requested number of sites whose incident and
+  outgoing directions are both above the horizon, as told by
+  `rivoli.parametrization.is_above_horizon`.
 
 [unreleased]: https://github.com/fmargall/rivoli/commits/HEAD

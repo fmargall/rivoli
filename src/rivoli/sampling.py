@@ -34,6 +34,14 @@ nested: the sites for ``n`` are not a subset of those for ``n + 1``.
 Adding the spectral dimension changes the increments, so the angles of a
 spectral sampling differ from those of the same sampling without it.
 
+Part of the domain is below the horizon: ``wi`` or ``wo`` points under
+the surface there. With ``above_horizon=True``, the samplers return only
+sites above it, as :func:`rivoli.parametrization.is_above_horizon` tells.
+They sample the whole domain with the smallest number of sites, found by
+bisection, of which at least ``n`` are above the horizon. As the
+samplings are not nested, that number can exceed ``n`` by a few sites,
+which are then removed evenly along the stratified coordinate.
+
 The angles follow the conventions of :mod:`rivoli.geometry`, with
 azimuths in ``(-pi, pi]``, and come in the order of
 :func:`rivoli.parametrization.rusinkiewicz_to_spherical`.
@@ -52,7 +60,11 @@ from typing import TYPE_CHECKING, overload
 
 import numpy as np
 
+from rivoli.parametrization import is_above_horizon
+
 if TYPE_CHECKING:
+    from collections.abc import Callable
+
     from numpy.typing import NDArray
 
 __all__ = [
@@ -105,18 +117,85 @@ def _wavelength(
     return low + (high - low) * u
 
 
+def _isotropic(
+    n: int, wavelength_range: tuple[float, float] | None
+) -> tuple["NDArray[np.float64]", ...]:
+    cube = _super_fibonacci_cube(n, 2 if wavelength_range is None else 3)
+    angles = (
+        0.5 * np.pi * cube[0],
+        _hemisphere_polar_angle(cube[2]),
+        _azimuth(cube[1]),
+    )
+    if wavelength_range is None:
+        return angles
+    return *angles, _wavelength(cube[3], wavelength_range)
+
+
+def _anisotropic(
+    n: int, wavelength_range: tuple[float, float] | None
+) -> tuple["NDArray[np.float64]", ...]:
+    cube = _super_fibonacci_cube(n, 3 if wavelength_range is None else 4)
+    angles = (
+        _hemisphere_polar_angle(cube[0]),
+        _azimuth(cube[1]),
+        _hemisphere_polar_angle(cube[2]),
+        _azimuth(cube[3]),
+    )
+    if wavelength_range is None:
+        return angles
+    return *angles, _wavelength(cube[4], wavelength_range)
+
+
+def _above_horizon(
+    sample: "Callable[[int], tuple[NDArray[np.float64], ...]]", n: int, angle_count: int
+) -> tuple["NDArray[np.float64]", ...]:
+    """Sample exactly ``n`` sites above the horizon.
+
+    `sample` returns the sites of the whole domain, whose first
+    `angle_count` coordinates are the Rusinkiewicz angles.
+    """
+
+    def survivors(size: int) -> tuple["NDArray[np.float64]", ...]:
+        sites = sample(size)
+        above = is_above_horizon(*sites[:angle_count])
+        return tuple(x[above] for x in sites)
+
+    # The number of survivors only increases on average with the size, as
+    # the samplings are not nested: the bisection finds a size for which
+    # there are enough of them, not necessarily the smallest one
+    low = high = n
+    while len(survivors(high)[0]) < n:
+        low, high = high, 2 * high
+    while high - low > 1:
+        middle = (low + high) // 2
+        if len(survivors(middle)[0]) >= n:
+            high = middle
+        else:
+            low = middle
+
+    sites = survivors(high)
+    # Thin out the surplus evenly in index, hence along the stratified
+    # coordinate. The step between the kept indices is at least 1, so
+    # they are distinct after rounding
+    kept = np.round(np.linspace(0, len(sites[0]) - 1, n)).astype(np.intp)
+    return tuple(x[kept] for x in sites)
+
+
 @overload
 def super_fibonacci_isotropic(
-    n: int, *, wavelength_range: None = None
+    n: int, *, wavelength_range: None = None, above_horizon: bool = False
 ) -> tuple["NDArray[np.float64]", "NDArray[np.float64]", "NDArray[np.float64]"]: ...
 @overload
 def super_fibonacci_isotropic(
-    n: int, *, wavelength_range: tuple[float, float]
+    n: int, *, wavelength_range: tuple[float, float], above_horizon: bool = False
 ) -> tuple[
     "NDArray[np.float64]", "NDArray[np.float64]", "NDArray[np.float64]", "NDArray[np.float64]"
 ]: ...
 def super_fibonacci_isotropic(
-    n: int, *, wavelength_range: tuple[float, float] | None = None
+    n: int,
+    *,
+    wavelength_range: tuple[float, float] | None = None,
+    above_horizon: bool = False,
 ) -> tuple["NDArray[np.float64]", ...]:
     """Sample the isotropic Rusinkiewicz domain.
 
@@ -131,6 +210,9 @@ def super_fibonacci_isotropic(
     wavelength_range : tuple of float, optional
         Lower and upper bounds of the wavelengths, in any unit. When
         given, the domain gets a spectral dimension, sampled uniformly.
+    above_horizon : bool, default False
+        Whether to keep only sites whose incident and outgoing directions
+        are both above the horizon.
 
     Returns
     -------
@@ -145,27 +227,20 @@ def super_fibonacci_isotropic(
     ValueError
         If `n` is less than 1, or if `wavelength_range` is not increasing.
     """
-    spectral = wavelength_range is not None
-    cube = _super_fibonacci_cube(n, 3 if spectral else 2)
-    angles = (
-        0.5 * np.pi * cube[0],
-        _hemisphere_polar_angle(cube[2]),
-        _azimuth(cube[1]),
-    )
-    if wavelength_range is None:
-        return angles
-    return *angles, _wavelength(cube[3], wavelength_range)
+    if above_horizon:
+        return _above_horizon(lambda size: _isotropic(size, wavelength_range), n, 3)
+    return _isotropic(n, wavelength_range)
 
 
 @overload
 def super_fibonacci_anisotropic(
-    n: int, *, wavelength_range: None = None
+    n: int, *, wavelength_range: None = None, above_horizon: bool = False
 ) -> tuple[
     "NDArray[np.float64]", "NDArray[np.float64]", "NDArray[np.float64]", "NDArray[np.float64]"
 ]: ...
 @overload
 def super_fibonacci_anisotropic(
-    n: int, *, wavelength_range: tuple[float, float]
+    n: int, *, wavelength_range: tuple[float, float], above_horizon: bool = False
 ) -> tuple[
     "NDArray[np.float64]",
     "NDArray[np.float64]",
@@ -174,7 +249,10 @@ def super_fibonacci_anisotropic(
     "NDArray[np.float64]",
 ]: ...
 def super_fibonacci_anisotropic(
-    n: int, *, wavelength_range: tuple[float, float] | None = None
+    n: int,
+    *,
+    wavelength_range: tuple[float, float] | None = None,
+    above_horizon: bool = False,
 ) -> tuple["NDArray[np.float64]", ...]:
     """Sample the anisotropic Rusinkiewicz domain.
 
@@ -188,6 +266,9 @@ def super_fibonacci_anisotropic(
     wavelength_range : tuple of float, optional
         Lower and upper bounds of the wavelengths, in any unit. When
         given, the domain gets a spectral dimension, sampled uniformly.
+    above_horizon : bool, default False
+        Whether to keep only sites whose incident and outgoing directions
+        are both above the horizon.
 
     Returns
     -------
@@ -202,14 +283,6 @@ def super_fibonacci_anisotropic(
     ValueError
         If `n` is less than 1, or if `wavelength_range` is not increasing.
     """
-    spectral = wavelength_range is not None
-    cube = _super_fibonacci_cube(n, 4 if spectral else 3)
-    angles = (
-        _hemisphere_polar_angle(cube[0]),
-        _azimuth(cube[1]),
-        _hemisphere_polar_angle(cube[2]),
-        _azimuth(cube[3]),
-    )
-    if wavelength_range is None:
-        return angles
-    return *angles, _wavelength(cube[4], wavelength_range)
+    if above_horizon:
+        return _above_horizon(lambda size: _anisotropic(size, wavelength_range), n, 4)
+    return _anisotropic(n, wavelength_range)

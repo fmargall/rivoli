@@ -12,6 +12,7 @@ from rivoli.parametrization import (
     directions_to_half_difference,
     directions_to_rusinkiewicz,
     half_difference_to_directions,
+    is_above_horizon,
     rusinkiewicz_to_directions,
     rusinkiewicz_to_spherical,
     spherical_to_rusinkiewicz,
@@ -209,8 +210,43 @@ def test_isotropic_known_values():
     assert_allclose(spherical_to_rusinkiewicz(0.2, 0.6, 0), (0.4, 0.2, np.pi), atol=1e-15)
 
 
-@pytest.mark.parametrize("function", [spherical_to_rusinkiewicz, rusinkiewicz_to_spherical])
+@pytest.mark.parametrize(
+    "function", [spherical_to_rusinkiewicz, rusinkiewicz_to_spherical, is_above_horizon]
+)
 @pytest.mark.parametrize("count", [2, 5])
 def test_wrong_number_of_angles(function, count):
     with pytest.raises(TypeError, match=f"expected 3 or 4 angles, got {count}"):
         function(*[0.0] * count)
+
+
+def test_above_horizon_matches_the_heights_of_the_directions(rng):
+    theta_h, theta_d = rng.uniform(0, np.pi / 2, (2, 10000))
+    phi_h, phi_d = rng.uniform(-np.pi, np.pi, (2, 10000))
+    wi, wo = rusinkiewicz_to_directions(theta_h, phi_h, theta_d, phi_d)
+    expected = (wi[:, 2] > 0) & (wo[:, 2] > 0)
+    assert 0 < expected.mean() < 1
+    assert np.array_equal(is_above_horizon(theta_h, phi_h, theta_d, phi_d), expected)
+    assert np.array_equal(is_above_horizon(theta_h, theta_d, phi_d), expected)
+
+
+@pytest.mark.parametrize(
+    ("angles", "expected"),
+    [
+        ((0, 0, 0), True),
+        # Both directions just above, then just below the horizon
+        ((0, np.pi / 2 - 1e-9, 1.0), True),
+        ((0, np.pi / 2 + 1e-9, 1.0), False),
+        # wi just above, then just below the horizon
+        ((np.pi / 4, np.pi / 4 - 1e-9, 0), True),
+        ((np.pi / 4, np.pi / 4 + 1e-9, 0), False),
+        ((np.pi / 4, np.pi / 4, np.pi / 2), True),
+        ((np.pi / 3, np.pi / 3, np.pi), False),  # wo below
+    ],
+)
+def test_above_horizon_known_values(angles, expected):
+    assert is_above_horizon(*angles) == expected
+
+
+def test_above_horizon_broadcasts():
+    theta_h = np.linspace(0, np.pi / 2, 4)[:, np.newaxis]
+    assert is_above_horizon(theta_h, 0.3, np.linspace(-np.pi, np.pi, 5)).shape == (4, 5)
