@@ -54,6 +54,7 @@ __all__ = [
     "directions_to_half_difference",
     "directions_to_rusinkiewicz",
     "half_difference_to_directions",
+    "is_above_horizon",
     "rusinkiewicz_to_directions",
     "rusinkiewicz_to_spherical",
     "spherical_to_rusinkiewicz",
@@ -268,5 +269,43 @@ def rusinkiewicz_to_spherical(*angles: "ArrayLike") -> tuple["NDArray[np.float64
             # azimuth wraps delta_phi into (-pi, pi]
             theta_o, delta_phi = cartesian_to_spherical(rotate(wo, _NORMAL, -phi_i))
             return theta_i, theta_o, delta_phi
+        case _:
+            raise TypeError(f"expected 3 or 4 angles, got {len(angles)}")
+
+
+def is_above_horizon(*angles: "ArrayLike") -> "NDArray[np.bool_]":
+    """Tell whether Rusinkiewicz angles describe directions above the horizon.
+
+    Rotating ``d`` around the binormal by ``theta_h`` gives the heights
+    ``cos(theta_h) cos(theta_d) -+ sin(theta_h) sin(theta_d) cos(phi_d)``
+    of ``wi`` and ``wo``, which do not depend on ``phi_h``. Both are
+    positive when the first term exceeds the absolute value of the second.
+
+    Parameters
+    ----------
+    *angles : array_like
+        Either ``(theta_h, phi_h, theta_d, phi_d)``, or
+        ``(theta_h, theta_d, phi_d)`` for an isotropic BRDF. All angles
+        are broadcast together.
+
+    Returns
+    -------
+    ndarray of bool
+        True where both ``wi`` and ``wo`` are strictly above the horizon.
+        Grazing directions are below it, up to rounding errors: for
+        instance ``cos(pi / 2)`` is not exactly 0 in floating point.
+
+    Raises
+    ------
+    TypeError
+        If the number of angles is neither 3 nor 4.
+    """
+    match angles:
+        case (theta_h, _, theta_d, phi_d) | (theta_h, theta_d, phi_d):
+            theta_h = np.asarray(theta_h, dtype=np.float64)
+            theta_d = np.asarray(theta_d, dtype=np.float64)
+            axial = np.cos(theta_h) * np.cos(theta_d)
+            lateral = np.sin(theta_h) * np.sin(theta_d) * np.cos(phi_d)
+            return axial > np.abs(lateral)
         case _:
             raise TypeError(f"expected 3 or 4 angles, got {len(angles)}")
