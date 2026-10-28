@@ -12,5 +12,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - `rivoli.geometry`: conversions between spherical angles and unit vectors,
   normalization and rotations around an axis, vectorized over batches of vectors.
+- `rivoli.parametrization`: conversions between pairs of directions and the
+  Rusinkiewicz parametrization, as half and difference vectors or as angles.
+  The spherical angles of the directions are converted by
+  `spherical_to_rusinkiewicz` and `rusinkiewicz_to_spherical`, with four angles,
+  or three for isotropic BRDFs.
 
 [unreleased]: https://github.com/fmargall/rivoli/commits/HEAD
