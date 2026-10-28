@@ -10,7 +10,7 @@ import pytest
 from numpy.testing import assert_allclose
 
 from rivoli import sampling
-from rivoli.parametrization import rusinkiewicz_to_directions
+from rivoli.parametrization import is_above_horizon, rusinkiewicz_to_directions
 from rivoli.sampling import super_fibonacci_anisotropic, super_fibonacci_isotropic
 
 VISIBLE = (380.0, 780.0)
@@ -40,12 +40,12 @@ def anisotropic_cube(theta_h, phi_h, theta_d, phi_d, *wavelength):
     )
 
 
-def isotropic_spectral(n):
-    return super_fibonacci_isotropic(n, wavelength_range=VISIBLE)
+def isotropic_spectral(n, above_horizon=False):
+    return super_fibonacci_isotropic(n, wavelength_range=VISIBLE, above_horizon=above_horizon)
 
 
-def anisotropic_spectral(n):
-    return super_fibonacci_anisotropic(n, wavelength_range=VISIBLE)
+def anisotropic_spectral(n, above_horizon=False):
+    return super_fibonacci_anisotropic(n, wavelength_range=VISIBLE, above_horizon=above_horizon)
 
 
 SAMPLERS = [
@@ -178,3 +178,37 @@ def test_sampling_is_deterministic(sampler, _):
 def test_at_least_one_site(sampler, n):
     with pytest.raises(ValueError, match=f"at least 1, got {n}"):
         sampler(n)
+
+
+@pytest.mark.parametrize(
+    ("sampler", "angle_count"),
+    [
+        (super_fibonacci_isotropic, 3),
+        (super_fibonacci_anisotropic, 4),
+        (isotropic_spectral, 3),
+        (anisotropic_spectral, 4),
+    ],
+)
+@pytest.mark.parametrize("n", [1, 2, 3, 10, 1000])
+def test_above_horizon_gives_exactly_n_sites_above_it(sampler, angle_count, n):
+    sites = sampler(n, above_horizon=True)
+    assert all(x.shape == (n,) for x in sites)
+    assert np.all(is_above_horizon(*sites[:angle_count]))
+
+
+def test_above_horizon_sites_are_uniform():
+    # Reference proportions of the cells above the horizon, from a dense sampling
+    reference = super_fibonacci_isotropic(400000)
+    reference = tuple(x[is_above_horizon(*reference)] for x in reference)
+
+    def cells(sites):
+        u = np.minimum((isotropic_cube(*sites) * 4).astype(int), 3)
+        return np.ravel_multi_index(tuple(u), (4, 4, 4))
+
+    expected = 10000 * np.bincount(cells(reference), minlength=64) / len(reference[0])
+    counts = np.bincount(cells(super_fibonacci_isotropic(10000, above_horizon=True)), minlength=64)
+    # Cells mostly below the horizon have too few sites to compare. A random
+    # subset of the reference has a deviation of about 0.3
+    populated = expected > 20
+    deviation = np.abs(counts - expected)[populated] / expected[populated]
+    assert np.max(deviation) < 0.12
