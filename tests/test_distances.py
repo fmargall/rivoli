@@ -13,6 +13,7 @@ from rivoli.distances import (
     diameters,
     geodesic_distance,
     nearest_neighbour_spacings,
+    pairwise_distances,
 )
 from rivoli.geometry import normalize, spherical_to_cartesian
 from rivoli.sampling import super_fibonacci_anisotropic, super_fibonacci_isotropic
@@ -224,3 +225,46 @@ def test_scales_change_the_nearest_neighbour():
 def test_invalid_scales(scales, message):
     with pytest.raises(ValueError, match=message):
         nearest_neighbour_spacings([Z, X], [Z, X], scales=scales)
+
+
+@pytest.mark.parametrize("metric", ["geodesic", "chordal"])
+@pytest.mark.parametrize("spectral", [False, True])
+@pytest.mark.parametrize("pairs_per_chunk", [7, 2**20])
+def test_pairwise_distances(rng, monkeypatch, metric, spectral, pairs_per_chunk):
+    monkeypatch.setattr(distances, "_PAIRS_PER_CHUNK", pairs_per_chunk)
+    distance = {"geodesic": geodesic_distance, "chordal": chordal_distance}[metric]
+    sites = [random_directions(rng, 30), random_directions(rng, 30)]
+    centres = [random_directions(rng, 20), random_directions(rng, 20)]
+    scale_h, scale_d, scale_wavelength = 0.5, 2.0, 400.0
+    expected = (distance(sites[0][:, np.newaxis], centres[0]) / scale_h) ** 2 + (
+        distance(sites[1][:, np.newaxis], centres[1]) / scale_d
+    ) ** 2
+    if spectral:
+        sites.append(rng.uniform(380, 780, 30))
+        centres.append(rng.uniform(380, 780, 20))
+        expected += (np.abs(sites[2][:, np.newaxis] - centres[2]) / scale_wavelength) ** 2
+    scales = (scale_h, scale_d, scale_wavelength) if spectral else (scale_h, scale_d)
+    expected = np.sqrt(expected)
+    actual = pairwise_distances(sites, centres, metric=metric, scales=scales)
+    assert actual.shape == (30, 20)
+    assert_allclose(actual, expected)
+
+
+def test_pairwise_distances_of_sites_to_themselves(rng):
+    sites = (random_directions(rng, 40), random_directions(rng, 40))
+    r = pairwise_distances(sites, sites)
+    assert_allclose(np.diag(r), 0, atol=1e-15)
+    assert_allclose(r, r.T)
+
+
+@pytest.mark.parametrize(
+    ("sites", "centres", "message"),
+    [
+        ((Z,), (Z, Z), "sites must be"),
+        ((Z, Z), (Z, Z, 1.0, 2.0), "centres must be"),
+        ((Z, Z), ([Z], [Z], [500.0]), "same factors, got 2 and 3"),
+    ],
+)
+def test_pairwise_distances_reject_mismatched_factors(sites, centres, message):
+    with pytest.raises(ValueError, match=message):
+        pairwise_distances(sites, centres)

@@ -38,7 +38,7 @@ from typing import TYPE_CHECKING, Literal
 import numpy as np
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
+    from collections.abc import Callable, Sequence
 
     from numpy.typing import ArrayLike, NDArray
 
@@ -47,10 +47,12 @@ __all__ = [
     "diameters",
     "geodesic_distance",
     "nearest_neighbour_spacings",
+    "pairwise_distances",
 ]
 
 # Number of pairs of sites whose distances are held in memory at once by
-# nearest_neighbour_spacings, about 24 MB for the differences of vectors
+# nearest_neighbour_spacings and pairwise_distances, about 24 MB for the
+# differences of vectors
 _PAIRS_PER_CHUNK = 2**20
 
 
@@ -243,3 +245,75 @@ def nearest_neighbour_spacings(
         nearest = np.argmin(squared, axis=1)
         spacings[:, rows] = components[:, np.arange(len(rows)), nearest]
     return tuple(spacings)
+
+
+def _factors(sites: "Sequence[ArrayLike]", name: str) -> list["NDArray[np.float64]"]:
+    """Check and convert the factors of sites: (h, d) or (h, d, wavelength)."""
+    if len(sites) not in (2, 3):
+        raise ValueError(f"{name} must be (h, d) or (h, d, wavelength), got {len(sites)} arrays")
+    return [np.asarray(x, dtype=np.float64) for x in sites]
+
+
+def pairwise_distances(
+    sites: "Sequence[ArrayLike]",
+    centres: "Sequence[ArrayLike]",
+    *,
+    metric: Literal["geodesic", "chordal"] = "geodesic",
+    scales: tuple[float, ...] | None = None,
+) -> "NDArray[np.float64]":
+    """Compute the product distances between sites and centres.
+
+    The product distance is the Euclidean norm of the distances between
+    the half vectors, between the difference vectors and between the
+    wavelengths, each divided by its scale.
+
+    Parameters
+    ----------
+    sites : sequence of array_like
+        ``(h, d)`` or, for a spectral BRDF, ``(h, d, wavelength)``: the
+        half vectors, of shape ``(m, 3)``, the difference vectors, of
+        shape ``(m, 3)``, and the wavelengths, of shape ``(m,)``, of the
+        sites.
+    centres : sequence of array_like
+        The same for the centres, with ``n`` instead of ``m``.
+    metric : {"geodesic", "chordal"}, default "geodesic"
+        Distance between the half vectors and between the difference
+        vectors.
+    scales : tuple of float, optional
+        Positive scales of the distances on each factor, such as the
+        :func:`diameters` of the domain. Default: 1 for each.
+
+    Returns
+    -------
+    ndarray, shape (m, n)
+        Product distances between each site and each centre.
+
+    Raises
+    ------
+    ValueError
+        If `sites` and `centres` do not both have 2 or 3 factors, if
+        `metric` is unknown, or if `scales` are not one positive number
+        per factor.
+    """
+    _check_metric(metric)
+    distance = _DISTANCES[metric]
+    sites = _factors(sites, "sites")
+    centres = _factors(centres, "centres")
+    if len(sites) != len(centres):
+        raise ValueError(
+            f"sites and centres must have the same factors, got {len(sites)} and {len(centres)}"
+        )
+    scale = _check_scales(scales, len(sites))
+    distances = (distance, distance, lambda a, b: np.abs(np.subtract(a, b)))
+
+    m, n = len(sites[0]), len(centres[0])
+    result = np.empty((m, n))
+    chunk = max(1, _PAIRS_PER_CHUNK // max(n, 1))
+    for low in range(0, m, chunk):
+        rows = slice(low, min(low + chunk, m))
+        squared = sum(
+            (dist(x[rows, np.newaxis], c[np.newaxis]) / s) ** 2
+            for x, c, dist, s in zip(sites, centres, distances, scale, strict=False)
+        )
+        result[rows] = np.sqrt(squared)
+    return result

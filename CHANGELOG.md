@@ -27,6 +27,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   the spacings between each site of a sampling and its nearest neighbour. The
   distances on each factor of the domain can be divided by scales, such as the
   diameters of the factors given by `diameters`, to make them comparable.
+- `rivoli.distances.pairwise_distances`: product distances between sites and
+  centres, with a scale per factor.
+- `rivoli.kernels`: Gaussian radial basis function kernel with a width per
+  factor of the domain, and the collocation matrix of centres at sites. The
+  Gaussian of the chordal distance is positive definite, unlike that of the
+  geodesic one, which is kept for compatibility.
+- `rivoli.warp.kernels`: the same collocation matrix computed with Warp.
 - `rivoli.warp.distances`: the same distances and spacings computed in parallel
   on a GPU or the CPU with NVIDIA Warp, installed by the `warp` extra.
 
