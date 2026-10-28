@@ -34,6 +34,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   Gaussian of the chordal distance is positive definite, unlike that of the
   geodesic one, which is kept for compatibility.
 - `rivoli.warp.kernels`: the same collocation matrix computed with Warp.
+- `rivoli.dirichlet`: Dirichlet matrix of the Gaussian kernels, whose quadratic
+  form is the mean squared gradient of an expansion on the kernels over the
+  whole Rusinkiewicz domain, with an optional weight per factor such as the
+  squared diameters. It is computed by quadrature, accurate up to rounding.
+- `rivoli.warp.dirichlet`: the same Dirichlet matrix computed with Warp.
 - `rivoli.warp.distances`: the same distances and spacings computed in parallel
   on a GPU or the CPU with NVIDIA Warp, installed by the `warp` extra.
 
