@@ -76,7 +76,12 @@ xfail_strict = true
 # Warnings are errors: a deprecation in a dependency fails the tests while there
 # is still time to adapt, instead of scrolling by unread. An expected warning is
 # allowed by adding an "ignore:..." filter after "error".
-filterwarnings = ["error"]
+filterwarnings = [
+    "error",
+    # Warp 1.18 declares packed ctypes structures without a _layout_, deprecated
+    # since Python 3.14 outside Windows. Remove once a release of Warp fixes it
+    "ignore:Due to '_pack_', the '.*' Structure will use memory layout compatible with MSVC:DeprecationWarning",
+]
 # Shown with the output of a failing test only
 log_level = "INFO"
 
