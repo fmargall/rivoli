@@ -23,5 +23,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   the samplers return exactly the requested number of sites whose incident and
   outgoing directions are both above the horizon, as told by
   `rivoli.parametrization.is_above_horizon`.
+- `rivoli.distances`: geodesic and chordal distances between unit vectors, and
+  the spacings between each site of a sampling and its nearest neighbour. The
+  distances on each factor of the domain can be divided by scales, such as the
+  diameters of the factors given by `diameters`, to make them comparable.
+- `rivoli.warp.distances`: the same distances and spacings computed in parallel
+  on a GPU or the CPU with NVIDIA Warp, installed by the `warp` extra.
 
 [unreleased]: https://github.com/fmargall/rivoli/commits/HEAD
