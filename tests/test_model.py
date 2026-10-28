@@ -47,6 +47,16 @@ def test_model_evaluates_the_exponential_of_the_expansion():
     assert_allclose(linear(sites), collocation @ linear.weights)
 
 
+def test_model_is_evaluated_by_chunks(monkeypatch):
+    centres, _ = isotropic_sites(100)
+    sites, values = isotropic_sites(600)
+    model = fit(sites, values, centres, regularization=0.1, **ARGUMENTS)
+    expected = model(sites)
+    # Chunks of 7 sites, the last one being partial
+    monkeypatch.setattr("rivoli.model._ENTRIES_PER_CHUNK", 700)
+    assert_allclose(model(sites), expected, rtol=1e-14)
+
+
 def test_log_space_fits_the_logarithm_of_the_values():
     centres, _ = isotropic_sites(100)
     sites, values = isotropic_sites(600)

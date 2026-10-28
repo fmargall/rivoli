@@ -36,6 +36,8 @@ __all__ = [
 
 # Offset of the values in log space, as in earlier versions of RIVOLI
 _LOG_OFFSET = 1e-6
+# Entries of the collocation matrix computed at once by a model, 128 MiB
+_ENTRIES_PER_CHUNK = 2**24
 
 
 @dataclass(frozen=True)
@@ -81,10 +83,24 @@ class RBFModel:
         ndarray, shape (m,) or (m, c)
             Values of the model at the sites.
         """
-        collocation = collocation_matrix(
-            sites, self.centres, widths=self.widths, metric=self.metric, kernel=self.kernel
+        sites = [np.asarray(factor, dtype=np.float64) for factor in sites]
+        m = len(sites[0])
+        # The collocation matrix is computed by chunks of sites, as for a
+        # whole MERL grid it would not fit in memory
+        step = max(1, _ENTRIES_PER_CHUNK // len(self.weights))
+        expansion = np.concatenate(
+            [
+                collocation_matrix(
+                    [factor[start : start + step] for factor in sites],
+                    self.centres,
+                    widths=self.widths,
+                    metric=self.metric,
+                    kernel=self.kernel,
+                )
+                @ self.weights
+                for start in range(0, m, step)
+            ]
         )
-        expansion = collocation @ self.weights
         if self.log_offset is None:
             return expansion
         return np.exp(expansion) - self.log_offset
