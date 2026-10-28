@@ -45,7 +45,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   space of the energy is not penalized.
 - `rivoli.model`: fit of a radial basis function model to measurements of a
   BRDF, regularized by its Dirichlet energy, in log space by default, and its
-  evaluation at new sites.
+  evaluation at new sites, by chunks of sites so that it fits in memory for a
+  whole MERL grid.
+- `rivoli.merl`: reading and writing of the RGB files of the MERL BRDF database,
+  the angles of the bins of its grid, and the lookup of the bins that contain
+  Rusinkiewicz angles, as in its reference implementation.
 - `rivoli.warp.distances`: the same distances and spacings computed in parallel
   on a GPU or the CPU with NVIDIA Warp, installed by the `warp` extra.
 
