@@ -42,14 +42,16 @@ Issues = "https://github.com/fmargall/rivoli/issues"
 Changelog = "https://github.com/fmargall/rivoli/blob/main/CHANGELOG.md"
 
 # Optional features for users go in extras, published with the package and
-# installed with `pip install rivoli[name]`, e.g.:
-# [project.optional-dependencies]
-# ui = ["PySide6"]
+# installed with `pip install rivoli[name]`
+[project.optional-dependencies]
+# GPU and parallel CPU kernels of rivoli.warp
+warp = ["warp-lang>=1.18"]
 
 # Tools for contributors go in dependency groups (PEP 735): they are not published,
 # and are installed with `uv sync` (or `pip install -e . --group dev`, pip >= 25.1)
 [dependency-groups]
-test = ["pytest", "pytest-cov"]
+# warp-lang runs the kernels of rivoli.warp on the CPU when there is no GPU, as in CI
+test = ["pytest", "pytest-cov", "warp-lang>=1.18"]
 # pyright is pinned: each release can add new errors, upgrades must be deliberate.
 # The "nodejs" extra ships Node.js as a wheel instead of downloading it at first run.
 dev = [
@@ -74,7 +76,12 @@ xfail_strict = true
 # Warnings are errors: a deprecation in a dependency fails the tests while there
 # is still time to adapt, instead of scrolling by unread. An expected warning is
 # allowed by adding an "ignore:..." filter after "error".
-filterwarnings = ["error"]
+filterwarnings = [
+    "error",
+    # Warp 1.18 declares packed ctypes structures without a _layout_, deprecated
+    # since Python 3.14 outside Windows. Remove once a release of Warp fixes it
+    "ignore:Due to '_pack_', the '.*' Structure will use memory layout compatible with MSVC:DeprecationWarning",
+]
 # Shown with the output of a failing test only
 log_level = "INFO"
 
@@ -85,6 +92,10 @@ source = ["rivoli"]
 [tool.coverage.report]
 show_missing = true
 fail_under = 90
+# Warp functions and kernels run compiled, out of reach of the Python tracer:
+# excluding their decorator excludes their whole body. Their tests compare them
+# with their NumPy counterparts instead
+exclude_also = ['@wp\.(func|kernel)']
 
 [tool.pyright]
 # Tests are checked too: they are the first client of the public API. So are the
