@@ -17,14 +17,21 @@ sites are the centres, and ``lambda`` close to 1 gives the smoothest
 fits, of the least energy. Dividing by ``1 - lambda``, it is the
 Tikhonov problem of multiplier ``mu = lambda / (1 - lambda)``.
 
-The energy is positive semidefinite. Its null space, such as the
-constant functions for a Dirichlet energy, is not penalized: the problem
-is solved in the standard form of the generalized Tikhonov problem [1]_,
-in which the penalized part of the weights has the identity as energy,
-and the unpenalized part is fitted by least squares. Both are computed
-from singular value decompositions, which give a minimum-norm solution
-when several weights synthesize the same function, as happens with
-close or wide kernels.
+The energy is positive semidefinite, and its matrix has eigenvalues
+close to 0 for redundant kernels, such as kernels close to each other,
+or narrow along a factor and wide along another one. Its eigenvalues are
+floored at a small fraction of the largest one, as in earlier versions
+of RIVOLI, so that every direction of the weights is penalized: where
+the values do not constrain the weights, as away from measurements made
+in a single plane, the regularization still bounds them, instead of
+leaving them to least squares, which make them diverge. The energy has
+no exact null space to preserve: the constant functions, of zero
+Dirichlet energy, are not expansions on Gaussian kernels.
+
+With the floored energy ``G = U diag(s) U^T``, the problem is solved in
+the standard form of the Tikhonov problem [1]_: the weights ``w = T z``,
+with ``T = U diag(s)^(-1/2)``, have the energy ``|z|^2``, and ``z`` is
+computed from the singular value decomposition of ``K T``.
 
 References
 ----------
@@ -44,12 +51,8 @@ __all__ = [
     "Tikhonov",
 ]
 
-# Eigenvalues of the energy below this fraction of the largest one are
-# taken as 0, as numerical noise on its null space
-_NULL_ENERGY = 1e-9
-# Singular values of the fit of the unpenalized part below this fraction of
-# the largest one are dropped: their weights synthesize no function
-_NULL_SINGULAR_VALUE = 1e-10
+# Eigenvalues of the energy are floored at this fraction of the largest one
+_ENERGY_FLOOR = 1e-9
 
 
 class Tikhonov:
@@ -85,26 +88,15 @@ class Tikhonov:
             )
         self._collocation = collocation
 
-        # Energy G = U diag(s) U^T, whose small eigenvalues are its null space
+        # Floored energy G = U diag(s) U^T
         s, u = np.linalg.eigh(energy)
-        s = np.maximum(s, 0.0)
-        penalized = s > _NULL_ENERGY * s.max(initial=0.0)
-        if not np.any(penalized):
+        largest = s.max(initial=0.0)
+        if largest <= 0.0:
             raise ValueError("the energy must not be zero")
-        # Weights w = T z + Z a, where z has the energy |z|^2, and a none
-        self._transform = u[:, penalized] / np.sqrt(s[penalized])
-        self._null_basis = u[:, ~penalized]
-
-        # The unpenalized part a fits what it can of the values, by least
-        # squares, so z only fits the rest, orthogonal to the range of K Z
-        fitted = collocation @ self._null_basis
-        left, singular_values, right = np.linalg.svd(fitted, full_matrices=False)
-        kept = singular_values > _NULL_SINGULAR_VALUE * singular_values.max(initial=0.0)
-        self._null_range = left[:, kept]
-        self._null_pseudoinverse = (right[kept].T / singular_values[kept]) @ left[:, kept].T
-        standard = collocation @ self._transform
-        standard -= self._null_range @ (self._null_range.T @ standard)
-        self._standard = np.linalg.svd(standard, full_matrices=False)
+        s = np.maximum(s, _ENERGY_FLOOR * largest)
+        # Weights w = T z, where z has the energy |z|^2
+        self._transform = u / np.sqrt(s)
+        self._standard = np.linalg.svd(collocation @ self._transform, full_matrices=False)
 
     @cached_property
     def _least_squares(
@@ -146,12 +138,8 @@ class Tikhonov:
         # Multiplier of |z|^2 for the sum of the squared residuals
         mu = m * regularization / (1.0 - regularization)
         left, singular_values, right = self._standard
-        remainder = values - self._null_range @ (self._null_range.T @ values)
         filters = singular_values / (singular_values**2 + mu)
-        z = right.T @ _scale_rows(filters, left.T @ remainder)
-        weights = self._transform @ z
-        residual = values - self._collocation @ weights
-        return weights + self._null_basis @ (self._null_pseudoinverse @ residual)
+        return self._transform @ (right.T @ _scale_rows(filters, left.T @ values))
 
 
 def _check_regularization(regularization: float) -> None:
