@@ -22,6 +22,12 @@ def random_problem(rng, m=50, n=20, null=3):
     return collocation, root @ root.T
 
 
+def floored(energy):
+    """The energy whose eigenvalues are floored, as the solver does."""
+    s, u = np.linalg.eigh(energy)
+    return (u * np.maximum(s, 1e-9 * s.max())) @ u.T
+
+
 @pytest.mark.parametrize("regularization", [1e-6, 0.1, 0.5, 0.99])
 @pytest.mark.parametrize("channels", [(), (3,)])
 def test_solution_solves_the_normal_equations(rng, regularization, channels):
@@ -31,8 +37,9 @@ def test_solution_solves_the_normal_equations(rng, regularization, channels):
     assert weights.shape == (20, *channels)
     # Minimizer of (1 - lambda) |K w - f|^2 / m + lambda w^T G w
     mu = 50 * regularization / (1 - regularization)
-    expected = np.linalg.solve(collocation.T @ collocation + mu * energy, collocation.T @ values)
-    assert_allclose(weights, expected, rtol=0, atol=1e-12 * np.abs(expected).max())
+    normal = collocation.T @ collocation + mu * floored(energy)
+    expected = np.linalg.solve(normal, collocation.T @ values)
+    assert_allclose(weights, expected, rtol=0, atol=1e-9 * np.abs(expected).max())
 
 
 def test_zero_regularization_is_least_squares(rng):
@@ -60,14 +67,19 @@ def test_regularization_trades_the_residual_for_the_energy(rng):
     assert np.all(np.diff(energies) < 0)
 
 
-def test_the_null_space_of_the_energy_is_not_penalized(rng):
+def test_directions_of_nearly_zero_energy_are_penalized(rng):
+    # Directions of the weights of nearly zero energy, which the values
+    # hardly see, as kernels away from measurements made in a single plane
     collocation, energy = random_problem(rng)
-    # Values synthesized by weights of zero energy are fitted exactly
     null_basis = np.linalg.eigh(energy)[1][:, :3]
-    values = collocation @ null_basis @ rng.normal(size=3)
-    weights = Tikhonov(collocation, energy).solve(values, 0.999)
-    assert_allclose(collocation @ weights, values, atol=1e-12)
-    assert abs(weights @ energy @ weights) < 1e-12 * np.abs(energy).max()
+    seen = collocation - collocation @ null_basis @ null_basis.T
+    collocation = seen + 1e-8 * collocation @ null_basis @ null_basis.T
+    values = rng.normal(size=50)
+    weights = Tikhonov(collocation, energy).solve(values, 0.1)
+    # Unpenalized, they would be fitted by least squares, with weights of 1e8
+    assert np.abs(weights).max() < 1e2
+    # A smaller regularization lets them grow, but not without bound
+    assert np.abs(Tikhonov(collocation, energy).solve(values, 1e-6)).max() < 1e6
 
 
 def test_duplicate_kernels_give_the_same_fit(rng):
