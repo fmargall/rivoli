@@ -7,11 +7,12 @@ import numpy as np
 import pytest
 from numpy.testing import assert_allclose
 
+from rivoli.colour import spectrum_to_rgb
 from rivoli.dirichlet import dirichlet_matrix
 from rivoli.distances import diameters
 from rivoli.geometry import spherical_to_cartesian
 from rivoli.kernels import collocation_matrix
-from rivoli.model import fit
+from rivoli.model import RBFModel, fit
 from rivoli.sampling import super_fibonacci_isotropic
 
 ARGUMENTS = {"widths": (0.25, 0.4), "metric": "chordal", "isotropic": True}
@@ -124,6 +125,67 @@ def test_spectral_model():
     )
     assert len(model.centres) == 3
     assert model(sites).shape == (400,)
+
+
+def spectral_model(channels=(), log_space=True):
+    """A spectral model, with random weights."""
+    angles = super_fibonacci_isotropic(60, wavelength_range=(380.0, 780.0))
+    theta_h, theta_d, phi_d, wavelength = angles
+    centres = (
+        spherical_to_cartesian(theta_h, 0.0),
+        spherical_to_cartesian(theta_d, phi_d),
+        wavelength,
+    )
+    weights = np.random.default_rng(20261029).normal(scale=0.3, size=(60, *channels))
+    return RBFModel(
+        centres=centres,
+        weights=weights,
+        widths=(0.3, 0.5, 60.0),
+        metric="chordal",
+        kernel="gaussian",
+        log_offset=1e-6 if log_space else None,
+    )
+
+
+@pytest.mark.parametrize("log_space", [True, False])
+@pytest.mark.parametrize("channels", [(), (2,)])
+def test_spectra_are_the_model_at_each_wavelength(monkeypatch, log_space, channels):
+    model = spectral_model(channels, log_space)
+    (h, d), _ = isotropic_sites(50)
+    wavelengths = np.linspace(380.0, 780.0, 7)
+    spectra = model.spectra((h, d), wavelengths)
+    assert spectra.shape == (50, 7, *channels)
+    for k, wavelength in enumerate(wavelengths):
+        expected = model((h, d, np.full(50, wavelength)))
+        assert_allclose(spectra[:, k], expected, rtol=1e-12, atol=1e-14)
+    monkeypatch.setattr("rivoli.model._ENTRIES_PER_CHUNK", 1000)
+    assert_allclose(model.spectra((h, d), wavelengths), spectra, rtol=1e-14)
+
+
+def test_rgb_of_a_spectral_model():
+    model = spectral_model()
+    (h, d), _ = isotropic_sites(50)
+    wavelengths = np.arange(380.0, 781.0, 5.0)
+    rgb = model.rgb((h, d), wavelengths, illuminant="E")
+    assert rgb.shape == (50, 3)
+    expected = spectrum_to_rgb(wavelengths, model.spectra((h, d), wavelengths), illuminant="E")
+    assert_allclose(rgb, expected, rtol=1e-12)
+
+
+def test_invalid_spectral_evaluations():
+    (h, d), _ = isotropic_sites(10)
+    wavelengths = np.linspace(380.0, 780.0, 5)
+    model = spectral_model()
+    with pytest.raises(ValueError, match="without wavelengths, got 3 factors"):
+        model.spectra((h, d, np.full(10, 500.0)), wavelengths)
+    with pytest.raises(ValueError, match="shape \\(k,\\)"):
+        model.spectra((h, d), wavelengths[:, np.newaxis])
+    with pytest.raises(ValueError, match="several channels"):
+        spectral_model((3,)).rgb((h, d), wavelengths)
+    centres, values = isotropic_sites(20)
+    rgb = fit(centres, values, centres, regularization=0.0, **ARGUMENTS)
+    with pytest.raises(ValueError, match="not spectral"):
+        rgb.spectra(centres, wavelengths)
 
 
 def test_invalid_values():
