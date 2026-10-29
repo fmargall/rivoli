@@ -213,3 +213,14 @@ def test_write_invalid_models(tmp_path, rng):
     with pytest.raises(ValueError, match="got weights of shape \\(30,\\)"):
         write_model(path, model(rng, channels=()))
     assert not path.exists()
+
+
+@pytest.mark.parametrize("spectral", [False, True])
+def test_write_model_with_warp(tmp_path, rng, spectral):
+    pytest.importorskip("warp")
+    written = model(rng, channels=() if spectral else (3,), spectral=spectral)
+    wavelengths = np.arange(380.0, 781.0, 20.0) if spectral else None
+    write_model(tmp_path / "numpy.binary", written, wavelengths=wavelengths)
+    write_model(tmp_path / "warp.binary", written, wavelengths=wavelengths, device="cpu")
+    expected = read_merl(tmp_path / "numpy.binary")
+    assert_allclose(read_merl(tmp_path / "warp.binary"), expected, rtol=1e-12, atol=1e-300)

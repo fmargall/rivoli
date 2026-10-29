@@ -197,6 +197,7 @@ def write_model(
     *,
     wavelengths: "ArrayLike | None" = None,
     illuminant: Literal["D65", "E"] = "D65",
+    device: str | None = None,
 ) -> None:
     """Write a model of a BRDF as a MERL file.
 
@@ -220,6 +221,11 @@ def write_model(
         Required for a spectral model, and only for it.
     illuminant : {"D65", "E"}, default "D65"
         Illuminant under which a spectral model is seen.
+    device : str, optional
+        Warp device, such as ``"cuda:0"``, on which the model is
+        evaluated, which takes seconds on a GPU instead of minutes with
+        NumPy for a model of a thousand centres. Default: NumPy, without
+        Warp.
 
     Raises
     ------
@@ -245,7 +251,8 @@ def write_model(
     )
     values = np.full((*SHAPE, len(SCALES)), -1.0)
     if wavelengths is None:
-        values[above] = np.maximum(model(sites), 0.0)
+        values[above] = np.maximum(model(sites, device=device), 0.0)
     else:
-        values[above] = np.maximum(model.rgb(sites, wavelengths, illuminant=illuminant), 0.0)
+        rgb = model.rgb(sites, wavelengths, illuminant=illuminant, device=device)
+        values[above] = np.maximum(rgb, 0.0)
     write_merl(path, values)

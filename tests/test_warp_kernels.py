@@ -84,3 +84,47 @@ def test_unknown_kernel(rng):
         warp_kernels.collocation_matrix(
             centres, centres, widths=(1.0, 1.0), metric="chordal", kernel="cubic", device="cpu"
         )
+
+
+@pytest.mark.parametrize("device", DEVICES)
+@pytest.mark.parametrize("spectral", [False, True])
+@pytest.mark.parametrize("symmetry", ["none", "reciprocity"])
+@pytest.mark.parametrize("channels", [(), (3,)])
+def test_expansion_is_the_product_with_the_collocation_matrix(
+    rng, device, spectral, symmetry, channels
+):
+    sites, centres = random_sites(rng, 70, spectral), random_sites(rng, 50, spectral)
+    weights = rng.normal(size=(50, *channels))
+    arguments = {
+        "widths": (0.4, 0.6, 100.0) if spectral else (0.4, 0.6),
+        "metric": "geodesic",
+        "symmetry": symmetry,
+    }
+    expected = kernels.collocation_matrix(sites, centres, **arguments) @ weights
+    actual = warp_kernels.expansion(sites, centres, weights, device=device, **arguments)
+    assert actual.shape == (70, *channels)
+    assert_allclose(actual, expected, rtol=1e-13, atol=1e-14 * np.abs(expected).max())
+
+
+def test_expansion_by_launches_of_a_few_sites(rng, monkeypatch):
+    # Launches of 3 sites for 20 centres, the last one partial
+    monkeypatch.setattr(warp_kernels, "_PAIRS_PER_LAUNCH", 60)
+    sites, centres = random_sites(rng, 10), random_sites(rng, 20)
+    weights = rng.normal(size=(20, 2))
+    arguments = {"widths": (0.5, 0.5), "metric": "chordal"}
+    expected = kernels.collocation_matrix(sites, centres, **arguments) @ weights
+    actual = warp_kernels.expansion(sites, centres, weights, device="cpu", **arguments)
+    assert_allclose(actual, expected, rtol=1e-13)
+
+
+@pytest.mark.parametrize("shape", [(19,), (20, 2, 2)])
+def test_expansion_of_invalid_weights(rng, shape):
+    with pytest.raises(ValueError, match="expected weights of shape \\(20,\\) or \\(20, c\\)"):
+        warp_kernels.expansion(
+            random_sites(rng, 3),
+            random_sites(rng, 20),
+            np.zeros(shape),
+            widths=(1.0, 1.0),
+            metric="chordal",
+            device="cpu",
+        )

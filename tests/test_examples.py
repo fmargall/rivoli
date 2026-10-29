@@ -40,6 +40,7 @@ def test_merl_reconstruction(merl_file, tmp_path, capsys):
             "--test-bins", "5000",
             "--output", str(output),
             "--figure", str(figure),
+            "--device", "cpu",
         ]
     )  # fmt: skip
     printed = capsys.readouterr().out
