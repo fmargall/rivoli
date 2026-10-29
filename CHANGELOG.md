@@ -60,6 +60,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   in the linear RGB of sRGB.
 - `rivoli.merl.write_model`: writing of an RGB or spectral model as a MERL file,
   evaluated above the horizon and clamped to non-negative values.
+- `examples/merl_reconstruction.py`: example script that decimates a BRDF of the
+  MERL database, reconstructs it and compares the reconstruction with it, with
+  an optional MERL output and figure. The examples are run by the tests, and
+  their dependencies, such as matplotlib, are in the `examples` dependency group.
 - `rivoli.warp.distances`: the same distances and spacings computed in parallel
   on a GPU or the CPU with NVIDIA Warp, installed by the `warp` extra.
 

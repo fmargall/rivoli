@@ -51,7 +51,10 @@ warp = ["warp-lang>=1.18"]
 # and are installed with `uv sync` (or `pip install -e . --group dev`, pip >= 25.1)
 [dependency-groups]
 # warp-lang runs the kernels of rivoli.warp on the CPU when there is no GPU, as in CI
-test = ["pytest", "pytest-cov", "warp-lang>=1.18"]
+# Plotting of the scripts of examples/
+examples = ["matplotlib"]
+# The examples are run by the tests, so that they follow the API
+test = ["pytest", "pytest-cov", "warp-lang>=1.18", { include-group = "examples" }]
 # pyright is pinned: each release can add new errors, upgrades must be deliberate.
 # The "nodejs" extra ships Node.js as a wheel instead of downloading it at first run.
 dev = [
@@ -99,8 +102,8 @@ exclude_also = ['@wp\.(func|kernel)']
 
 [tool.pyright]
 # Tests are checked too: they are the first client of the public API. So are the
-# scripts of the repository, such as the release script
-include = ["src", "tests", "scripts"]
+# scripts of the repository, such as the release script, and the examples
+include = ["src", "tests", "scripts", "examples"]
 # Check against the oldest supported version, so newer syntax is rejected
 pythonVersion = "3.13"
 typeCheckingMode = "standard"
