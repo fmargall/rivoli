@@ -73,7 +73,9 @@ class RBFModel:
     log_offset: float | None
     symmetry: Literal["none", "reciprocity"] = "reciprocity"
 
-    def __call__(self, sites: "Sequence[ArrayLike]") -> "NDArray[np.float64]":
+    def __call__(
+        self, sites: "Sequence[ArrayLike]", *, device: str | None = None
+    ) -> "NDArray[np.float64]":
         """Evaluate the model.
 
         Parameters
@@ -81,16 +83,25 @@ class RBFModel:
         sites : sequence of array_like
             ``(h, d)`` or ``(h, d, wavelength)`` of ``m`` sites, as the
             centres.
+        device : str, optional
+            Warp device, such as ``"cuda:0"`` or ``"cpu"``, on which the
+            model is evaluated by :func:`rivoli.warp.kernels.expansion`,
+            much faster on a GPU. Default: NumPy, without Warp.
 
         Returns
         -------
         ndarray, shape (m,) or (m, c)
             Values of the model at the sites.
         """
-        return self._values(self._expand(sites, self.centres, self.weights, self.widths))
+        expansion = self._expand(sites, self.centres, self.weights, self.widths, device)
+        return self._values(expansion)
 
     def spectra(
-        self, sites: "Sequence[ArrayLike]", wavelengths: "ArrayLike"
+        self,
+        sites: "Sequence[ArrayLike]",
+        wavelengths: "ArrayLike",
+        *,
+        device: str | None = None,
     ) -> "NDArray[np.float64]":
         """Evaluate a spectral model at every wavelength of each site.
 
@@ -105,6 +116,10 @@ class RBFModel:
             ``(h, d)`` of ``m`` sites, without wavelengths.
         wavelengths : array_like, shape (k,)
             Wavelengths at which the model is evaluated at each site.
+        device : str, optional
+            Warp device, such as ``"cuda:0"`` or ``"cpu"``, on which the
+            model is evaluated by :func:`rivoli.warp.kernels.expansion`,
+            much faster on a GPU. Default: NumPy, without Warp.
 
         Returns
         -------
@@ -132,7 +147,7 @@ class RBFModel:
             self.weights.reshape(len(self.weights), 1, *channels)
         )
         expansion = self._expand(
-            sites, self.centres[:2], weights.reshape(len(weights), -1), self.widths[:2]
+            sites, self.centres[:2], weights.reshape(len(weights), -1), self.widths[:2], device
         )
         return self._values(expansion.reshape(len(expansion), len(wavelengths), *channels))
 
@@ -142,6 +157,7 @@ class RBFModel:
         wavelengths: "ArrayLike",
         *,
         illuminant: Literal["D65", "E"] = "D65",
+        device: str | None = None,
     ) -> "NDArray[np.float64]":
         """Evaluate the colour of a spectral model.
 
@@ -159,6 +175,10 @@ class RBFModel:
             such as every 5 nm over the range of the model.
         illuminant : {"D65", "E"}, default "D65"
             Illuminant under which the BRDF is seen.
+        device : str, optional
+            Warp device, such as ``"cuda:0"`` or ``"cpu"``, on which the
+            model is evaluated by :func:`rivoli.warp.kernels.expansion`,
+            much faster on a GPU. Default: NumPy, without Warp.
 
         Returns
         -------
@@ -174,7 +194,7 @@ class RBFModel:
         if self.weights.ndim != 1:
             raise ValueError("the colour of a model with several channels is undefined")
         matrix = spectral_matrix(wavelengths, illuminant=illuminant)
-        return self.spectra(sites, wavelengths) @ matrix
+        return self.spectra(sites, wavelengths, device=device) @ matrix
 
     def _expand(
         self,
@@ -182,8 +202,16 @@ class RBFModel:
         centres: "Sequence[NDArray[np.float64]]",
         weights: "NDArray[np.float64]",
         widths: tuple[float, ...],
+        device: str | None,
     ) -> "NDArray[np.float64]":
         """Expansion of weights on the kernels of centres at sites."""
+        arguments = {"widths": widths, "metric": self.metric, "kernel": self.kernel}
+        arguments["symmetry"] = self.symmetry
+        if device is not None:
+            # Imported here, as Warp is an optional dependency
+            from rivoli.warp.kernels import expansion
+
+            return expansion(sites, centres, weights, device=device, **arguments)
         sites = [np.asarray(factor, dtype=np.float64) for factor in sites]
         m = len(sites[0])
         # The collocation matrix is computed by chunks of sites, as for a
@@ -192,12 +220,7 @@ class RBFModel:
         return np.concatenate(
             [
                 collocation_matrix(
-                    [factor[start : start + step] for factor in sites],
-                    centres,
-                    widths=widths,
-                    metric=self.metric,
-                    kernel=self.kernel,
-                    symmetry=self.symmetry,
+                    [factor[start : start + step] for factor in sites], centres, **arguments
                 )
                 @ weights
                 for start in range(0, m, step)

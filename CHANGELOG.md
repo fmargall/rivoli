@@ -60,6 +60,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   model at a set of wavelengths at each site, at the cost of a single
   evaluation thanks to the separability of the Gaussian kernels, and its colour
   in the linear RGB of sRGB.
+- `rivoli.warp.kernels.expansion`: evaluation of expansions on the kernels with
+  Warp, one thread per site, without the collocation matrix. Models are evaluated
+  with it by passing a Warp `device` to `RBFModel`, `RBFModel.spectra`,
+  `RBFModel.rgb` and `rivoli.merl.write_model`: writing a MERL file of a model of
+  a thousand centres takes seconds on a GPU instead of minutes with NumPy.
 - `rivoli.merl.write_model`: writing of an RGB or spectral model as a MERL file,
   evaluated above the horizon and clamped to non-negative values.
 - Reciprocity of the kernels, `symmetry="reciprocity"` by default in

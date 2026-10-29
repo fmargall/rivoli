@@ -21,6 +21,10 @@ uv sync --group examples
   uv run python examples/merl_reconstruction.py blue-acrylic.binary --figure comparison.png
   ```
 
+  With [Warp](https://github.com/NVIDIA/warp), installed by the `warp` extra, add
+  `--device cuda:0` to evaluate the model on a GPU: the MERL file is then written
+  in seconds instead of minutes.
+
 ## Data
 
 The MERL BRDF database is not distributed with RIVOLI. It is free for research

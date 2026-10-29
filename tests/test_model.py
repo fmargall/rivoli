@@ -210,3 +210,17 @@ def test_reciprocal_models_are_invariant_by_swapping_the_directions(symmetry):
         assert_allclose(swapped, model((h, d)), rtol=1e-12)
     else:
         assert not np.allclose(swapped, model((h, d)), rtol=1e-6)
+
+
+def test_evaluation_with_warp():
+    pytest.importorskip("warp")
+    centres, _ = isotropic_sites(100)
+    sites, values = isotropic_sites(300)
+    model = fit(sites, values, centres, regularization=0.1, **ARGUMENTS)
+    assert_allclose(model(sites, device="cpu"), model(sites), rtol=1e-12)
+    spectral = spectral_model()
+    wavelengths = np.linspace(380.0, 780.0, 9)
+    expected = spectral.spectra(sites, wavelengths)
+    assert_allclose(spectral.spectra(sites, wavelengths, device="cpu"), expected, rtol=1e-12)
+    expected = spectral.rgb(sites, wavelengths)
+    assert_allclose(spectral.rgb(sites, wavelengths, device="cpu"), expected, rtol=1e-12)

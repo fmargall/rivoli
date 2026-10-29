@@ -18,7 +18,8 @@ Usage::
 
 Run it with ``--help`` for the other options, such as the numbers of sites
 and centres. Writing the reconstruction evaluates the model on the 1.1
-million bins of the grid above the horizon, which takes a few minutes.
+million bins of the grid above the horizon, which takes a few minutes
+with NumPy, and seconds on a GPU with ``--device cuda:0``.
 """
 
 import argparse
@@ -97,14 +98,18 @@ def reconstruct(
 
 
 def compare(
-    model: RBFModel, values: "NDArray", count: int, rng: np.random.Generator
+    model: RBFModel,
+    values: "NDArray",
+    count: int,
+    rng: np.random.Generator,
+    device: str | None = None,
 ) -> dict[str, "NDArray"]:
     """Errors of the model on random measured bins, per channel."""
     angles = bin_angles()
     measured = is_above_horizon(*angles) & np.all(values >= 0, axis=-1)
     bins = rng.choice(np.flatnonzero(measured), size=min(count, measured.sum()), replace=False)
     reference = values.reshape(-1, 3)[bins]
-    reconstruction = model(sites_of(*(angle.ravel()[bins] for angle in angles)))
+    reconstruction = model(sites_of(*(angle.ravel()[bins] for angle in angles)), device=device)
     log_ratio = np.log((reconstruction + LOG_ERROR_OFFSET) / (reference + LOG_ERROR_OFFSET))
     return {
         "relative error": np.linalg.norm(reconstruction - reference, axis=0)
@@ -182,6 +187,11 @@ def main(argv: "Sequence[str] | None" = None) -> None:
     parser.add_argument("--output", type=Path, help="MERL file of the reconstruction")
     parser.add_argument("--figure", type=Path, help="image comparing slices, needs matplotlib")
     parser.add_argument("--seed", type=int, default=0, help="seed of the random test bins")
+    parser.add_argument(
+        "--device",
+        help="Warp device on which the model is evaluated, such as cuda:0, "
+        "much faster on a GPU (default: NumPy)",
+    )
     arguments = parser.parse_args(argv)
 
     values = read_merl(arguments.merl)
@@ -192,13 +202,14 @@ def main(argv: "Sequence[str] | None" = None) -> None:
     model = reconstruct(sites, measurements, arguments.centres, arguments.regularization)
     print(f"model of {arguments.centres} centres fitted in {time.perf_counter() - start:.1f} s")
 
-    errors = compare(model, values, arguments.test_bins, np.random.default_rng(arguments.seed))
+    rng = np.random.default_rng(arguments.seed)
+    errors = compare(model, values, arguments.test_bins, rng, arguments.device)
     for name, error in errors.items():
         print(f"{name}: " + ", ".join(f"{e:.4f}" for e in error) + " (red, green, blue)")
 
     if arguments.output is not None:
         start = time.perf_counter()
-        write_model(arguments.output, model)
+        write_model(arguments.output, model, device=arguments.device)
         print(f"{arguments.output} written in {time.perf_counter() - start:.1f} s")
     if arguments.figure is not None:
         plot(model, values, arguments.figure)
