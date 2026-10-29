@@ -23,6 +23,9 @@ factors of :data:`SCALES` on reading, to give values in ``sr^-1``, and
 divided by them on writing. Negative values mark bins without
 measurement, such as those below the horizon.
 
+A model of :mod:`rivoli.model`, of RGB values or spectral, is written as
+a MERL file by :func:`write_model`.
+
 References
 ----------
 .. [1] W. Matusik, H. Pfister, M. Brand, L. McMillan, "A Data-Driven
@@ -31,14 +34,19 @@ References
 """
 
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Literal
 
 import numpy as np
+
+from rivoli.geometry import spherical_to_cartesian
+from rivoli.parametrization import is_above_horizon
 
 if TYPE_CHECKING:
     from os import PathLike
 
     from numpy.typing import ArrayLike, NDArray
+
+    from rivoli.model import RBFModel
 
 __all__ = [
     "SCALES",
@@ -47,6 +55,7 @@ __all__ = [
     "bin_indices",
     "read_merl",
     "write_merl",
+    "write_model",
 ]
 
 SHAPE = (90, 90, 180)
@@ -180,3 +189,63 @@ def write_merl(path: "str | PathLike[str]", values: "ArrayLike") -> None:
     tables = np.moveaxis(values / np.array(SCALES), -1, 0)
     header = np.array(SHAPE, dtype=_HEADER).tobytes()
     Path(path).write_bytes(header + tables.astype(_VALUE).tobytes())
+
+
+def write_model(
+    path: "str | PathLike[str]",
+    model: "RBFModel",
+    *,
+    wavelengths: "ArrayLike | None" = None,
+    illuminant: Literal["D65", "E"] = "D65",
+) -> None:
+    """Write a model of a BRDF as a MERL file.
+
+    The model is evaluated at the angles of the bins of :func:`bin_angles`
+    that are above the horizon, with half vectors of zero azimuth, as an
+    isotropic BRDF. Its values are clamped to 0 from below, as a BRDF is
+    not negative, and the bins below the horizon are marked as without
+    measurement, by the value -1.
+
+    Parameters
+    ----------
+    path : str or path-like
+        Path of the file, usually with the ``.binary`` extension. An
+        existing file is overwritten.
+    model : RBFModel
+        A model of 3 channels, the red, green and blue values, or a
+        spectral model of a single channel.
+    wavelengths : array_like, shape (k,), optional
+        Increasing wavelengths at which a spectral model is evaluated,
+        to be converted to RGB by :meth:`rivoli.model.RBFModel.rgb`.
+        Required for a spectral model, and only for it.
+    illuminant : {"D65", "E"}, default "D65"
+        Illuminant under which a spectral model is seen.
+
+    Raises
+    ------
+    ValueError
+        If `wavelengths` are given for a model that is not spectral, or
+        missing for a spectral one, if a model that is not spectral does
+        not have 3 channels, or for an invalid spectral model, as in
+        :meth:`rivoli.model.RBFModel.rgb`.
+    """
+    spectral = len(model.centres) == 3
+    if spectral != (wavelengths is not None):
+        raise ValueError("wavelengths must be given if and only if the model is spectral")
+    if not spectral and model.weights.shape[1:] != (len(SCALES),):
+        raise ValueError(
+            f"expected a model of {len(SCALES)} channels, red, green and blue, "
+            f"got weights of shape {model.weights.shape}"
+        )
+    theta_h, theta_d, phi_d = bin_angles()
+    above = is_above_horizon(theta_h, theta_d, phi_d)
+    sites = (
+        spherical_to_cartesian(theta_h[above], 0.0),
+        spherical_to_cartesian(theta_d[above], phi_d[above]),
+    )
+    values = np.full((*SHAPE, len(SCALES)), -1.0)
+    if wavelengths is None:
+        values[above] = np.maximum(model(sites), 0.0)
+    else:
+        values[above] = np.maximum(model.rgb(sites, wavelengths, illuminant=illuminant), 0.0)
+    write_merl(path, values)

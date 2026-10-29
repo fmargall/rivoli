@@ -20,8 +20,9 @@ from typing import TYPE_CHECKING, Literal
 
 import numpy as np
 
+from rivoli.colour import spectral_matrix
 from rivoli.dirichlet import dirichlet_matrix
-from rivoli.kernels import collocation_matrix
+from rivoli.kernels import collocation_matrix, gaussian
 from rivoli.tikhonov import Tikhonov, _check_regularization, _truncated_solve
 
 if TYPE_CHECKING:
@@ -83,24 +84,124 @@ class RBFModel:
         ndarray, shape (m,) or (m, c)
             Values of the model at the sites.
         """
+        return self._values(self._expand(sites, self.centres, self.weights, self.widths))
+
+    def spectra(
+        self, sites: "Sequence[ArrayLike]", wavelengths: "ArrayLike"
+    ) -> "NDArray[np.float64]":
+        """Evaluate a spectral model at every wavelength of each site.
+
+        The Gaussian of the product distance is the product of the
+        Gaussians of the distances on each factor, so the kernels of the
+        half and difference vectors are evaluated once for all the
+        wavelengths: the cost is that of a single evaluation per site.
+
+        Parameters
+        ----------
+        sites : sequence of array_like
+            ``(h, d)`` of ``m`` sites, without wavelengths.
+        wavelengths : array_like, shape (k,)
+            Wavelengths at which the model is evaluated at each site.
+
+        Returns
+        -------
+        ndarray, shape (m, k) or (m, k, c)
+            Spectra of the model at the sites.
+
+        Raises
+        ------
+        ValueError
+            If the model is not spectral, if `sites` do not have 2
+            factors, or if `wavelengths` is not one-dimensional.
+        """
+        if len(self.centres) != 3:
+            raise ValueError("the model is not spectral: its centres have no wavelengths")
+        if len(sites) != 2:
+            raise ValueError(f"expected sites (h, d) without wavelengths, got {len(sites)} factors")
+        wavelengths = np.asarray(wavelengths, dtype=np.float64)
+        if wavelengths.ndim != 1:
+            raise ValueError(f"expected wavelengths of shape (k,), got {wavelengths.shape}")
+        # Kernels of the wavelengths, of shape (k, n), whose products with the
+        # weights are the weights of the kernels of (h, d) at each wavelength
+        spectral = gaussian((wavelengths[:, np.newaxis] - self.centres[2]) / self.widths[2])
+        channels = self.weights.shape[1:]
+        weights = spectral.T.reshape(*spectral.T.shape, *(1,) * len(channels)) * (
+            self.weights.reshape(len(self.weights), 1, *channels)
+        )
+        expansion = self._expand(
+            sites, self.centres[:2], weights.reshape(len(weights), -1), self.widths[:2]
+        )
+        return self._values(expansion.reshape(len(expansion), len(wavelengths), *channels))
+
+    def rgb(
+        self,
+        sites: "Sequence[ArrayLike]",
+        wavelengths: "ArrayLike",
+        *,
+        illuminant: Literal["D65", "E"] = "D65",
+    ) -> "NDArray[np.float64]":
+        """Evaluate the colour of a spectral model.
+
+        The spectra of the model at the wavelengths are converted to the
+        linear RGB of sRGB by :func:`rivoli.colour.spectrum_to_rgb`, and
+        are extended by their values at the first and last wavelengths
+        beyond them.
+
+        Parameters
+        ----------
+        sites : sequence of array_like
+            ``(h, d)`` of ``m`` sites, without wavelengths.
+        wavelengths : array_like, shape (k,)
+            Increasing wavelengths at which the spectra are evaluated,
+            such as every 5 nm over the range of the model.
+        illuminant : {"D65", "E"}, default "D65"
+            Illuminant under which the BRDF is seen.
+
+        Returns
+        -------
+        ndarray, shape (m, 3)
+            Linear red, green and blue values of the model at the sites.
+
+        Raises
+        ------
+        ValueError
+            If the model is not spectral, if it has several channels, or
+            for invalid sites or wavelengths, as in :meth:`spectra`.
+        """
+        if self.weights.ndim != 1:
+            raise ValueError("the colour of a model with several channels is undefined")
+        matrix = spectral_matrix(wavelengths, illuminant=illuminant)
+        return self.spectra(sites, wavelengths) @ matrix
+
+    def _expand(
+        self,
+        sites: "Sequence[ArrayLike]",
+        centres: "Sequence[NDArray[np.float64]]",
+        weights: "NDArray[np.float64]",
+        widths: tuple[float, ...],
+    ) -> "NDArray[np.float64]":
+        """Expansion of weights on the kernels of centres at sites."""
         sites = [np.asarray(factor, dtype=np.float64) for factor in sites]
         m = len(sites[0])
         # The collocation matrix is computed by chunks of sites, as for a
         # whole MERL grid it would not fit in memory
-        step = max(1, _ENTRIES_PER_CHUNK // len(self.weights))
-        expansion = np.concatenate(
+        step = max(1, _ENTRIES_PER_CHUNK // len(weights))
+        return np.concatenate(
             [
                 collocation_matrix(
                     [factor[start : start + step] for factor in sites],
-                    self.centres,
-                    widths=self.widths,
+                    centres,
+                    widths=widths,
                     metric=self.metric,
                     kernel=self.kernel,
                 )
-                @ self.weights
+                @ weights
                 for start in range(0, m, step)
             ]
         )
+
+    def _values(self, expansion: "NDArray[np.float64]") -> "NDArray[np.float64]":
+        """Values of the model of an expansion, out of log space."""
         if self.log_offset is None:
             return expansion
         return np.exp(expansion) - self.log_offset
