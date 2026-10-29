@@ -25,6 +25,18 @@ uv sync --group examples
   `--device cuda:0` to evaluate the model on a GPU: the MERL file is then written
   in seconds instead of minutes.
 
+- [`hdf5_reconstruction.py`](hdf5_reconstruction.py): reconstructs the colour of
+  spectral measurements read from an HDF5 file described by a JSON layout, see
+  `rivoli.hdf5`, in three ways: a model per channel of a single wavelength each
+  (`--mode wavelengths`), a model per channel of the RGB of the measured spectra
+  (`--mode rgb`), or a spectral model whose RGB is computed afterwards
+  (`--mode spectral`). It measures the errors on directions kept out of the fit,
+  and optionally writes the reconstruction as a MERL file.
+
+  ```bash
+  uv run python examples/hdf5_reconstruction.py measurements.h5 layout.json --mode spectral --centres 2000 --device cuda:0 --output reconstruction.binary
+  ```
+
 ## Data
 
 The MERL BRDF database is not distributed with RIVOLI. It is free for research

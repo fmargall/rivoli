@@ -76,6 +76,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `symmetry="reciprocity"` in the samplers of `rivoli.sampling`, which then
   sample the fundamental domain, `phi_d` in `(0, pi]`, for the centres of
   reciprocal kernels.
+- `examples/hdf5_reconstruction.py`: example script that reconstructs the
+  colour of spectral measurements read from an HDF5 file, from single
+  wavelengths, from the RGB of the measured spectra, or with a spectral model,
+  and compares them on directions kept out of the fit.
 - `rivoli.hdf5`: reading of measurements of BRDFs from HDF5 files, described
   by a layout given as a mapping or a JSON file: the grids of the angles and
   wavelengths, the template of the paths of the tables of values, the unit of
