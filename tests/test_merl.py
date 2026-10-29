@@ -5,13 +5,25 @@
 
 import math
 import struct
+from dataclasses import replace
 
 import numpy as np
 import pytest
 from numpy.testing import assert_allclose, assert_array_equal
 
-from rivoli.merl import SCALES, SHAPE, bin_angles, bin_indices, read_merl, write_merl
+from rivoli.geometry import spherical_to_cartesian
+from rivoli.merl import (
+    SCALES,
+    SHAPE,
+    bin_angles,
+    bin_indices,
+    read_merl,
+    write_merl,
+    write_model,
+)
+from rivoli.model import RBFModel
 from rivoli.parametrization import is_above_horizon
+from rivoli.sampling import super_fibonacci_isotropic
 
 
 @pytest.fixture
@@ -132,3 +144,72 @@ def test_bin_indices_broadcast():
     for index in indices:
         assert index.shape == (4, 5)
         assert index.dtype == np.intp
+
+
+def model(rng, channels=(3,), spectral=False):
+    """A small model with random weights."""
+    if spectral:
+        theta_h, theta_d, phi_d, wavelength = super_fibonacci_isotropic(
+            30, wavelength_range=(380.0, 780.0)
+        )
+        wavelengths = (wavelength,)
+    else:
+        theta_h, theta_d, phi_d = super_fibonacci_isotropic(30)
+        wavelengths = ()
+    h, d = spherical_to_cartesian(theta_h, 0.0), spherical_to_cartesian(theta_d, phi_d)
+    centres = (h, d, *wavelengths)
+    return RBFModel(
+        centres=centres,
+        weights=rng.normal(scale=0.5, size=(30, *channels)) - 2.0,
+        widths=(0.4, 0.6, 80.0)[: len(centres)],
+        metric="chordal",
+        kernel="gaussian",
+        log_offset=1e-6,
+    )
+
+
+def grid_sites(above):
+    theta_h, theta_d, phi_d = bin_angles()
+    return (
+        spherical_to_cartesian(theta_h[above], 0.0),
+        spherical_to_cartesian(theta_d[above], phi_d[above]),
+    )
+
+
+def test_write_rgb_model(tmp_path, rng):
+    rgb = model(rng)
+    write_model(tmp_path / "model.binary", rgb)
+    values = read_merl(tmp_path / "model.binary")
+    above = is_above_horizon(*bin_angles())
+    assert np.all(values[~above] == -1.0)
+    assert_allclose(values[above], rgb(grid_sites(above)), rtol=1e-14)
+    # Negative values of a model fitted in linear space are clamped
+    linear = replace(rgb, log_offset=None)
+    write_model(tmp_path / "model.binary", linear)
+    values = read_merl(tmp_path / "model.binary")
+    expected = linear(grid_sites(above))
+    assert np.any(expected < 0)
+    assert_allclose(values[above], np.maximum(expected, 0.0), rtol=1e-14)
+
+
+def test_write_spectral_model(tmp_path, rng):
+    spectral = model(rng, channels=(), spectral=True)
+    wavelengths = np.arange(380.0, 781.0, 10.0)
+    write_model(tmp_path / "model.binary", spectral, wavelengths=wavelengths, illuminant="E")
+    values = read_merl(tmp_path / "model.binary")
+    above = is_above_horizon(*bin_angles())
+    assert np.all(values[~above] == -1.0)
+    expected = spectral.rgb(grid_sites(above), wavelengths, illuminant="E")
+    assert_allclose(values[above], np.maximum(expected, 0.0), rtol=1e-14)
+
+
+def test_write_invalid_models(tmp_path, rng):
+    path = tmp_path / "model.binary"
+    wavelengths = np.arange(380.0, 781.0, 10.0)
+    with pytest.raises(ValueError, match="if and only if the model is spectral"):
+        write_model(path, model(rng), wavelengths=wavelengths)
+    with pytest.raises(ValueError, match="if and only if the model is spectral"):
+        write_model(path, model(rng, channels=(), spectral=True))
+    with pytest.raises(ValueError, match="got weights of shape \\(30,\\)"):
+        write_model(path, model(rng, channels=()))
+    assert not path.exists()

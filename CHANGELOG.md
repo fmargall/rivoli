@@ -54,6 +54,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   CIE 1931 tristimulus values and to the linear RGB of sRGB, under the
   illuminant D65 or E, with the colour matching functions and the illuminant
   tabulated by the CIE. The conversions are linear, and also given as a matrix.
+- `rivoli.model.RBFModel.spectra` and `RBFModel.rgb`: evaluation of a spectral
+  model at a set of wavelengths at each site, at the cost of a single
+  evaluation thanks to the separability of the Gaussian kernels, and its colour
+  in the linear RGB of sRGB.
+- `rivoli.merl.write_model`: writing of an RGB or spectral model as a MERL file,
+  evaluated above the horizon and clamped to non-negative values.
 - `rivoli.warp.distances`: the same distances and spacings computed in parallel
   on a GPU or the CPU with NVIDIA Warp, installed by the `warp` extra.
 
