@@ -1,4 +1,6 @@
-# RIVOLI
+<h1 align="center">
+  <img src="docs/assets/header.png" alt="RIVOLI, a BRDF toolbox: interpolation, reconstruction">
+</h1>
 
 [![CI][ci-badge]][ci-workflow]
 
