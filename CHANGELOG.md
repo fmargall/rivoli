@@ -50,6 +50,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `rivoli.merl`: reading and writing of the RGB files of the MERL BRDF database,
   the angles of the bins of its grid, and the lookup of the bins that contain
   Rusinkiewicz angles, as in its reference implementation.
+- `rivoli.colour`: conversions of spectra, such as those of a spectral BRDF, to
+  CIE 1931 tristimulus values and to the linear RGB of sRGB, under the
+  illuminant D65 or E, with the colour matching functions and the illuminant
+  tabulated by the CIE. The conversions are linear, and also given as a matrix.
 - `rivoli.warp.distances`: the same distances and spacings computed in parallel
   on a GPU or the CPU with NVIDIA Warp, installed by the `warp` extra.
 
