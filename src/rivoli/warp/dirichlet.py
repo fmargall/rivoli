@@ -56,6 +56,7 @@ def _sphere_kernels(
     centres: wp.array(dtype=wp.vec3d),
     width: wp.float64,
     metric: int,
+    reciprocal: int,
     values: wp.array2d(dtype=wp.float64),
     gradients: wp.array3d(dtype=wp.float64),
 ) -> None:
@@ -63,22 +64,32 @@ def _sphere_kernels(
     q, j = wp.tid()  # pyright: ignore[reportAssignmentType, reportGeneralTypeIssues]
     x = nodes[q]
     c = centres[j]
-    ratio = wp.float64(1.0)
-    if metric == _GEODESIC:
-        distance = geodesic(x, c)
-        # The gradient of the geodesic distance is that of the chordal one
-        # times gamma / sin(gamma), which tends to 1 at the centre
-        sine = wp.float64(0.5) * wp.length(x - c) * wp.length(x + c)
-        if sine > wp.float64(0.0):
-            ratio = distance / sine
-    else:
-        distance = chordal(x, c)
-    scaled = distance / width
-    value = roots[q] * wp.exp(-scaled * scaled)
+    value = wp.float64(0.0)
+    # Vector whose tangent components are those of the gradient
+    gradient = wp.vec3d(wp.float64(0.0), wp.float64(0.0), wp.float64(0.0))
+    # The centre, then its image by reciprocity, a half turn of d
+    for image in range(1 + reciprocal):
+        if image == 1:
+            c = wp.vec3d(-c[0], -c[1], c[2])
+        ratio = wp.float64(1.0)
+        if metric == _GEODESIC:
+            distance = geodesic(x, c)
+            # The gradient of the geodesic distance is that of the chordal
+            # one times gamma / sin(gamma), which tends to 1 at the centre
+            sine = wp.float64(0.5) * wp.length(x - c) * wp.length(x + c)
+            if sine > wp.float64(0.0):
+                ratio = distance / sine
+        else:
+            distance = chordal(x, c)
+        scaled = distance / width
+        term = roots[q] * wp.exp(-scaled * scaled)
+        value += term
+        gradient += c * (wp.float64(2.0) / (width * width) * ratio * term)
     values[q, j] = value
-    factor = wp.float64(2.0) / (width * width) * ratio * value
     for k in range(tangents.shape[1]):
-        gradients[k, q, j] = factor * wp.dot(c, tangents[q, k])
+        # Expanded, as Warp's stubs lose the type of the sum of scaled vectors
+        t = tangents[q, k]
+        gradients[k, q, j] = gradient[0] * t[0] + gradient[1] * t[1] + gradient[2] * t[2]
 
 
 @wp.kernel
@@ -126,12 +137,17 @@ def _symmetric(upper: wp.array) -> "NDArray[np.float64]":
 
 def _blocks(
     rule: "_Rule",
-    centres: "NDArray[np.float64]",
+    orbit: "list[NDArray[np.float64]]",
     width: float,
     metric: str,
     device: str | None,
 ) -> tuple["NDArray[np.float64]", "NDArray[np.float64]"]:
-    """Mass and stiffness matrices of the Gaussians of the centres on a factor."""
+    """Mass and stiffness matrices on a factor of the Gaussians summed over orbits.
+
+    `orbit` holds the centres, then their images by reciprocity, which the
+    device computes again from the centres.
+    """
+    centres = orbit[0]
     n = len(centres)
     dtype = wp.float64 if rule.tangents is None else wp.vec3d
     centres_array = wp.array(np.ascontiguousarray(centres), dtype=dtype, device=device)
@@ -168,7 +184,15 @@ def _blocks(
             tangents = wp.array(
                 np.ascontiguousarray(rule.tangents[rows]), dtype=wp.vec3d, device=device
             )
-            inputs = [nodes, tangents, roots, centres_array, width, _METRICS[metric]]
+            inputs = [
+                nodes,
+                tangents,
+                roots,
+                centres_array,
+                width,
+                _METRICS[metric],
+                len(orbit) - 1,
+            ]
             wp.launch(
                 _sphere_kernels,
                 dim=(count, n),
@@ -195,6 +219,7 @@ def dirichlet_matrix(
     wavelength_range: tuple[float, float] | None = None,
     scales: tuple[float, ...] | None = None,
     kernel: Literal["gaussian"] = "gaussian",
+    symmetry: Literal["none", "reciprocity"] = "reciprocity",
     refinement: int = 1,
     device: str | None = None,
 ) -> "NDArray[np.float64]":
@@ -223,6 +248,8 @@ def dirichlet_matrix(
         each.
     kernel : {"gaussian"}, default "gaussian"
         Profile of the kernels.
+    symmetry : {"reciprocity", "none"}, default "reciprocity"
+        Symmetry of the BRDF, over whose orbit the kernels are summed.
     refinement : int, default 1
         Multiplier of the numbers of quadrature nodes along each
         dimension.
@@ -241,10 +268,10 @@ def dirichlet_matrix(
         As :func:`rivoli.dirichlet.dirichlet_matrix`.
     """
     problem = _problem(
-        centres, widths, metric, isotropic, wavelength_range, scales, kernel, refinement
+        centres, widths, metric, isotropic, wavelength_range, scales, kernel, symmetry, refinement
     )
     blocks = [
-        _blocks(rule, factor, width, metric, device)
-        for rule, factor, width in zip(problem.rules, problem.centres, problem.widths, strict=True)
+        _blocks(rule, orbit, width, metric, device)
+        for rule, orbit, width in zip(problem.rules, problem.orbits, problem.widths, strict=True)
     ]
     return _assemble(blocks, problem.scales)

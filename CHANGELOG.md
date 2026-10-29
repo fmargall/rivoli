@@ -60,6 +60,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   in the linear RGB of sRGB.
 - `rivoli.merl.write_model`: writing of an RGB or spectral model as a MERL file,
   evaluated above the horizon and clamped to non-negative values.
+- Reciprocity of the kernels, `symmetry="reciprocity"` by default in
+  `rivoli.kernels`, `rivoli.dirichlet`, their Warp counterparts and
+  `rivoli.model`: the kernels are summed over the orbit of their centre by the
+  swap of the incident and outgoing directions, `phi_d -> phi_d + pi`, so that
+  the models are exactly reciprocal and smooth, and their Dirichlet matrix is
+  that of the fundamental domain. `symmetry="none"` gives the plain kernels.
+- `symmetry="reciprocity"` in the samplers of `rivoli.sampling`, which then
+  sample the fundamental domain, `phi_d` in `(0, pi]`, for the centres of
+  reciprocal kernels.
 - `examples/merl_reconstruction.py`: example script that decimates a BRDF of the
   MERL database, reconstructs it and compares the reconstruction with it, with
   an optional MERL output and figure. The examples are run by the tests, and

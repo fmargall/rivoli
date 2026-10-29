@@ -36,7 +36,7 @@ def test_merl_reconstruction(merl_file, tmp_path, capsys):
         [
             str(merl_file),
             "--sites", "2000",
-            "--centres", "150",
+            "--centres", "300",
             "--test-bins", "5000",
             "--output", str(output),
             "--figure", str(figure),

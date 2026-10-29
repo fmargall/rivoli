@@ -28,7 +28,8 @@ def rng():
 @pytest.mark.parametrize(
     ("isotropic", "spectral"), [(True, False), (True, True), (False, False), (False, True)]
 )
-def test_dirichlet_matrix_matches_numpy(rng, device, metric, isotropic, spectral):
+@pytest.mark.parametrize("symmetry", ["none", "reciprocity"])
+def test_dirichlet_matrix_matches_numpy(rng, device, metric, isotropic, spectral, symmetry):
     n = 40
     phi_h = np.zeros(n) if isotropic else rng.uniform(-np.pi, np.pi, n)
     centres = [
@@ -40,6 +41,7 @@ def test_dirichlet_matrix_matches_numpy(rng, device, metric, isotropic, spectral
         "metric": metric,
         "isotropic": isotropic,
         "scales": (1.5, 3.0),
+        "symmetry": symmetry,
     }
     if spectral:
         centres.append(rng.uniform(*RANGE, n))

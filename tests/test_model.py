@@ -196,3 +196,17 @@ def test_invalid_values():
         fit(centres, values[1:], centres, regularization=0.5, **ARGUMENTS)
     with pytest.raises(ValueError, match="must be in \\[0, 1\\)"):
         fit(centres, values, centres, regularization=1.0, **ARGUMENTS)
+
+
+@pytest.mark.parametrize("symmetry", ["none", "reciprocity"])
+def test_reciprocal_models_are_invariant_by_swapping_the_directions(symmetry):
+    centres, _ = isotropic_sites(100)
+    (h, d), values = isotropic_sites(600)
+    model = fit((h, d), values, centres, regularization=0.1, symmetry=symmetry, **ARGUMENTS)
+    assert model.symmetry == symmetry
+    # Swapping wi and wo maps d to (-x, -y, z), phi_d to phi_d + pi
+    swapped = model((h, d * [-1.0, -1.0, 1.0]))
+    if symmetry == "reciprocity":
+        assert_allclose(swapped, model((h, d)), rtol=1e-12)
+    else:
+        assert not np.allclose(swapped, model((h, d)), rtol=1e-6)
