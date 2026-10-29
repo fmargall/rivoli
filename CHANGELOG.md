@@ -69,6 +69,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `symmetry="reciprocity"` in the samplers of `rivoli.sampling`, which then
   sample the fundamental domain, `phi_d` in `(0, pi]`, for the centres of
   reciprocal kernels.
+- `rivoli.hdf5`: reading of measurements of BRDFs from HDF5 files, described
+  by a layout given as a mapping or a JSON file: the grids of the angles and
+  wavelengths, the template of the paths of the tables of values, the unit of
+  the angles and whether the values are weighted by the cosine of the outgoing
+  polar angle. The measurements are returned as `Measurements`, which unpacks
+  into the sites and values given to `rivoli.model.fit`. h5py is installed by
+  the `hdf5` extra.
 - `examples/merl_reconstruction.py`: example script that decimates a BRDF of the
   MERL database, reconstructs it and compares the reconstruction with it, with
   an optional MERL output and figure. The examples are run by the tests, and
