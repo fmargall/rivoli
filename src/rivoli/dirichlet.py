@@ -20,7 +20,11 @@ The domain is a product of factors, as in :mod:`rivoli.distances`:
 -   the wavelengths, for a spectral BRDF, span an interval.
 
 As in earlier versions of RIVOLI, this is the whole domain, below the
-horizon too, without the symmetries of the BRDF. The squared norm of a
+horizon too. The kernels made reciprocal by :mod:`rivoli.kernels` are
+invariant by the half turn ``g`` of the difference vectors, an isometry
+of their hemisphere: their energy over the whole domain is that over the
+fundamental domain, ``phi_d`` in ``[0, pi)``, as both the integral and
+the volume are halved. The squared norm of a
 gradient on the product is the sum of those of its components on each
 factor, where the gradient on a hemisphere is that of the round sphere.
 They can be weighted by the squares of scales, which is the energy for
@@ -34,7 +38,11 @@ Dirichlet matrix is the sum, over the factors ``k``, of the Hadamard
 product of the stiffness matrix of ``k``, made of the integrals of the
 products of the gradients of the Gaussians on ``k``, with the mass
 matrices of the other factors, made of the integrals of the products of
-their Gaussians. These integrals are computed by quadrature: composite
+their Gaussians. With the reciprocal kernels, the
+Gaussians on the difference vectors are the sums of those of the centres
+and of their images, so only the matrices of that factor change: the
+values and gradients at each node are summed over the orbit of each
+centre before their products. These integrals are computed by quadrature: composite
 Gauss-Legendre rules, with panels no longer than the width of the
 Gaussians, along the polar angle and the wavelength, and the
 trapezoidal rule, exact up to rounding for smooth periodic functions,
@@ -55,7 +63,7 @@ import numpy as np
 
 from rivoli.distances import _PAIRS_PER_CHUNK, _check_metric, _check_scales, _factors
 from rivoli.geometry import spherical_to_cartesian
-from rivoli.kernels import _check_kernel
+from rivoli.kernels import _check_kernel, _check_symmetry, _difference_orbit
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
@@ -171,21 +179,27 @@ def _interval_kernels(
 
 
 def _blocks(
-    rule: _Rule, centres: "NDArray[np.float64]", width: float, metric: str
+    rule: _Rule, orbit: "list[NDArray[np.float64]]", width: float, metric: str
 ) -> tuple["NDArray[np.float64]", "NDArray[np.float64]"]:
-    """Mass and stiffness matrices of the Gaussians of the centres on a factor."""
-    n = len(centres)
+    """Mass and stiffness matrices on a factor of the Gaussians summed over orbits.
+
+    `orbit` holds the centres, then their images by the symmetries.
+    """
+    n = len(orbit[0])
     mass = np.zeros((n, n))
     stiffness = np.zeros((n, n))
-    chunk = max(1, _PAIRS_PER_CHUNK // n)
+    chunk = max(1, _PAIRS_PER_CHUNK // (n * len(orbit)))
     for low in range(0, len(rule.weights), chunk):
         rows = slice(low, low + chunk)
-        if rule.tangents is None:
-            values, gradients = _interval_kernels(rule.nodes[rows], centres, width)
-        else:
-            values, gradients = _sphere_kernels(
-                rule.nodes[rows], rule.tangents[rows], centres, width, metric
-            )
+        values, gradients = np.zeros(()), np.zeros(())
+        for centres in orbit:
+            if rule.tangents is None:
+                terms = _interval_kernels(rule.nodes[rows], centres, width)
+            else:
+                terms = _sphere_kernels(
+                    rule.nodes[rows], rule.tangents[rows], centres, width, metric
+                )
+            values, gradients = values + terms[0], gradients + terms[1]
         root = np.sqrt(rule.weights[rows])[:, np.newaxis]
         values *= root
         gradients *= root
@@ -199,7 +213,8 @@ class _Problem(NamedTuple):
     """Checked arguments of dirichlet_matrix, with a rule per factor."""
 
     rules: list[_Rule]
-    centres: list["NDArray[np.float64]"]
+    # Per factor, the centres then their images by the symmetries
+    orbits: list[list["NDArray[np.float64]"]]
     widths: tuple[float, ...]
     scales: tuple[float, ...]
 
@@ -212,10 +227,12 @@ def _problem(
     wavelength_range: tuple[float, float] | None,
     scales: tuple[float, ...] | None,
     kernel: str,
+    symmetry: str,
     refinement: int,
 ) -> _Problem:
     """Check the arguments of dirichlet_matrix, and build the rules of its factors."""
     _check_kernel(kernel)
+    _check_symmetry(symmetry)
     _check_metric(metric)
     factors = _factors(centres, "centres")
     if (len(factors) == 3) != (wavelength_range is not None):
@@ -237,7 +254,9 @@ def _problem(
         if not low < high:
             raise ValueError(f"the wavelength range must be increasing, got {wavelength_range}")
         rules.append(_interval_rule(low, high, widths[2], refinement))
-    return _Problem(rules, factors, widths, scales)
+    h, d, *wavelengths = factors
+    orbits = [[h], _difference_orbit(d, symmetry), *([w] for w in wavelengths)]
+    return _Problem(rules, orbits, widths, scales)
 
 
 def _assemble(
@@ -263,6 +282,7 @@ def dirichlet_matrix(
     wavelength_range: tuple[float, float] | None = None,
     scales: tuple[float, ...] | None = None,
     kernel: Literal["gaussian"] = "gaussian",
+    symmetry: Literal["none", "reciprocity"] = "reciprocity",
     refinement: int = 1,
 ) -> "NDArray[np.float64]":
     """Compute the Dirichlet matrix of kernels on the Rusinkiewicz domain.
@@ -300,6 +320,9 @@ def dirichlet_matrix(
         in their own units.
     kernel : {"gaussian"}, default "gaussian"
         Profile of the kernels.
+    symmetry : {"reciprocity", "none"}, default "reciprocity"
+        Symmetry of the BRDF, over whose orbit the kernels are summed, as
+        in :func:`rivoli.kernels.collocation_matrix`.
     refinement : int, default 1
         Multiplier of the numbers of quadrature nodes along each
         dimension, to check the convergence of the quadrature.
@@ -312,17 +335,17 @@ def dirichlet_matrix(
     Raises
     ------
     ValueError
-        If `kernel` or `metric` is unknown, if `centres` do not have 2
-        or 3 factors, if `widths` or `scales` are not one positive
+        If `kernel`, `metric` or `symmetry` is unknown, if `centres` do
+        not have 2 or 3 factors, if `widths` or `scales` are not one positive
         number per factor, if `wavelength_range` is missing, unexpected
         or not increasing, if `refinement` is not a positive integer, or
         if the half vectors of an isotropic BRDF have a nonzero azimuth.
     """
     problem = _problem(
-        centres, widths, metric, isotropic, wavelength_range, scales, kernel, refinement
+        centres, widths, metric, isotropic, wavelength_range, scales, kernel, symmetry, refinement
     )
     blocks = [
-        _blocks(rule, factor, width, metric)
-        for rule, factor, width in zip(problem.rules, problem.centres, problem.widths, strict=True)
+        _blocks(rule, orbit, width, metric)
+        for rule, orbit, width in zip(problem.rules, problem.orbits, problem.widths, strict=True)
     ]
     return _assemble(blocks, problem.scales)

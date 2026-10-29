@@ -19,7 +19,7 @@ from typing import TYPE_CHECKING, Literal
 import numpy as np
 
 from rivoli.distances import _check_metric, _check_scales, _factors
-from rivoli.kernels import _check_kernel
+from rivoli.kernels import _check_kernel, _check_symmetry
 
 try:
     import warp as wp
@@ -58,17 +58,25 @@ def _collocation(
     centres_wavelength: wp.array(dtype=wp.float64),
     metric: int,
     width: wp.vec3d,
+    reciprocal: int,
     matrix: wp.array2d(dtype=wp.float64),
 ) -> None:
     # Warp's stubs do not tell that the thread index of a 2D launch is a pair
     i, j = wp.tid()  # pyright: ignore[reportAssignmentType, reportGeneralTypeIssues]
     distance_h = _distance(sites_h[i], centres_h[j], metric) / width[0]
-    distance_d = _distance(sites_d[i], centres_d[j], metric) / width[1]
-    squared = distance_h * distance_h + distance_d * distance_d
+    squared = distance_h * distance_h
     if sites_wavelength.shape[0] > 0:
         distance_wavelength = wp.abs(sites_wavelength[i] - centres_wavelength[j]) / width[2]
         squared += distance_wavelength * distance_wavelength
-    matrix[i, j] = gaussian(wp.sqrt(squared))
+    centre_d = centres_d[j]
+    value = wp.float64(0.0)
+    # The centre, then its image by reciprocity, a half turn of d
+    for image in range(1 + reciprocal):
+        if image == 1:
+            centre_d = wp.vec3d(-centre_d[0], -centre_d[1], centre_d[2])
+        distance_d = _distance(sites_d[i], centre_d, metric) / width[1]
+        value += gaussian(wp.sqrt(squared + distance_d * distance_d))
+    matrix[i, j] = value
 
 
 def collocation_matrix(
@@ -78,6 +86,7 @@ def collocation_matrix(
     widths: tuple[float, ...],
     metric: Literal["geodesic", "chordal"],
     kernel: Literal["gaussian"] = "gaussian",
+    symmetry: Literal["none", "reciprocity"] = "reciprocity",
     device: str | None = None,
 ) -> "NDArray[np.float64]":
     """Evaluate the kernels of centres at sites.
@@ -98,6 +107,8 @@ def collocation_matrix(
         vectors.
     kernel : {"gaussian"}, default "gaussian"
         Profile of the kernel.
+    symmetry : {"reciprocity", "none"}, default "reciprocity"
+        Symmetry of the BRDF, over whose orbit the kernels are summed.
     device : str, optional
         Warp device, such as ``"cpu"`` or ``"cuda:0"``. Default: the
         default device of Warp.
@@ -110,12 +121,13 @@ def collocation_matrix(
     Raises
     ------
     ValueError
-        If `kernel` or `metric` is unknown, if `sites` and `centres` do
+        If `kernel`, `metric` or `symmetry` is unknown, if `sites` and `centres` do
         not both have 2 or 3 factors, or if `widths` are not one positive
         number per factor.
     """
     _check_kernel(kernel)
     _check_metric(metric)
+    _check_symmetry(symmetry)
     sites = _factors(sites, "sites")
     centres = _factors(centres, "centres")
     if len(sites) != len(centres):
@@ -140,7 +152,13 @@ def collocation_matrix(
     wp.launch(
         _collocation,
         dim=shape,
-        inputs=[*arrays(sites), *arrays(centres), _METRICS[metric], width],
+        inputs=[
+            *arrays(sites),
+            *arrays(centres),
+            _METRICS[metric],
+            width,
+            int(symmetry == "reciprocity"),
+        ],
         outputs=[matrix],
         device=device,
     )

@@ -56,13 +56,13 @@ def test_gaussian_matches_numpy(device):
 @pytest.mark.parametrize("device", DEVICES)
 @pytest.mark.parametrize("metric", ["geodesic", "chordal"])
 @pytest.mark.parametrize("spectral", [False, True])
-def test_collocation_matrix_matches_numpy(rng, device, metric, spectral):
+@pytest.mark.parametrize("symmetry", ["none", "reciprocity"])
+def test_collocation_matrix_matches_numpy(rng, device, metric, spectral, symmetry):
     sites, centres = random_sites(rng, 70, spectral), random_sites(rng, 50, spectral)
     widths = (0.4, 0.6, 100.0) if spectral else (0.4, 0.6)
-    expected = kernels.collocation_matrix(sites, centres, widths=widths, metric=metric)
-    actual = warp_kernels.collocation_matrix(
-        sites, centres, widths=widths, metric=metric, device=device
-    )
+    arguments = {"widths": widths, "metric": metric, "symmetry": symmetry}
+    expected = kernels.collocation_matrix(sites, centres, **arguments)
+    actual = warp_kernels.collocation_matrix(sites, centres, device=device, **arguments)
     assert actual.shape == (70, 50)
     assert_allclose(actual, expected, rtol=1e-13, atol=1e-300)
 

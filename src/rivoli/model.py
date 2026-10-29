@@ -61,6 +61,8 @@ class RBFModel:
     log_offset : float or None
         Offset of the values in log space, or None if the expansion
         models the values themselves.
+    symmetry : {"reciprocity", "none"}, default "reciprocity"
+        Symmetry of the BRDF, over whose orbit the kernels are summed.
     """
 
     centres: tuple["NDArray[np.float64]", ...]
@@ -69,6 +71,7 @@ class RBFModel:
     metric: Literal["geodesic", "chordal"]
     kernel: Literal["gaussian"]
     log_offset: float | None
+    symmetry: Literal["none", "reciprocity"] = "reciprocity"
 
     def __call__(self, sites: "Sequence[ArrayLike]") -> "NDArray[np.float64]":
         """Evaluate the model.
@@ -194,6 +197,7 @@ class RBFModel:
                     widths=widths,
                     metric=self.metric,
                     kernel=self.kernel,
+                    symmetry=self.symmetry,
                 )
                 @ weights
                 for start in range(0, m, step)
@@ -220,6 +224,7 @@ def fit(
     scales: tuple[float, ...] | None = None,
     log_space: bool = True,
     kernel: Literal["gaussian"] = "gaussian",
+    symmetry: Literal["none", "reciprocity"] = "reciprocity",
     energy: "ArrayLike | None" = None,
 ) -> RBFModel:
     """Fit a model to measurements of a BRDF.
@@ -260,6 +265,13 @@ def fit(
         Whether to fit ``log(f + 1e-6)`` instead of ``f``.
     kernel : {"gaussian"}, default "gaussian"
         Profile of the kernels.
+    symmetry : {"reciprocity", "none"}, default "reciprocity"
+        Symmetry of the BRDF, over whose orbit the kernels are summed, so
+        that the model has it exactly. With reciprocity, the centres are
+        best sampled over the fundamental domain, as by
+        :func:`rivoli.sampling.super_fibonacci_isotropic` with the same
+        option: centres that are images of each other have the same
+        kernel.
     energy : array_like, shape (n, n), optional
         Dirichlet matrix of the kernels, if already computed, such as by
         :func:`rivoli.warp.dirichlet.dirichlet_matrix`. It is otherwise
@@ -286,7 +298,9 @@ def fit(
         if np.any(values <= -log_offset):
             raise ValueError(f"values must be above {-log_offset} to be fitted in log space")
         values = np.log(values + log_offset)
-    collocation = collocation_matrix(sites, centres, widths=widths, metric=metric, kernel=kernel)
+    collocation = collocation_matrix(
+        sites, centres, widths=widths, metric=metric, kernel=kernel, symmetry=symmetry
+    )
     if values.shape[:1] != collocation.shape[:1] or values.ndim > 2:
         raise ValueError(
             f"expected values of shape ({len(collocation)},) or ({len(collocation)}, c), "
@@ -305,6 +319,7 @@ def fit(
                 wavelength_range=wavelength_range,
                 scales=scales,
                 kernel=kernel,
+                symmetry=symmetry,
             )
         weights = Tikhonov(collocation, energy).solve(values, regularization)
     return RBFModel(
@@ -314,4 +329,5 @@ def fit(
         metric=metric,
         kernel=kernel,
         log_offset=log_offset,
+        symmetry=symmetry,
     )

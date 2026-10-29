@@ -58,10 +58,8 @@ def sites_of(theta_h: "NDArray", theta_d: "NDArray", phi_d: "NDArray") -> tuple[
 def decimate(values: "NDArray", count: int) -> tuple[tuple["NDArray", ...], "NDArray"]:
     """Keep the measured bins of a Super-Fibonacci sampling of the domain.
 
-    The bins are taken at their angles in the grid, and each of them twice:
-    at ``phi_d`` and at ``phi_d - pi``. MERL only stores ``phi_d`` in
-    ``[0, pi)``, the rest following by reciprocity, so the copies give the
-    model the values on the whole domain over which it is regularized.
+    The bins are taken at their angles in the grid, with ``phi_d`` in
+    ``[0, pi)``, the only half of the azimuths that MERL stores.
     """
     angles = bin_angles()
     measured = is_above_horizon(*angles) & np.all(values >= 0, axis=-1)
@@ -70,16 +68,18 @@ def decimate(values: "NDArray", count: int) -> tuple[tuple["NDArray", ...], "NDA
     )
     bins = np.unique(bins)
     bins = bins[measured.ravel()[bins]]
-    theta_h, theta_d, phi_d = (angle.ravel()[bins] for angle in angles)
-    sites = sites_of(np.tile(theta_h, 2), np.tile(theta_d, 2), np.r_[phi_d, phi_d - np.pi])
-    return sites, np.tile(values.reshape(-1, 3)[bins], (2, 1))
+    sites = sites_of(*(angle.ravel()[bins] for angle in angles))
+    return sites, values.reshape(-1, 3)[bins]
 
 
 def reconstruct(
     sites: "Sequence[NDArray]", values: "NDArray", centres: int, regularization: float
 ) -> RBFModel:
     """Fit a model to the measurements, on centres above the horizon."""
-    centre_sites = sites_of(*super_fibonacci_isotropic(centres, above_horizon=True))
+    # Reciprocal kernels: centres over the fundamental domain, phi_d in (0, pi]
+    centre_sites = sites_of(
+        *super_fibonacci_isotropic(centres, above_horizon=True, symmetry="reciprocity")
+    )
     spacings = nearest_neighbour_spacings(*centre_sites, metric="chordal")
     widths = tuple(
         factor * float(np.mean(spacing))
@@ -186,7 +186,7 @@ def main(argv: "Sequence[str] | None" = None) -> None:
 
     values = read_merl(arguments.merl)
     sites, measurements = decimate(values, arguments.sites)
-    print(f"{len(measurements) // 2} measured bins kept, {values[..., 0].size} in the grid")
+    print(f"{len(measurements)} measured bins kept, {values[..., 0].size} in the grid")
 
     start = time.perf_counter()
     model = reconstruct(sites, measurements, arguments.centres, arguments.regularization)

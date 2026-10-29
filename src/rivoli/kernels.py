@@ -27,6 +27,19 @@ depends on the metric:
     widths are large compared to the spacing of the centres. It is
     kept as the kernel of earlier versions of RIVOLI.
 
+BRDFs are reciprocal: swapping the incident and outgoing directions,
+which leaves the half vector unchanged and maps the difference vector
+``d = (x, y, z)`` to ``g d = (-x, -y, z)``, that is ``phi_d`` to
+``phi_d + pi``, does not change their values. By default, the kernels
+are made reciprocal by summing them over the orbit of their centre:
+``k(x, c) + k(x, g c)``, where ``g`` only acts on the difference vector.
+The sum is smooth, unlike the kernel of the distance to the nearest
+image of the centre, and stays positive semidefinite: the matrix of the
+centres is positive definite unless two centres are images of each
+other. Summing rather than averaging over the orbit only scales the
+kernels by a constant, which scales the fitted weights by its inverse
+and leaves the fitted functions unchanged.
+
 The kernels of :mod:`rivoli.warp.kernels` compute the same matrices in
 parallel, on the CPU or a GPU.
 
@@ -40,7 +53,7 @@ from typing import TYPE_CHECKING, Literal
 
 import numpy as np
 
-from rivoli.distances import pairwise_distances
+from rivoli.distances import _factors, pairwise_distances
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
@@ -51,6 +64,10 @@ __all__ = [
     "collocation_matrix",
     "gaussian",
 ]
+
+_SYMMETRIES = ("none", "reciprocity")
+# Reciprocity maps the difference vector d to g d, a half turn around the normal
+_HALF_TURN = np.array([-1.0, -1.0, 1.0])
 
 
 def gaussian(r: "ArrayLike") -> "NDArray[np.float64]":
@@ -78,6 +95,18 @@ def _check_kernel(kernel: str) -> None:
         raise ValueError(f"kernel must be one of {sorted(_PROFILES)}, got {kernel!r}")
 
 
+def _check_symmetry(symmetry: str) -> None:
+    if symmetry not in _SYMMETRIES:
+        raise ValueError(f"symmetry must be one of {list(_SYMMETRIES)}, got {symmetry!r}")
+
+
+def _difference_orbit(d: "NDArray[np.float64]", symmetry: str) -> list["NDArray[np.float64]"]:
+    """Images of difference vectors by the symmetries of the BRDF, themselves first."""
+    if symmetry == "reciprocity":
+        return [d, d * _HALF_TURN]
+    return [d]
+
+
 def collocation_matrix(
     sites: "Sequence[ArrayLike]",
     centres: "Sequence[ArrayLike]",
@@ -85,6 +114,7 @@ def collocation_matrix(
     widths: tuple[float, ...],
     metric: Literal["geodesic", "chordal"],
     kernel: Literal["gaussian"] = "gaussian",
+    symmetry: Literal["none", "reciprocity"] = "reciprocity",
 ) -> "NDArray[np.float64]":
     """Evaluate the kernels of centres at sites.
 
@@ -112,6 +142,8 @@ def collocation_matrix(
         kernel.
     kernel : {"gaussian"}, default "gaussian"
         Profile of the kernel.
+    symmetry : {"reciprocity", "none"}, default "reciprocity"
+        Symmetry of the BRDF, over whose orbit the kernels are summed.
 
     Returns
     -------
@@ -121,10 +153,15 @@ def collocation_matrix(
     Raises
     ------
     ValueError
-        If `kernel` or `metric` is unknown, if `sites` and `centres` do
-        not both have 2 or 3 factors, or if `widths` are not one positive
-        number per factor.
+        If `kernel`, `metric` or `symmetry` is unknown, if `sites` and
+        `centres` do not both have 2 or 3 factors, or if `widths` are not
+        one positive number per factor.
     """
     _check_kernel(kernel)
-    r = pairwise_distances(sites, centres, metric=metric, scales=widths)
-    return _PROFILES[kernel](r)
+    _check_symmetry(symmetry)
+    h, d, *wavelengths = _factors(centres, "centres")
+    matrix = np.zeros(())
+    for image in _difference_orbit(d, symmetry):
+        r = pairwise_distances(sites, (h, image, *wavelengths), metric=metric, scales=widths)
+        matrix = matrix + _PROFILES[kernel](r)
+    return matrix

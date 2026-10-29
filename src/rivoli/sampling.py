@@ -42,6 +42,15 @@ bisection, of which at least ``n`` are above the horizon. As the
 samplings are not nested, that number can exceed ``n`` by a few sites,
 which are then removed evenly along the stratified coordinate.
 
+A reciprocal BRDF, invariant by the half turn ``phi_d -> phi_d + pi``
+of the difference vector, is determined by its values on the fundamental
+domain ``phi_d`` in ``(0, pi]``. With ``symmetry="reciprocity"``, the
+samplers spread their sites over that half of the domain only, with the
+same density for half as many sites as over the whole domain: the right
+choice for the centres of reciprocal kernels, which have the same
+orbits. The horizon is invariant by the half turn, so the two options
+combine.
+
 The angles follow the conventions of :mod:`rivoli.geometry`, with
 azimuths in ``(-pi, pi]``, and come in the order of
 :func:`rivoli.parametrization.rusinkiewicz_to_spherical`.
@@ -56,10 +65,11 @@ References
 """
 
 from functools import cache
-from typing import TYPE_CHECKING, overload
+from typing import TYPE_CHECKING, Literal, overload
 
 import numpy as np
 
+from rivoli.kernels import _check_symmetry
 from rivoli.parametrization import is_above_horizon
 
 if TYPE_CHECKING:
@@ -97,9 +107,15 @@ def _super_fibonacci_cube(n: int, k: int) -> "NDArray[np.float64]":
     return np.vstack([s / n, np.mod(np.outer(alpha, s), 1.0)])
 
 
-def _azimuth(u: "NDArray[np.float64]") -> "NDArray[np.float64]":
-    # Maps [0, 1) onto (-pi, pi], uniformly
-    return np.pi - 2.0 * np.pi * u
+def _azimuth(u: "NDArray[np.float64]", period: float = 2.0 * np.pi) -> "NDArray[np.float64]":
+    # Maps [0, 1) onto (pi - period, pi], uniformly
+    return np.pi - period * u
+
+
+def _difference_period(symmetry: str) -> float:
+    # The azimuths of d of the fundamental domain of the symmetries
+    _check_symmetry(symmetry)
+    return np.pi if symmetry == "reciprocity" else 2.0 * np.pi
 
 
 def _hemisphere_polar_angle(u: "NDArray[np.float64]") -> "NDArray[np.float64]":
@@ -118,13 +134,13 @@ def _wavelength(
 
 
 def _isotropic(
-    n: int, wavelength_range: tuple[float, float] | None
+    n: int, wavelength_range: tuple[float, float] | None, period: float
 ) -> tuple["NDArray[np.float64]", ...]:
     cube = _super_fibonacci_cube(n, 2 if wavelength_range is None else 3)
     angles = (
         0.5 * np.pi * cube[0],
         _hemisphere_polar_angle(cube[2]),
-        _azimuth(cube[1]),
+        _azimuth(cube[1], period),
     )
     if wavelength_range is None:
         return angles
@@ -132,14 +148,14 @@ def _isotropic(
 
 
 def _anisotropic(
-    n: int, wavelength_range: tuple[float, float] | None
+    n: int, wavelength_range: tuple[float, float] | None, period: float
 ) -> tuple["NDArray[np.float64]", ...]:
     cube = _super_fibonacci_cube(n, 3 if wavelength_range is None else 4)
     angles = (
         _hemisphere_polar_angle(cube[0]),
         _azimuth(cube[1]),
         _hemisphere_polar_angle(cube[2]),
-        _azimuth(cube[3]),
+        _azimuth(cube[3], period),
     )
     if wavelength_range is None:
         return angles
@@ -183,11 +199,19 @@ def _above_horizon(
 
 @overload
 def super_fibonacci_isotropic(
-    n: int, *, wavelength_range: None = None, above_horizon: bool = False
+    n: int,
+    *,
+    wavelength_range: None = None,
+    above_horizon: bool = False,
+    symmetry: Literal["none", "reciprocity"] = "none",
 ) -> tuple["NDArray[np.float64]", "NDArray[np.float64]", "NDArray[np.float64]"]: ...
 @overload
 def super_fibonacci_isotropic(
-    n: int, *, wavelength_range: tuple[float, float], above_horizon: bool = False
+    n: int,
+    *,
+    wavelength_range: tuple[float, float],
+    above_horizon: bool = False,
+    symmetry: Literal["none", "reciprocity"] = "none",
 ) -> tuple[
     "NDArray[np.float64]", "NDArray[np.float64]", "NDArray[np.float64]", "NDArray[np.float64]"
 ]: ...
@@ -196,6 +220,7 @@ def super_fibonacci_isotropic(
     *,
     wavelength_range: tuple[float, float] | None = None,
     above_horizon: bool = False,
+    symmetry: Literal["none", "reciprocity"] = "none",
 ) -> tuple["NDArray[np.float64]", ...]:
     """Sample the isotropic Rusinkiewicz domain.
 
@@ -213,34 +238,48 @@ def super_fibonacci_isotropic(
     above_horizon : bool, default False
         Whether to keep only sites whose incident and outgoing directions
         are both above the horizon.
+    symmetry : {"none", "reciprocity"}, default "none"
+        Symmetry of the BRDF, whose fundamental domain is sampled: with
+        ``"reciprocity"``, ``phi_d`` is in ``(0, pi]``.
 
     Returns
     -------
     theta_h, theta_d, phi_d : ndarray, shape (n,)
         Angles of the sites, with ``theta_h`` and ``theta_d`` in
-        ``[0, pi / 2]`` and ``phi_d`` in ``(-pi, pi]``.
+        ``[0, pi / 2]`` and ``phi_d`` in ``(-pi, pi]``, or ``(0, pi]``
+        with reciprocity.
     wavelength : ndarray, shape (n,)
         Wavelengths of the sites, only when `wavelength_range` is given.
 
     Raises
     ------
     ValueError
-        If `n` is less than 1, or if `wavelength_range` is not increasing.
+        If `n` is less than 1, if `wavelength_range` is not increasing,
+        or if `symmetry` is unknown.
     """
+    period = _difference_period(symmetry)
     if above_horizon:
-        return _above_horizon(lambda size: _isotropic(size, wavelength_range), n, 3)
-    return _isotropic(n, wavelength_range)
+        return _above_horizon(lambda size: _isotropic(size, wavelength_range, period), n, 3)
+    return _isotropic(n, wavelength_range, period)
 
 
 @overload
 def super_fibonacci_anisotropic(
-    n: int, *, wavelength_range: None = None, above_horizon: bool = False
+    n: int,
+    *,
+    wavelength_range: None = None,
+    above_horizon: bool = False,
+    symmetry: Literal["none", "reciprocity"] = "none",
 ) -> tuple[
     "NDArray[np.float64]", "NDArray[np.float64]", "NDArray[np.float64]", "NDArray[np.float64]"
 ]: ...
 @overload
 def super_fibonacci_anisotropic(
-    n: int, *, wavelength_range: tuple[float, float], above_horizon: bool = False
+    n: int,
+    *,
+    wavelength_range: tuple[float, float],
+    above_horizon: bool = False,
+    symmetry: Literal["none", "reciprocity"] = "none",
 ) -> tuple[
     "NDArray[np.float64]",
     "NDArray[np.float64]",
@@ -253,6 +292,7 @@ def super_fibonacci_anisotropic(
     *,
     wavelength_range: tuple[float, float] | None = None,
     above_horizon: bool = False,
+    symmetry: Literal["none", "reciprocity"] = "none",
 ) -> tuple["NDArray[np.float64]", ...]:
     """Sample the anisotropic Rusinkiewicz domain.
 
@@ -269,20 +309,26 @@ def super_fibonacci_anisotropic(
     above_horizon : bool, default False
         Whether to keep only sites whose incident and outgoing directions
         are both above the horizon.
+    symmetry : {"none", "reciprocity"}, default "none"
+        Symmetry of the BRDF, whose fundamental domain is sampled: with
+        ``"reciprocity"``, ``phi_d`` is in ``(0, pi]``.
 
     Returns
     -------
     theta_h, phi_h, theta_d, phi_d : ndarray, shape (n,)
         Angles of the sites, with ``theta_h`` and ``theta_d`` in
-        ``[0, pi / 2]``, ``phi_h`` and ``phi_d`` in ``(-pi, pi]``.
+        ``[0, pi / 2]``, ``phi_h`` and ``phi_d`` in ``(-pi, pi]``, ``phi_d``
+        in ``(0, pi]`` with reciprocity.
     wavelength : ndarray, shape (n,)
         Wavelengths of the sites, only when `wavelength_range` is given.
 
     Raises
     ------
     ValueError
-        If `n` is less than 1, or if `wavelength_range` is not increasing.
+        If `n` is less than 1, if `wavelength_range` is not increasing,
+        or if `symmetry` is unknown.
     """
+    period = _difference_period(symmetry)
     if above_horizon:
-        return _above_horizon(lambda size: _anisotropic(size, wavelength_range), n, 4)
-    return _anisotropic(n, wavelength_range)
+        return _above_horizon(lambda size: _anisotropic(size, wavelength_range, period), n, 4)
+    return _anisotropic(n, wavelength_range, period)

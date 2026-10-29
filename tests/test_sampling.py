@@ -40,12 +40,12 @@ def anisotropic_cube(theta_h, phi_h, theta_d, phi_d, *wavelength):
     )
 
 
-def isotropic_spectral(n, above_horizon=False):
-    return super_fibonacci_isotropic(n, wavelength_range=VISIBLE, above_horizon=above_horizon)
+def isotropic_spectral(n, **arguments):
+    return super_fibonacci_isotropic(n, wavelength_range=VISIBLE, **arguments)
 
 
-def anisotropic_spectral(n, above_horizon=False):
-    return super_fibonacci_anisotropic(n, wavelength_range=VISIBLE, above_horizon=above_horizon)
+def anisotropic_spectral(n, **arguments):
+    return super_fibonacci_anisotropic(n, wavelength_range=VISIBLE, **arguments)
 
 
 SAMPLERS = [
@@ -194,6 +194,38 @@ def test_above_horizon_gives_exactly_n_sites_above_it(sampler, angle_count, n):
     sites = sampler(n, above_horizon=True)
     assert all(x.shape == (n,) for x in sites)
     assert np.all(is_above_horizon(*sites[:angle_count]))
+
+
+@pytest.mark.parametrize(
+    ("sampler", "angle_count"),
+    [
+        (super_fibonacci_isotropic, 3),
+        (super_fibonacci_anisotropic, 4),
+        (isotropic_spectral, 3),
+        (anisotropic_spectral, 4),
+    ],
+)
+@pytest.mark.parametrize("above_horizon", [False, True])
+def test_reciprocity_samples_half_of_the_difference_azimuths(sampler, angle_count, above_horizon):
+    n = 2000
+    full = sampler(n, above_horizon=above_horizon)
+    half = sampler(n, above_horizon=above_horizon, symmetry="reciprocity")
+    phi_d = half[angle_count - 1]
+    assert all(x.shape == (n,) for x in half)
+    assert np.all((phi_d > 0) & (phi_d <= np.pi))
+    if above_horizon:
+        assert np.all(is_above_horizon(*half[:angle_count]))
+    else:
+        # The same sites, with the azimuths of d halved onto (0, pi]
+        assert_allclose(phi_d, (full[angle_count - 1] + np.pi) / 2)
+        for k, x in enumerate(half):
+            if k != angle_count - 1:
+                assert_allclose(x, full[k])
+
+
+def test_invalid_symmetry():
+    with pytest.raises(ValueError, match="symmetry must be one of"):
+        super_fibonacci_isotropic(10, symmetry="bilateral")  # pyright: ignore[reportArgumentType]
 
 
 def test_above_horizon_sites_are_uniform():

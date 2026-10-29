@@ -36,7 +36,7 @@ def test_gaussian_profile():
 def test_collocation_matrix_is_the_profile_of_the_distances(rng, metric, spectral):
     sites, centres = random_sites(rng, 30, spectral), random_sites(rng, 20, spectral)
     widths = (0.4, 0.6, 100.0) if spectral else (0.4, 0.6)
-    matrix = collocation_matrix(sites, centres, widths=widths, metric=metric)
+    matrix = collocation_matrix(sites, centres, widths=widths, metric=metric, symmetry="none")
     assert matrix.shape == (30, 20)
     r = pairwise_distances(sites, centres, metric=metric, scales=widths)
     assert_allclose(matrix, np.exp(-(r**2)))
@@ -45,7 +45,7 @@ def test_collocation_matrix_is_the_profile_of_the_distances(rng, metric, spectra
 @pytest.mark.parametrize("metric", ["geodesic", "chordal"])
 def test_interpolation_matrix_is_symmetric_with_a_unit_diagonal(rng, metric):
     centres = random_sites(rng, 50)
-    matrix = collocation_matrix(centres, centres, widths=(0.5, 0.5), metric=metric)
+    matrix = collocation_matrix(centres, centres, widths=(0.5, 0.5), metric=metric, symmetry="none")
     assert_allclose(np.diag(matrix), 1)
     assert_allclose(matrix, matrix.T)
     assert np.all((matrix > 0) & (matrix <= 1))
@@ -103,3 +103,43 @@ def test_invalid_widths(rng):
     centres = random_sites(rng, 3)
     with pytest.raises(ValueError, match="must be positive"):
         collocation_matrix(centres, centres, widths=(1.0, 0.0), metric="chordal")
+
+
+HALF_TURN = np.array([-1.0, -1.0, 1.0])
+
+
+@pytest.mark.parametrize("metric", ["geodesic", "chordal"])
+@pytest.mark.parametrize("spectral", [False, True])
+def test_reciprocal_kernels_sum_over_the_orbit(rng, metric, spectral):
+    sites, centres = random_sites(rng, 30, spectral), random_sites(rng, 20, spectral)
+    widths = (0.4, 0.6, 100.0) if spectral else (0.4, 0.6)
+    images = [centres[0], centres[1] * HALF_TURN, *centres[2:]]
+    plain = {"widths": widths, "metric": metric, "symmetry": "none"}
+    expected = collocation_matrix(sites, centres, **plain) + collocation_matrix(
+        sites, images, **plain
+    )
+    matrix = collocation_matrix(sites, centres, widths=widths, metric=metric)
+    assert_allclose(matrix, expected, rtol=1e-15)
+    # Swapping the directions of the sites, d -> g d, leaves the kernels unchanged
+    swapped = [sites[0], sites[1] * HALF_TURN, *sites[2:]]
+    assert_allclose(collocation_matrix(swapped, centres, widths=widths, metric=metric), matrix)
+
+
+@pytest.mark.parametrize("metric", ["geodesic", "chordal"])
+def test_reciprocal_interpolation_matrix_is_symmetric_positive_definite(rng, metric):
+    centres = random_sites(rng, 60)
+    matrix = collocation_matrix(centres, centres, widths=(0.5, 0.5), metric=metric)
+    assert_allclose(matrix, matrix.T, rtol=1e-15)
+    if metric == "chordal":
+        assert np.linalg.eigvalsh(matrix)[0] > 0
+
+
+def test_invalid_symmetry(rng):
+    with pytest.raises(ValueError, match="symmetry must be one of"):
+        collocation_matrix(
+            random_sites(rng, 3),
+            random_sites(rng, 3),
+            widths=(1.0, 1.0),
+            metric="chordal",
+            symmetry="bilateral",  # pyright: ignore[reportArgumentType]
+        )

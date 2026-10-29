@@ -84,7 +84,7 @@ def gaussian_blocks(centres, width, low, high):
 @pytest.mark.parametrize("width", [5.0, 40.0, 300.0])
 def test_wavelength_blocks_match_their_closed_form(rng, width):
     centres = rng.uniform(*RANGE, 12)
-    mass, stiffness = _blocks(_interval_rule(*RANGE, width, 1), centres, width, "chordal")
+    mass, stiffness = _blocks(_interval_rule(*RANGE, width, 1), [centres], width, "chordal")
     expected_mass, expected_stiffness = gaussian_blocks(centres, width, *RANGE)
     assert_allclose(mass, expected_mass, rtol=1e-12, atol=1e-15 * expected_mass.max())
     assert_allclose(
@@ -97,7 +97,7 @@ def test_geodesic_meridian_blocks_match_their_closed_form(rng, width):
     # On the meridian, the geodesic distance is the difference of polar angles
     theta = rng.uniform(0, np.pi / 2, 12)
     centres = spherical_to_cartesian(theta, 0.0)
-    mass, stiffness = _blocks(_meridian_rule(width, 1), centres, width, "geodesic")
+    mass, stiffness = _blocks(_meridian_rule(width, 1), [centres], width, "geodesic")
     expected_mass, expected_stiffness = gaussian_blocks(theta, width, 0, np.pi / 2)
     assert_allclose(mass, expected_mass, rtol=1e-12, atol=1e-15 * expected_mass.max())
     assert_allclose(
@@ -111,7 +111,7 @@ def test_hemisphere_blocks_of_the_normal(metric, width):
     # The Gaussian of the normal only depends on the polar angle, whose
     # derivative is its gradient
     normal = np.array([[0.0, 0.0, 1.0]])
-    mass, stiffness = _blocks(_hemisphere_rule(width, 1), normal, width, metric)
+    mass, stiffness = _blocks(_hemisphere_rule(width, 1), [normal], width, metric)
     theta, weights = gauss_legendre(0, np.pi / 2, 400)
     if metric == "geodesic":
         distance, derivative = theta, 1.0
@@ -138,7 +138,7 @@ def test_rules_are_normalized():
         assert_allclose(np.einsum("qkj,qj->qk", rule.tangents, rule.nodes), 0, atol=1e-15)
 
 
-def energy_by_finite_differences(centres, weights, widths, metric, scales, isotropic):
+def energy_by_finite_differences(centres, weights, widths, metric, scales, isotropic, symmetry):
     """Mean squared gradient of sum_j w_j phi_j, by finite differences of the angles."""
     polar = gauss_legendre(0, np.pi / 2, 24)
     azimuth = gauss_legendre(-np.pi, np.pi, 48)
@@ -158,7 +158,8 @@ def energy_by_finite_differences(centres, weights, widths, metric, scales, isotr
         h = spherical_to_cartesian(c[0], 0.0) if isotropic else spherical_to_cartesian(c[0], c[1])
         k = 1 if isotropic else 2
         sites = [h, spherical_to_cartesian(c[k], c[k + 1]), *c[k + 2 :]]
-        return collocation_matrix(sites, centres, widths=widths, metric=metric) @ weights
+        matrix = collocation_matrix(sites, centres, widths=widths, metric=metric, symmetry=symmetry)
+        return matrix @ weights
 
     # Each coordinate, its factor, and the polar angle that divides its
     # derivative, for the azimuths
@@ -190,7 +191,8 @@ def energy_by_finite_differences(centres, weights, widths, metric, scales, isotr
 
 @pytest.mark.parametrize("metric", ["geodesic", "chordal"])
 @pytest.mark.parametrize(("isotropic", "spectral"), [(True, False), (True, True), (False, False)])
-def test_energy_matches_finite_differences(rng, metric, isotropic, spectral):
+@pytest.mark.parametrize("symmetry", ["none", "reciprocity"])
+def test_energy_matches_finite_differences(rng, metric, isotropic, spectral, symmetry):
     n = 4
     theta_h = rng.uniform(0, np.pi / 2, n)
     phi_h = np.zeros(n) if isotropic else rng.uniform(-np.pi, np.pi, n)
@@ -211,8 +213,11 @@ def test_energy_matches_finite_differences(rng, metric, isotropic, spectral):
         isotropic=isotropic,
         wavelength_range=wavelength_range,
         scales=scales,
+        symmetry=symmetry,
     )
-    expected = energy_by_finite_differences(centres, weights, widths, metric, scales, isotropic)
+    expected = energy_by_finite_differences(
+        centres, weights, widths, metric, scales, isotropic, symmetry
+    )
     assert_allclose(weights @ matrix @ weights, expected, rtol=1e-6)
 
 
@@ -294,6 +299,7 @@ def test_scales_weigh_the_energy_of_each_factor():
         ((2, False), {"metric": "manhattan"}, "metric must be"),
         ((2, False), {"widths": (1.0,)}, "expected 2 scales"),
         ((2, False), {"scales": (1.0, -1.0)}, "must be positive"),
+        ((2, False), {"symmetry": "bilateral"}, "symmetry must be one of"),
     ],
 )
 def test_invalid_arguments(rng, centres, arguments, message):
@@ -305,3 +311,29 @@ def test_invalid_arguments(rng, centres, arguments, message):
     defaults = {"widths": (1.0,) * count, "metric": "chordal", "isotropic": True}
     with pytest.raises(ValueError, match=message):
         dirichlet_matrix(factors[:count], **(defaults | arguments))
+
+
+@pytest.mark.parametrize("metric", ["geodesic", "chordal"])
+@pytest.mark.parametrize(("isotropic", "spectral"), [(True, False), (True, True), (False, False)])
+def test_reciprocal_energy_is_that_of_the_sums_over_orbits(metric, isotropic, spectral):
+    # The kernels of the centres c and of their images g c, without symmetry
+    centres = isotropic_centres(30, spectral) if isotropic else anisotropic_centres(30)
+    images = [centres[0], centres[1] * np.array([-1.0, -1.0, 1.0]), *centres[2:]]
+    both = [np.concatenate(pair) for pair in zip(centres, images, strict=True)]
+    arguments = {
+        "widths": (0.4, 0.5, 60.0)[: len(centres)],
+        "metric": metric,
+        "isotropic": isotropic,
+        "wavelength_range": RANGE if spectral else None,
+        "scales": (1.3, 0.7, 200.0)[: len(centres)],
+    }
+    plain = dirichlet_matrix(both, symmetry="none", **arguments)
+    n = len(centres[0])
+    # Energy of k(., c) + k(., g c): the sum of the four blocks
+    expected = plain[:n, :n] + plain[:n, n:] + plain[n:, :n] + plain[n:, n:]
+    matrix = dirichlet_matrix(centres, **arguments)
+    tolerance = 1e-13 * np.abs(matrix).max()
+    assert_allclose(matrix, expected, rtol=0, atol=tolerance)
+    # The half turn is an isometry of the domain, which leaves the energy unchanged
+    assert_allclose(plain[n:, n:], plain[:n, :n], rtol=0, atol=tolerance)
+    assert_allclose(matrix, 2 * (plain[:n, :n] + plain[:n, n:]), rtol=0, atol=tolerance)
