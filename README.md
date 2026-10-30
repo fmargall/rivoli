@@ -1,11 +1,12 @@
 <h1 align="center">
-  <img src="docs/assets/header.png" alt="RIVOLI, a BRDF toolbox: interpolation, reconstruction">
+  <img src="https://raw.githubusercontent.com/fmargall/rivoli/main/docs/assets/header.png" alt="RIVOLI, a BRDF toolbox: interpolation, reconstruction">
 </h1>
 
 [![CI][ci-badge]][ci-workflow]
 [![Coverage][coverage-badge]][coverage]
 [![pre-commit][pre-commit-badge]][pre-commit]
 [![DOI][doi-badge]][doi]
+[![PyPI][pypi-badge]][pypi]
 
 RIVOLI reconstructs continuous BRDFs from sparse measurements. It fits expansions on
 radial basis functions over the product of the hemispheres of the half and difference
@@ -100,23 +101,23 @@ extra is installed.
 
 ## Examples
 
-The [`examples`](examples) directory holds complete scripts, run by the tests so that
+The [`examples`](https://github.com/fmargall/rivoli/tree/main/examples) directory holds complete scripts, run by the tests so that
 they follow the API:
 
-- [`merl_reconstruction.py`](examples/merl_reconstruction.py) reconstructs a BRDF of the
+- [`merl_reconstruction.py`](https://github.com/fmargall/rivoli/blob/main/examples/merl_reconstruction.py) reconstructs a BRDF of the
   MERL database from a few percent of its bins, and measures the error on the others.
-- [`hdf5_reconstruction.py`](examples/hdf5_reconstruction.py) reconstructs the colour of
+- [`hdf5_reconstruction.py`](https://github.com/fmargall/rivoli/blob/main/examples/hdf5_reconstruction.py) reconstructs the colour of
   spectral measurements read from an HDF5 file, per wavelength, per RGB channel, or with
   a spectral model.
 
-See [their guide](examples/README.md) to install their dependencies and run them.
+See [their guide](https://github.com/fmargall/rivoli/blob/main/examples/README.md) to install their dependencies and run them.
 
 ## Contributing
 
 Bug reports, questions and contributions are welcome! Whether you fix a bug, improve documentation
 or add features, feel free to open an issue or submit a pull request. You will find all the information
-you need in the [contributing guide](CONTRIBUTING.md) to set up a development environment. Everyone taking
-part in the project is expected to follow the [Code of Conduct](CODE_OF_CONDUCT.md).
+you need in the [contributing guide](https://github.com/fmargall/rivoli/blob/main/CONTRIBUTING.md) to set up a development environment. Everyone taking
+part in the project is expected to follow the [Code of Conduct](https://github.com/fmargall/rivoli/blob/main/CODE_OF_CONDUCT.md).
 
 ### Contact
 
@@ -125,7 +126,7 @@ François Margall - fr.margall@proton.me
 ## Citation
 
 If you use RIVOLI in your research, please cite it with the metadata of
-[`CITATION.cff`](CITATION.cff), also available through the "Cite this repository" button
+[`CITATION.cff`](https://github.com/fmargall/rivoli/blob/main/CITATION.cff), also available through the "Cite this repository" button
 of GitHub. Each release is archived on Zenodo: the DOI
 [10.5281/zenodo.23804096][doi] cites the latest one, and the Zenodo page lists the DOI of
 each version, to cite the exact one you used.
@@ -140,7 +141,7 @@ each version, to cite the exact one you used.
 
 ## License
 
-RIVOLI is distributed under the [AGPL-3.0-or-later](LICENSE.txt) license.
+RIVOLI is distributed under the [AGPL-3.0-or-later](https://github.com/fmargall/rivoli/blob/main/LICENSE.txt) license.
 
 ---
 
@@ -158,5 +159,7 @@ RIVOLI is distributed under the [AGPL-3.0-or-later](LICENSE.txt) license.
 [pre-commit]: https://github.com/pre-commit/pre-commit
 [doi-badge]: https://zenodo.org/badge/DOI/10.5281/zenodo.23804096.svg
 [doi]: https://doi.org/10.5281/zenodo.23804096
+[pypi-badge]: https://img.shields.io/pypi/v/rivoli
+[pypi]: https://pypi.org/project/rivoli/
 [copier]: https://github.com/copier-org/copier
 [template]: https://github.com/fmargall/scientific-python-template
