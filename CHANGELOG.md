@@ -8,6 +8,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- The lower bounds of the dependencies are the oldest versions that RIVOLI works
+  with, instead of the newest ones: NumPy 2.2, and Warp 1.7 and h5py 3.12 for
+  the `warp` and `hdf5` extras. RIVOLI can now be installed next to packages
+  that do not support the newest NumPy yet, such as SciPy 1.15 or OpenCV.
+
 ## [0.1.0] - 2026-10-30
 
 First release of the rewrite of RIVOLI, distributed under the AGPL-3.0-or-later

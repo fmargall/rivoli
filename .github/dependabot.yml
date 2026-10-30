@@ -35,6 +35,9 @@ updates:
   # Python dependencies of pyproject.toml, and their locked versions in uv.lock
   - package-ecosystem: "uv"
     directory: "/"
+    # Keep the lower bounds of pyproject.toml, the oldest versions that RIVOLI works
+    # with, and only update uv.lock, unless a new release falls outside of them
+    versioning-strategy: increase-if-necessary
     schedule:
       interval: "weekly"
       day: "monday"

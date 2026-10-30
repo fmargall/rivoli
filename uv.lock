@@ -823,30 +823,30 @@ test = [
 
 [package.metadata]
 requires-dist = [
-    { name = "h5py", marker = "extra == 'hdf5'", specifier = ">=3.16" },
-    { name = "numpy", specifier = ">=2.5.4" },
-    { name = "warp-lang", marker = "extra == 'warp'", specifier = ">=1.18" },
+    { name = "h5py", marker = "extra == 'hdf5'", specifier = ">=3.12" },
+    { name = "numpy", specifier = ">=2.2" },
+    { name = "warp-lang", marker = "extra == 'warp'", specifier = ">=1.7" },
 ]
 provides-extras = ["warp", "hdf5"]
 
 [package.metadata.requires-dev]
 dev = [
-    { name = "h5py", specifier = ">=3.16" },
+    { name = "h5py", specifier = ">=3.12" },
     { name = "matplotlib" },
     { name = "pre-commit" },
     { name = "pyright", extras = ["nodejs"], specifier = "==1.1.414" },
     { name = "pytest" },
     { name = "pytest-cov" },
     { name = "ruff" },
-    { name = "warp-lang", specifier = ">=1.18" },
+    { name = "warp-lang", specifier = ">=1.7" },
 ]
 examples = [{ name = "matplotlib" }]
 test = [
-    { name = "h5py", specifier = ">=3.16" },
+    { name = "h5py", specifier = ">=3.12" },
     { name = "matplotlib" },
     { name = "pytest" },
     { name = "pytest-cov" },
-    { name = "warp-lang", specifier = ">=1.18" },
+    { name = "warp-lang", specifier = ">=1.7" },
 ]
 
 [[package]]

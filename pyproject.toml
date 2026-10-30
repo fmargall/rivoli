@@ -1,5 +1,6 @@
 [build-system]
-requires = ["setuptools>=84.2.0", "setuptools-scm>=10.3.4"]
+# setuptools 77 reads the SPDX license expression (PEP 639) of the license field
+requires = ["setuptools>=77", "setuptools-scm>=8"]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -35,8 +36,12 @@ readme = "README.md"
 license = "AGPL-3.0-or-later"
 license-files = ["LICENSE.txt"]
 requires-python = ">=3.13"
+# The lower bounds are the oldest versions that RIVOLI works with, tested by the
+# lowest run of the tests job of ci.yml: a library must not force its users to
+# upgrade the packages it shares with others. NumPy follows SPEC 0, which supports
+# the versions released in the last two years
 dependencies = [
-    "numpy>=2.5.4",
+    "numpy>=2.2",
 ]
 
 [project.urls]
@@ -49,9 +54,9 @@ Changelog = "https://github.com/fmargall/rivoli/blob/main/CHANGELOG.md"
 # installed with `pip install rivoli[name]`
 [project.optional-dependencies]
 # GPU and parallel CPU kernels of rivoli.warp
-warp = ["warp-lang>=1.18"]
+warp = ["warp-lang>=1.7"]
 # Reading of measurements in HDF5 files by rivoli.hdf5
-hdf5 = ["h5py>=3.16"]
+hdf5 = ["h5py>=3.12"]
 
 # Tools for contributors go in dependency groups (PEP 735): they are not published,
 # and are installed with `uv sync` (or `pip install -e . --group dev`, pip >= 25.1)
@@ -60,7 +65,7 @@ hdf5 = ["h5py>=3.16"]
 # Plotting of the scripts of examples/
 examples = ["matplotlib"]
 # The examples are run by the tests, so that they follow the API
-test = ["pytest", "pytest-cov", "warp-lang>=1.18", "h5py>=3.16", { include-group = "examples" }]
+test = ["pytest", "pytest-cov", "warp-lang>=1.7", "h5py>=3.12", { include-group = "examples" }]
 # pyright is pinned: each release can add new errors, upgrades must be deliberate.
 # The "nodejs" extra ships Node.js as a wheel instead of downloading it at first run.
 dev = [
