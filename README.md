@@ -159,7 +159,7 @@ RIVOLI is distributed under the [AGPL-3.0-or-later](https://github.com/fmargall/
 [pre-commit]: https://github.com/pre-commit/pre-commit
 [doi-badge]: https://zenodo.org/badge/DOI/10.5281/zenodo.23804096.svg
 [doi]: https://doi.org/10.5281/zenodo.23804096
-[pypi-badge]: https://img.shields.io/pypi/v/rivoli
+[pypi-badge]: https://img.shields.io/pypi/v/rivoli?label=PyPI&logo=pypi&logoColor=white
 [pypi]: https://pypi.org/project/rivoli/
 [copier]: https://github.com/copier-org/copier
 [template]: https://github.com/fmargall/scientific-python-template
