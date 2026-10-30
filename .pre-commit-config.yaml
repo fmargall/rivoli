@@ -23,7 +23,7 @@ repos:
     hooks:
       - id: editorconfig-checker
         # The license and code of conduct texts are kept verbatim and must not be reformatted
-        exclude: ^(LICENSE\.txt|CODE_OF_CONDUCT\.md)$
+        exclude: ^(LICENSE\.txt|LICENSES/.*|CODE_OF_CONDUCT\.md)$
 
   # Find common misspellings in code, comments, docstrings and documentation. It
   # only reports them: a word it does not know can be allowed with
@@ -33,7 +33,7 @@ repos:
     hooks:
       - id: codespell
         # Verbatim texts, and the hashes of the lock file
-        exclude: ^(LICENSE\.txt|CODE_OF_CONDUCT\.md|uv\.lock)$
+        exclude: ^(LICENSE\.txt|LICENSES/.*|CODE_OF_CONDUCT\.md|uv\.lock)$
 
   # Audit the GitHub Actions workflows, dependabot.yml and this file for security
   # issues (template injection, excessive permissions, unpinned actions...)

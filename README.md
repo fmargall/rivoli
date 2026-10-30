@@ -7,6 +7,7 @@
 [![pre-commit][pre-commit-badge]][pre-commit]
 [![DOI][doi-badge]][doi]
 [![PyPI][pypi-badge]][pypi]
+[![conda-forge][conda-forge-badge]][conda-forge]
 
 RIVOLI reconstructs continuous BRDFs from sparse measurements. It fits expansions on
 radial basis functions over the product of the hemispheres of the half and difference
@@ -49,6 +50,14 @@ installed with extras:
 
 ```bash
 pip install "rivoli[warp,hdf5]"
+```
+
+RIVOLI is also distributed on [conda-forge](https://anaconda.org/conda-forge/rivoli),
+which has no extras: the optional dependencies are installed by their names, and conda
+picks the CUDA build of Warp when it finds an NVIDIA driver.
+
+```bash
+conda install -c conda-forge rivoli warp-lang h5py
 ```
 
 ## Quick start
@@ -141,7 +150,10 @@ each version, to cite the exact one you used.
 
 ## License
 
-RIVOLI is distributed under the [AGPL-3.0-or-later](https://github.com/fmargall/rivoli/blob/main/LICENSE.txt) license.
+RIVOLI is distributed under the [AGPL-3.0-or-later](https://github.com/fmargall/rivoli/blob/main/LICENSE.txt) license. The tables of the
+CIE that it ships are distributed under the
+[CC-BY-SA-4.0](https://github.com/fmargall/rivoli/blob/main/LICENSES/CC-BY-SA-4.0.txt) license, as described in
+[their README](https://github.com/fmargall/rivoli/blob/main/src/rivoli/data/README.md).
 
 ---
 
@@ -161,5 +173,7 @@ RIVOLI is distributed under the [AGPL-3.0-or-later](https://github.com/fmargall/
 [doi]: https://doi.org/10.5281/zenodo.23804096
 [pypi-badge]: https://img.shields.io/pypi/v/rivoli?label=PyPI&logo=pypi&logoColor=white
 [pypi]: https://pypi.org/project/rivoli/
+[conda-forge-badge]: https://img.shields.io/conda/vn/conda-forge/rivoli?label=conda-forge&logo=condaforge&logoColor=white
+[conda-forge]: https://anaconda.org/conda-forge/rivoli
 [copier]: https://github.com/copier-org/copier
 [template]: https://github.com/fmargall/scientific-python-template
