@@ -2,6 +2,8 @@ cff-version: 1.2.0
 message: "If you use RIVOLI in your research, please cite it as below."
 type: software
 title: "RIVOLI"
+version: "0.1.0"
+date-released: "2026-10-30"
 abstract: "Physically-based interpolation code by radial basis function dedicated to BRDF, spherical or bispherical modeling functions and data reconstruction."
 authors:
   - family-names: "Margall"
