@@ -33,8 +33,10 @@ classifiers = [
     "Typing :: Typed",
 ]
 readme = "README.md"
-license = "AGPL-3.0-or-later"
-license-files = ["LICENSE.txt"]
+# The tables of the CIE in rivoli/data are distributed under CC-BY-SA-4.0, as stated
+# by the README next to them
+license = "AGPL-3.0-or-later AND CC-BY-SA-4.0"
+license-files = ["LICENSE.txt", "LICENSES/CC-BY-SA-4.0.txt", "src/rivoli/data/README.md"]
 requires-python = ">=3.13"
 # The lower bounds are the oldest versions that RIVOLI works with, tested by the
 # lowest run of the tests job of ci.yml: a library must not force its users to

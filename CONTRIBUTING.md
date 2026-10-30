@@ -102,6 +102,17 @@ The release workflow first runs `scripts/release.py check`: a forgotten step fai
 before anything is published. The changelog section of the version becomes the notes of
 the GitHub release.
 
+### On conda-forge
+
+The conda package is built from the sdist on PyPI by
+[`rivoli-feedstock`](https://github.com/conda-forge/rivoli-feedstock), whose maintainers
+are listed in its recipe. A few hours after a release on PyPI, the bot of conda-forge
+opens a pull request on the feedstock that updates the version and the hash of the
+sdist: merge it once its checks pass. The bot does not update the dependencies: when
+they or their bounds change in `pyproject.toml`, change `recipe/recipe.yaml` by hand in
+that pull request. Other changes to the recipe go through a pull request from a fork of
+the feedstock.
+
 ## License
 
 By contributing, you agree that your contributions will be licensed under the

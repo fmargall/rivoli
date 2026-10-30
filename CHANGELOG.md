@@ -8,6 +8,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- RIVOLI is distributed on conda-forge: `conda install -c conda-forge rivoli`, with
+  `warp-lang` and `h5py` installed by their names for the optional features.
+
+### Fixed
+
+- The metadata of the package declares the CC-BY-SA-4.0 license of the tables of
+  the CIE that it ships, next to the AGPL-3.0-or-later, and includes its text.
+
 ## [0.1.1] - 2026-10-30
 
 ### Fixed
