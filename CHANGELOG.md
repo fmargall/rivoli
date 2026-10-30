@@ -8,6 +8,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.1] - 2026-10-30
+
 ### Fixed
 
 - The lower bounds of the dependencies are the oldest versions that RIVOLI works
@@ -107,5 +109,6 @@ license and requiring Python 3.13 or later. It replaces the alphas 2.0.0a0 and
 - `rivoli.warp.distances`: the same distances and spacings computed in parallel
   on a GPU or the CPU with NVIDIA Warp, installed by the `warp` extra.
 
-[unreleased]: https://github.com/fmargall/rivoli/compare/v0.1.0...HEAD
+[unreleased]: https://github.com/fmargall/rivoli/compare/v0.1.1...HEAD
+[0.1.1]: https://github.com/fmargall/rivoli/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/fmargall/rivoli/releases/tag/v0.1.0
