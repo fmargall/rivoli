@@ -5,6 +5,7 @@
 [![CI][ci-badge]][ci-workflow]
 [![Coverage][coverage-badge]][coverage]
 [![pre-commit][pre-commit-badge]][pre-commit]
+[![DOI][doi-badge]][doi]
 
 RIVOLI reconstructs continuous BRDFs from sparse measurements. It fits expansions on
 radial basis functions over the product of the hemispheres of the half and difference
@@ -125,7 +126,9 @@ François Margall - fr.margall@proton.me
 
 If you use RIVOLI in your research, please cite it with the metadata of
 [`CITATION.cff`](CITATION.cff), also available through the "Cite this repository" button
-of GitHub.
+of GitHub. Each release is archived on Zenodo: the DOI
+[10.5281/zenodo.23804096][doi] cites the latest one, and the Zenodo page lists the DOI of
+each version, to cite the exact one you used.
 
 ## Publications
 
@@ -153,5 +156,7 @@ RIVOLI is distributed under the [AGPL-3.0-or-later](LICENSE.txt) license.
 [coverage]: https://codecov.io/gh/fmargall/rivoli
 [pre-commit-badge]: https://img.shields.io/badge/pre--commit-enabled-brightgreen?logo=pre-commit
 [pre-commit]: https://github.com/pre-commit/pre-commit
+[doi-badge]: https://zenodo.org/badge/DOI/10.5281/zenodo.23804096.svg
+[doi]: https://doi.org/10.5281/zenodo.23804096
 [copier]: https://github.com/copier-org/copier
 [template]: https://github.com/fmargall/scientific-python-template
