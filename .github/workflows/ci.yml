@@ -84,6 +84,10 @@ jobs:
           # one more run with their newest versions catches them before the users
           - python-version: "3.15"
             deps: latest
+          # The lower bounds of pyproject.toml must be true: one more run with the
+          # oldest versions they allow, on the oldest Python, which they must support
+          - python-version: "3.13"
+            deps: lowest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -100,6 +104,12 @@ jobs:
         run: uv sync --locked --no-default-groups --group test
       - if: matrix.deps == 'latest'
         run: uv sync --upgrade --no-default-groups --group test
+      # The test tools stay locked: only the dependencies of the package, and of its
+      # extras, are downgraded to their lower bounds
+      - if: matrix.deps == 'lowest'
+        run: |
+          uv sync --locked --no-default-groups --group test
+          uv pip install --upgrade --resolution lowest-direct -r pyproject.toml --all-extras
       # Reminder of #37: warns in the checks once the installed h5py has wheels for
       # Python 3.15, so that the installation of HDF5 above can be removed
       - if: matrix.python-version == '3.15'
