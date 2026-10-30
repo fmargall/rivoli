@@ -8,6 +8,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.0] - 2026-10-30
+
+First release of the rewrite of RIVOLI, distributed under the AGPL-3.0-or-later
+license and requiring Python 3.13 or later. It replaces the alphas 2.0.0a0 and
+2.0.0a1, distributed under the MIT license and now yanked from PyPI.
+
 ### Added
 
 - `rivoli.geometry`: conversions between spherical angles and unit vectors,
@@ -94,4 +100,5 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `rivoli.warp.distances`: the same distances and spacings computed in parallel
   on a GPU or the CPU with NVIDIA Warp, installed by the `warp` extra.
 
-[unreleased]: https://github.com/fmargall/rivoli/commits/HEAD
+[unreleased]: https://github.com/fmargall/rivoli/compare/v0.1.0...HEAD
+[0.1.0]: https://github.com/fmargall/rivoli/releases/tag/v0.1.0
